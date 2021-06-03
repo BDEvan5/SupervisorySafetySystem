@@ -3,8 +3,7 @@ import numpy as np
 from numba import njit, jit
 from matplotlib import pyplot as plt
 import csv
-
-from numpy.core.numerictypes import maximum_sctype
+from scipy.ndimage import distance_transform_edt as edt
 
 import toy_auto_race.Utils.LibFunctions as lib
 
@@ -206,32 +205,13 @@ class SafetyCar(SafetyPP):
 
         valid_window, starts, ends = check_dw_vo(scan, dw_ds)
 
-
-        # x_pts, y_pts  = segment_lidar_scan(scan)
         x1, y1 = segment_lidar_scan(scan)
 
-
-        # valid_window, end_pts = check_dw_clean(dw_ds, x_pts, y_pts, d)
-
         new_action = self.modify_action(pp_action, valid_window, dw_ds)
-        # new_action = pp_action
 
-        self.plot_valid_window(dw_ds, valid_window, pp_action, new_action)
+        # self.plot_valid_window(dw_ds, valid_window, pp_action, new_action)
 
-        self.plot_lidar_scan_vo(x1, y1, scan, starts, ends)
-
-        # self.plot_lidar_scan_clean(x1, y1, end_pts, x_pts, y_pts,)
-
-
-        # plt.show()
-        # if not valid_window.any():
-        #     plt.show()
-
-        # if new_action[0] != pp_action[0]:
-        #     plt.show()
-
-        # if not valid_window.all():
-        #     plt.show()
+        # self.plot_lidar_scan_vo(x1, y1, scan, starts, ends)
 
         return new_action
 
@@ -251,27 +231,16 @@ class SafetyCar(SafetyPP):
 
     def find_new_action(self, valid_window, d_idx):
         d_size = len(valid_window)
+        dt = edt(valid_window)
+        window_sz = int(min(5, max(dt)-1))
         for i in range(len(valid_window)): # search d space
             p_d = min(d_size-1, d_idx+i)
-            if check_action_safe(valid_window, p_d, 5):
-                check_action_safe(valid_window, p_d, 5)
+            if check_action_safe(valid_window, p_d, window_sz):
                 return p_d 
             n_d = max(0, d_idx-i)
-            if check_action_safe(valid_window, n_d, 5):
-                check_action_safe(valid_window, n_d, 5)
+            if check_action_safe(valid_window, n_d, window_sz):
                 return n_d 
         print(f"No Action Found: redo Search")
-        # find biggest gap and take it
-        gaps = np.convolve(valid_window, np.ones(2))
-        window = max(gaps) # find a way to dynamically find th ebiggest window size
-        for i in range(len(valid_window)): # search d space
-            p_d = min(d_size-1, d_idx+i)
-            if check_action_safe(valid_window, p_d, 1):
-                return p_d 
-            n_d = max(0, d_idx-i)
-            if check_action_safe(valid_window, n_d, 1):
-                return n_d 
-        print(f"Massive problem: the redo didn't work.")
 
     def plot_valid_window(self, dw_ds, valid_window, pp_action, new_action):
         plt.figure(1)
@@ -294,7 +263,6 @@ class SafetyCar(SafetyPP):
         # plt.show()
         plt.pause(0.0001)
 
-
     def plot_lidar_scan_vo(self, xs, ys, scan, starts, ends):
         plt.figure(2)
         plt.clf()
@@ -316,30 +284,6 @@ class SafetyCar(SafetyPP):
         plt.pause(0.0001)
 
 
-    def plot_lidar_scan_clean(self, xs, ys, end_pts, x2, y2):
-        plt.figure(2)
-        plt.clf()
-        plt.title(f'Lidar Scan: {self.step}')
-
-        plt.ylim([0, 8])
-        # plt.xlim([-1.5, 1.5])
-        plt.xlim([-4, 4])
-        # plt.xlim([-1.5, 1.5])
-        # plt.ylim([0, 3])
-        plt.plot(xs, ys, '-+')
-
-        plt.plot(x2, y2, '-+', linewidth=2)
-
-        xs = end_pts[:, 0].flatten()
-        ys = end_pts[:, 1].flatten()
-        for x, y in zip(xs, ys):
-            x_p = [0, x]
-            y_p = [0, y]
-            plt.plot(x_p, y_p, '--')
-
-        plt.pause(0.0001)
-        # plt.show()
-
 
 @njit(cache=True)
 def interp_y(xs, ys, x):
@@ -360,7 +304,7 @@ def segment_lidar_scan(scan):
     #TODO: probably useful to be able to get the diffs straight from the r,t h representation
     diffs = np.sqrt((xs[1:]-xs[:-1])**2 + (ys[1:]-ys[:-1])**2)
     i_pts = [0]
-    d_thresh = 0.3
+    d_thresh = 0.2
     for i in range(len(diffs)):
         if diffs[i] > d_thresh:
             i_pts.append(i)
@@ -369,8 +313,7 @@ def segment_lidar_scan(scan):
 
     if len(i_pts) < 3:
         i_pts.append(np.argmax(scan))
-        
-
+    
     i_pts = np.array(i_pts)
     x_pts = xs[i_pts]
     y_pts = ys[i_pts]
@@ -391,13 +334,13 @@ def build_dynamic_window(v, delta, max_v, max_steer, max_a, max_d_dot, dt):
     return ds
 
 def check_dw_vo(scan, dw_ds):
-    d_cone = 2.5
+    d_cone = 2
+
     angles = get_angles()
 
     inds = np.arange(1000)
     invalids = inds[scan<d_cone]
     valid_ds = np.ones_like(dw_ds)
-
 
     starts, ends = [invalids[0]], []
     for i in range(1, len(invalids)):
@@ -417,78 +360,13 @@ def check_dw_vo(scan, dw_ds):
         d_min = max(d_min, dw_ds[0])
         d_max = min(d_max, dw_ds[-1]+0.001)
 
-        i_min = steer_to_ind(d_min, dw_ds)
-        i_max = steer_to_ind(d_max, dw_ds)
+        i_min = steer_to_ind(d_min, dw_ds) 
+        i_max = steer_to_ind(d_max, dw_ds) 
 
         valid_ds[i_min:i_max] = False
 
     return valid_ds, starts, ends
         
-
-
-# @jit(cache=True)
-def check_dw_clean(dw_ds, xs, ys, o_d):
-    dt = 0.1
-    n_steps = 2
-    d_cone = 3 
-
-    N = len(xs)
-    valids = np.empty(len(dw_ds))
-
-    regions_idxs = []
-    rs, ths = convert_xys_rths(xs, ys) 
-    for i in range(N):
-        if rs[i] < d_cone:
-            regions_idxs.append(i)
-
-    starts, ends = [], []
-    for ind in regions_idxs:
-        if ind-1 in regions_idxs:
-            starts.append(ind-1)
-            ends.append(ind)
-        elif ind+1 in regions_idxs:
-            starts.append(ind)
-            ends.append(ind+1)
-        else:
-            raise NotImplementedError("Single problem region")
-    
-    # for start, end in zip(starts, ends):
-    #     d_min = # calculated data from
-    #     d-max = 
-
-        # make all vlaeus between min and max not valid
-
-
-
-    end_pts = np.empty((len(dw_ds), 2))
-
-    for j, d in enumerate(dw_ds):
-        t_xs, t_ys = predict_trajectory(d, n_steps, dt, o_d)
-        safe = check_pt_safe(t_xs[-1], t_ys[-1], xs, ys)
-
-        valids[j] = safe 
-        end_pts[j, 0] = t_xs[-1]
-        end_pts[j, 1] = t_ys[-1]
-
-    return valids, end_pts
-
-@njit(cache=True)
-def predict_trajectory(d, n_steps, dt, o_d, v=3):
-    xs = np.zeros(n_steps)
-    ys = np.zeros(n_steps)
-    speed = 3
-    x = np.array([0, 0, 0, speed, o_d])
-    ref = np.array([d, speed])
-    for i in range(0, n_steps):
-        for j in range(10):
-            u = control_system(x, ref)
-            x = update_kinematic_state(x, u, dt/10)
-        xs[i] = x[0]
-        ys[i] = x[1]
-    
-    return xs, ys
-
-
 
 @njit(cache=True)
 def convert_xys_rths(xs, ys):
@@ -504,14 +382,6 @@ def convert_polar_xy(rs, ths):
 
     return xs, ys
 
-
-# @njit(cache=True)
-def check_pt_safe(x, y, xs, ys):
-    idx = np.count_nonzero(xs[xs<x]) -1
-    y_bound = ys[idx] + (x - xs[idx]) * (ys[idx+1] - ys[idx]) / (xs[idx+1] - xs[idx])
-    if y > y_bound:
-        return False 
-    return True
 
 @njit(cache=True)
 def get_angles(n_beams=1000, fov=np.pi):
@@ -538,7 +408,7 @@ def convert_scan_xy(scan):
     ys = scan * cosines    
     return xs, ys
 
-# @njit(cache=True)
+@njit(cache=True)
 def check_action_safe(valid_window, d_idx, window=5):
     i_min = max(0, d_idx-window)
     i_max = min(len(valid_window)-1, d_idx+window)
@@ -556,66 +426,4 @@ def action_to_ind(action, dw_ds):
 def steer_to_ind(steer, dw_ds):
     d_idx = np.count_nonzero(dw_ds[dw_ds<steer])
     return d_idx
-
-@njit(cache=True)
-def update_kinematic_state(x, u, dt, whlb=0.33, max_steer=0.4, max_v=7):
-    """
-    Updates the kinematic state according to bicycle model
-
-    Args:
-        X: State, x, y, theta, velocity, steering
-        u: control action, d_dot, a
-    Returns
-        new_state: updated state of vehicle
-    """
-    dx = np.array([x[3]*np.sin(x[2]), # x
-                x[3]*np.cos(x[2]), # y
-                x[3]/whlb * np.tan(x[4]), # theta
-                u[1], # velocity
-                u[0]]) # steering
-
-    new_state = x + dx * dt 
-
-    # check limits
-    new_state[4] = min(new_state[4], max_steer)
-    new_state[4] = max(new_state[4], -max_steer)
-    new_state[3] = min(new_state[3], max_v)
-
-    return new_state
-
-@njit(cache=True)
-def control_system(state, action, max_v=7, max_steer=0.4, max_a=8.5, max_d_dot=3.2):
-    """
-    Generates acceleration and steering velocity commands to follow a reference
-    Note: the controller gains are hand tuned in the fcn
-
-    Args:
-        v_ref: the reference velocity to be followed
-        d_ref: reference steering to be followed
-
-    Returns:
-        a: acceleration
-        d_dot: the change in delta = steering velocity
-    """
-    # clip action
-    v_ref = min(action[1], max_v)
-    d_ref = max(action[0], -max_steer)
-    d_ref = min(action[0], max_steer)
-
-    kp_a = 10
-    a = (v_ref-state[3])*kp_a
-    
-    kp_delta = 40
-    d_dot = (d_ref-state[4])*kp_delta
-
-    # clip actions
-    a = min(a, max_a)
-    a = max(a, -max_a)
-    d_dot = min(d_dot, max_d_dot)
-    d_dot = max(d_dot, -max_d_dot)
-    
-    u = np.array([d_dot, a])
-
-    return u
-    
 
