@@ -207,40 +207,15 @@ class SafetyCar(SafetyPP):
 
         x1, y1 = segment_lidar_scan(scan)
 
-        new_action = self.modify_action(pp_action, valid_window, dw_ds)
+        new_action = modify_action(pp_action, valid_window, dw_ds)
 
         # self.plot_valid_window(dw_ds, valid_window, pp_action, new_action)
 
-        # self.plot_lidar_scan_vo(x1, y1, scan, starts, ends)
+        self.plot_lidar_scan_vo(x1, y1, scan, starts, ends)
 
         return new_action
 
-    def modify_action(self, pp_action, valid_window, dw_ds):
-        d_idx = action_to_ind(pp_action, dw_ds)
-        if not valid_window.any():
-            print(f"Massive problem: no valid answers")
 
-            return pp_action
-        if check_action_safe(valid_window, d_idx):
-            return pp_action 
-        else: 
-            d_idx_search = np.argmin(np.abs(dw_ds))
-            d_idx = self.find_new_action(valid_window, d_idx_search)
-            new_action = np.array([dw_ds[d_idx], 3])
-            return new_action
-
-    def find_new_action(self, valid_window, d_idx):
-        d_size = len(valid_window)
-        dt = edt(valid_window)
-        window_sz = int(min(5, max(dt)-1))
-        for i in range(len(valid_window)): # search d space
-            p_d = min(d_size-1, d_idx+i)
-            if check_action_safe(valid_window, p_d, window_sz):
-                return p_d 
-            n_d = max(0, d_idx-i)
-            if check_action_safe(valid_window, n_d, window_sz):
-                return n_d 
-        print(f"No Action Found: redo Search")
 
     def plot_valid_window(self, dw_ds, valid_window, pp_action, new_action):
         plt.figure(1)
@@ -284,16 +259,6 @@ class SafetyCar(SafetyPP):
         plt.pause(0.0001)
 
 
-
-@njit(cache=True)
-def interp_y(xs, ys, x):
-    idx = np.count_nonzero(xs[xs<x]) -1
-    if xs[idx] == xs[idx+1]:
-        return np.mean(ys[idx:idx+2])
-    y_bound = ys[idx] + (x - xs[idx]) * (ys[idx+1] - ys[idx]) / (xs[idx+1] - xs[idx])
-
-    return y_bound
-
 # @njit(cache=True)
 def segment_lidar_scan(scan):
     """ 
@@ -312,7 +277,13 @@ def segment_lidar_scan(scan):
     i_pts.append(len(scan)-1)
 
     if len(i_pts) < 3:
-        i_pts.append(np.argmax(scan))
+        i_pts = [0]
+        d_thresh = 0.1
+        for i in range(len(diffs)):
+            if diffs[i] > d_thresh:
+                i_pts.append(i)
+                i_pts.append(i+1)
+        i_pts.append(len(scan)-1)
     
     i_pts = np.array(i_pts)
     x_pts = xs[i_pts]
@@ -321,6 +292,35 @@ def segment_lidar_scan(scan):
     return x_pts, y_pts
 
 
+@jit(cache=True, nopython=False)
+def modify_action(pp_action, valid_window, dw_ds):
+    d_idx = action_to_ind(pp_action, dw_ds)
+    if not valid_window.any():
+        print(f"Massive problem: no valid answers")
+
+        return pp_action
+    if check_action_safe(valid_window, d_idx):
+        return pp_action 
+    else: 
+        d_idx_search = np.argmin(np.abs(dw_ds))
+        d_idx = find_new_action(valid_window, d_idx_search)
+        new_action = np.array([dw_ds[d_idx], 3])
+        return new_action
+
+
+@jit(cache=True)
+def find_new_action(valid_window, d_idx):
+    d_size = len(valid_window)
+    dt = edt(valid_window)
+    window_sz = int(min(5, max(dt)-1))
+    for i in range(len(valid_window)): # search d space
+        p_d = min(d_size-1, d_idx+i)
+        if check_action_safe(valid_window, p_d, window_sz):
+            return p_d 
+        n_d = max(0, d_idx-i)
+        if check_action_safe(valid_window, n_d, window_sz):
+            return n_d 
+    print(f"No Action Found: redo Search")
 
 @njit(cache=True) 
 def build_dynamic_window(v, delta, max_v, max_steer, max_a, max_d_dot, dt):
