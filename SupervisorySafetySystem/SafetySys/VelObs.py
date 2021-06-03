@@ -204,31 +204,34 @@ class SafetyCar(SafetyPP):
         d = state[4]
         dw_ds = build_dynamic_window(v, d, self.max_v, self.max_steer, self.max_a, self.max_d_dot, 0.1)
 
+        valid_window, starts, ends = check_dw_vo(scan, dw_ds)
 
-        x_pts, y_pts  = segment_lidar_scan(scan)
+
+        # x_pts, y_pts  = segment_lidar_scan(scan)
         x1, y1 = segment_lidar_scan(scan)
 
-        # x_pts, y_pts  = rectify_xy_pts(x_pts, y_pts)
 
+        # valid_window, end_pts = check_dw_clean(dw_ds, x_pts, y_pts, d)
 
-
-        # x_pts, y_pts  = create_safety_cones(x_pts, y_pts)
-        # x_pts, y_pts  = rectify_xy_pts(x_pts, y_pts)
-
-        valid_window, end_pts = check_dw_clean(dw_ds, x_pts, y_pts, d)
-
-        new_action = self.modify_action(pp_action, valid_window, dw_ds)
+        # new_action = self.modify_action(pp_action, valid_window, dw_ds)
+        new_action = pp_action
 
         self.plot_valid_window(dw_ds, valid_window, pp_action, new_action)
 
-        self.plot_lidar_scan_clean(x1, y1, end_pts, x_pts, y_pts,)
+        self.plot_lidar_scan_vo(x1, y1, scan, starts, ends)
 
-        plt.show()
+        # self.plot_lidar_scan_clean(x1, y1, end_pts, x_pts, y_pts,)
+
+
+        # plt.show()
         # if not valid_window.any():
         #     plt.show()
 
         # if new_action[0] != pp_action[0]:
         #     plt.show()
+
+        if not valid_window.all():
+            plt.show()
 
         return new_action
 
@@ -276,6 +279,28 @@ class SafetyCar(SafetyPP):
 
         # plt.show()
         plt.pause(0.0001)
+
+
+    def plot_lidar_scan_vo(self, xs, ys, scan, starts, ends):
+        plt.figure(2)
+        plt.clf()
+        plt.title(f'Lidar Scan: {self.step}')
+
+        plt.ylim([0, 8])
+        # plt.xlim([-1.5, 1.5])
+        plt.xlim([-4, 4])
+        # plt.xlim([-1.5, 1.5])
+        # plt.ylim([0, 3])
+        plt.plot(xs, ys, '-+')
+
+        sines, cosines = get_trigs(len(scan))
+        for s, e in zip(starts, ends):
+            xss = [0, scan[s]*sines[s], scan[e]*sines[e], 0]
+            yss = [0, scan[s]*cosines[s], scan[e]*cosines[e], 0]
+            plt.plot(xss, yss, '-+')
+
+        plt.pause(0.0001)
+
 
     def plot_lidar_scan_clean(self, xs, ys, end_pts, x2, y2):
         plt.figure(2)
@@ -351,6 +376,41 @@ def build_dynamic_window(v, delta, max_v, max_steer, max_a, max_d_dot, dt):
 
     return ds
 
+def check_dw_vo(scan, dw_ds):
+    d_cone = 3
+    angles = get_angles()
+
+    inds = np.arange(1000)
+    invalids = inds[scan<d_cone]
+    valid_ds = np.ones_like(dw_ds)
+
+
+    starts, ends = [invalids[0]], []
+    for i in range(1, len(invalids)):
+        if invalids[i] == invalids[i-1] + 1:
+            continue
+
+        ends.append(invalids[i-1])
+        starts.append(invalids[i])
+    ends.append(invalids[-1])
+
+    for s, e in zip(starts, ends):
+        L = 0.33
+        
+        d_min = np.arctan(2*L*np.sin(angles[s])/scan[s])
+        d_max = np.arctan(2*L*np.sin(angles[e])/scan[e])
+
+        d_min = max(d_min, dw_ds[0])
+        d_max = min(d_max, dw_ds[-1]+0.001)
+
+        i_min = steer_to_ind(d_min, dw_ds)
+        i_max = steer_to_ind(d_max, dw_ds)
+
+        valid_ds[i_min:i_max] = False
+
+    return valid_ds, starts, ends
+        
+
 
 # @jit(cache=True)
 def check_dw_clean(dw_ds, xs, ys, o_d):
@@ -378,9 +438,9 @@ def check_dw_clean(dw_ds, xs, ys, o_d):
         else:
             raise NotImplementedError("Single problem region")
     
-    for start, end in zip(starts, ends):
-        d_min = # calculated data from
-        d-max = 
+    # for start, end in zip(starts, ends):
+    #     d_min = # calculated data from
+    #     d-max = 
 
         # make all vlaeus between min and max not valid
 
@@ -439,7 +499,13 @@ def check_pt_safe(x, y, xs, ys):
         return False 
     return True
 
+@njit(cache=True)
+def get_angles(n_beams=1000, fov=np.pi):
+    angles = np.empty(n_beams)
+    for i in range(n_beams):
+        angles[i] = -fov/2 + fov/(n_beams-1) * i
 
+    return angles
 
 @njit(cache=True)
 def get_trigs(n_beams, fov=np.pi):
@@ -469,6 +535,11 @@ def check_action_safe(valid_window, d_idx):
 @njit(cache=True)
 def action_to_ind(action, dw_ds):
     d_idx = np.count_nonzero(dw_ds[dw_ds<action[0]])
+    return d_idx
+
+@njit(cache=True)
+def steer_to_ind(steer, dw_ds):
+    d_idx = np.count_nonzero(dw_ds[dw_ds<steer])
     return d_idx
 
 @njit(cache=True)
