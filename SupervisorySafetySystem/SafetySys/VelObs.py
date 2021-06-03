@@ -1,6 +1,7 @@
 
 import numpy as np
-from numba import njit, jit
+from numba import njit, jit 
+from numba.typed import List
 from matplotlib import pyplot as plt
 import csv
 from scipy.ndimage import distance_transform_edt as edt
@@ -193,11 +194,8 @@ class SafetyCar(SafetyPP):
 
     def run_safety_check(self, obs, pp_action):
 
-        # check if current corridor is safe
         scan = obs['scan']
-        # scan *= 0.95
         state = obs['state']
-
 
         v = state[3]
         d = state[4]
@@ -205,13 +203,14 @@ class SafetyCar(SafetyPP):
 
         valid_window, starts, ends = check_dw_vo(scan, dw_ds)
 
-        x1, y1 = segment_lidar_scan(scan)
+        # x1, y1 = segment_lidar_scan(scan)
+        x1, y1 = convert_scan_xy(scan)
 
         new_action = modify_action(pp_action, valid_window, dw_ds)
 
         # self.plot_valid_window(dw_ds, valid_window, pp_action, new_action)
 
-        self.plot_lidar_scan_vo(x1, y1, scan, starts, ends)
+        # self.plot_lidar_scan_vo(x1, y1, scan, starts, ends)
 
         return new_action
 
@@ -260,7 +259,7 @@ class SafetyCar(SafetyPP):
 
 
 # @njit(cache=True)
-def segment_lidar_scan(scan):
+def segment_lidar_scan2(scan):
     """ 
     Takes a lidar scan and reduces it to a set of points that make straight lines 
     TODO: possibly change implmentation to work completely in r, ths 
@@ -270,6 +269,47 @@ def segment_lidar_scan(scan):
     diffs = np.sqrt((xs[1:]-xs[:-1])**2 + (ys[1:]-ys[:-1])**2)
     i_pts = [0]
     d_thresh = 0.2
+
+    inds = diffs > d_thresh
+    all_inds = np.arange(999)
+    i_pts = all_inds[inds]
+    i_pts = np.append(i_pts, i_pts+np.ones_like(i_pts))
+    i_pts = np.insert(i_pts, 0, 0)
+    i_pts = np.insert(i_pts, -1, 999)
+
+    i_pts = np.sort(i_pts)
+
+    # for i in range(len(diffs)):
+    #     if diffs[i] > d_thresh:
+    #         i_pts.append(i)
+    #         i_pts.append(i+1)
+    # i_pts.append(len(scan)-1)
+
+    # if len(i_pts) < 3:
+    #     i_pts = [0]
+    #     d_thresh = 0.1
+    #     for i in range(len(diffs)):
+    #         if diffs[i] > d_thresh:
+    #             i_pts.append(i)
+    #             i_pts.append(i+1)
+    #     i_pts.append(len(scan)-1)
+    
+    # i_pts = np.array(i_pts)
+    x_pts = xs[i_pts]
+    y_pts = ys[i_pts]
+
+    return x_pts, y_pts
+
+# @njit(cache=True)
+def segment_lidar_scan(scan):
+    """ 
+    Takes a lidar scan and reduces it to a set of points that make straight lines 
+    TODO: possibly change implmentation to work completely in r, ths 
+    """
+    xs, ys = convert_scan_xy(scan)
+    diffs = np.sqrt((xs[1:]-xs[:-1])**2 + (ys[1:]-ys[:-1])**2)
+    i_pts = [0]
+    d_thresh = 0.3
     for i in range(len(diffs)):
         if diffs[i] > d_thresh:
             i_pts.append(i)
@@ -277,14 +317,9 @@ def segment_lidar_scan(scan):
     i_pts.append(len(scan)-1)
 
     if len(i_pts) < 3:
-        i_pts = [0]
-        d_thresh = 0.1
-        for i in range(len(diffs)):
-            if diffs[i] > d_thresh:
-                i_pts.append(i)
-                i_pts.append(i+1)
-        i_pts.append(len(scan)-1)
-    
+        i_pts.append(np.argmax(scan))
+        
+
     i_pts = np.array(i_pts)
     x_pts = xs[i_pts]
     y_pts = ys[i_pts]
@@ -292,7 +327,7 @@ def segment_lidar_scan(scan):
     return x_pts, y_pts
 
 
-@jit(cache=True, nopython=False)
+# @jit(cache=True, nopython=False)
 def modify_action(pp_action, valid_window, dw_ds):
     d_idx = action_to_ind(pp_action, dw_ds)
     if not valid_window.any():
@@ -308,7 +343,8 @@ def modify_action(pp_action, valid_window, dw_ds):
         return new_action
 
 
-@jit(cache=True)
+# @jit(cache=True, nopython=False)
+# can't jit due to edt call
 def find_new_action(valid_window, d_idx):
     d_size = len(valid_window)
     dt = edt(valid_window)
@@ -334,7 +370,7 @@ def build_dynamic_window(v, delta, max_v, max_steer, max_a, max_d_dot, dt):
     return ds
 
 def check_dw_vo(scan, dw_ds):
-    d_cone = 2
+    d_cone = 1.6
 
     angles = get_angles()
 

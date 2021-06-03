@@ -57,16 +57,16 @@ def test_single_vehicle(env, vehicle, show=False, laps=100, add_obs=True, wait=F
             state = s_p
             # env.render(False)
         if show:
-            vehicle.show_history(False)
+            # vehicle.show_history(False)
             env.render(wait=wait, name=vehicle.name)
 
         if r == -1:
             # vehicle.vis.play_visulisation()
             crashes += 1
             print(f"({i}) Crashed -> time: {env.steps} ")
-            vehicle.show_lidar()
-            vehicle.show_history()
-            env.render(wait=True, name=vehicle.name)
+            # vehicle.show_lidar()
+            # vehicle.show_history()
+            # env.render(wait=True, name=vehicle.name)
         elif r == 1:
             completes += 1
             print(f"({i}) Complete -> time: {env.steps}")
