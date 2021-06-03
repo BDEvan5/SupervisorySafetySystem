@@ -213,8 +213,8 @@ class SafetyCar(SafetyPP):
 
         # valid_window, end_pts = check_dw_clean(dw_ds, x_pts, y_pts, d)
 
-        # new_action = self.modify_action(pp_action, valid_window, dw_ds)
-        new_action = pp_action
+        new_action = self.modify_action(pp_action, valid_window, dw_ds)
+        # new_action = pp_action
 
         self.plot_valid_window(dw_ds, valid_window, pp_action, new_action)
 
@@ -230,8 +230,8 @@ class SafetyCar(SafetyPP):
         # if new_action[0] != pp_action[0]:
         #     plt.show()
 
-        if not valid_window.all():
-            plt.show()
+        # if not valid_window.all():
+        #     plt.show()
 
         return new_action
 
@@ -253,11 +253,25 @@ class SafetyCar(SafetyPP):
         d_size = len(valid_window)
         for i in range(len(valid_window)): # search d space
             p_d = min(d_size-1, d_idx+i)
-            if check_action_safe(valid_window, p_d):
+            if check_action_safe(valid_window, p_d, 5):
+                check_action_safe(valid_window, p_d, 5)
                 return p_d 
             n_d = max(0, d_idx-i)
-            if check_action_safe(valid_window, n_d):
+            if check_action_safe(valid_window, n_d, 5):
+                check_action_safe(valid_window, n_d, 5)
                 return n_d 
+        print(f"No Action Found: redo Search")
+        # find biggest gap and take it
+        gaps = np.convolve(valid_window, np.ones(2))
+        window = max(gaps) # find a way to dynamically find th ebiggest window size
+        for i in range(len(valid_window)): # search d space
+            p_d = min(d_size-1, d_idx+i)
+            if check_action_safe(valid_window, p_d, 1):
+                return p_d 
+            n_d = max(0, d_idx-i)
+            if check_action_safe(valid_window, n_d, 1):
+                return n_d 
+        print(f"Massive problem: the redo didn't work.")
 
     def plot_valid_window(self, dw_ds, valid_window, pp_action, new_action):
         plt.figure(1)
@@ -377,7 +391,7 @@ def build_dynamic_window(v, delta, max_v, max_steer, max_a, max_d_dot, dt):
     return ds
 
 def check_dw_vo(scan, dw_ds):
-    d_cone = 3
+    d_cone = 2.5
     angles = get_angles()
 
     inds = np.arange(1000)
@@ -524,10 +538,11 @@ def convert_scan_xy(scan):
     ys = scan * cosines    
     return xs, ys
 
-@njit(cache=True)
-def check_action_safe(valid_window, d_idx):
-    window = 5
-    valids = valid_window[d_idx-window:d_idx+window]
+# @njit(cache=True)
+def check_action_safe(valid_window, d_idx, window=5):
+    i_min = max(0, d_idx-window)
+    i_max = min(len(valid_window)-1, d_idx+window)
+    valids = valid_window[i_min:i_max]
     if valids.all():
         return True 
     return False
