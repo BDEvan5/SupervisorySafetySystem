@@ -161,7 +161,8 @@ class SafetyCar(SafetyPP):
         self.step += 1
 
         # pp_action[1] = max(pp_action[1], state[3])
-        action = self.run_safety_check(obs, pp_action)
+        # action = self.run_safety_check(obs, pp_action)
+        action = run_safety_check(obs, pp_action, self.max_steer, self.max_d_dot)
 
         self.old_steers.append(pp_action[0])
         self.new_steers.append(action[0])
@@ -331,6 +332,24 @@ def segment_lidar_scan(scan):
 
     return x_pts, y_pts
 
+def run_safety_check(obs, pp_action, max_steer, max_d_dot):
+        scan = obs['scan']
+        state = obs['state']
+
+        v = state[3]
+        d = state[4]
+        dw_ds = build_dynamic_window(d, max_steer, max_d_dot, 0.1)
+
+        valid_window, starts, ends = check_dw_vo(scan, dw_ds)
+
+        if not valid_window.any():
+            print(f"Massive problem: no valid answers")
+            return pp_action
+        
+        valid_dt = edt(valid_window)
+        new_action = modify_action(pp_action, valid_window, dw_ds, valid_dt)
+
+        return new_action
 
 @jit(cache=True)
 def modify_action(pp_action, valid_window, dw_ds, valid_dt):
@@ -359,12 +378,11 @@ def find_new_action(valid_window, d_idx, valid_dt):
     print(f"No Action Found: redo Search")
 
 @njit(cache=True) 
-def build_dynamic_window(v, delta, max_v, max_steer, max_a, max_d_dot, dt):
+def build_dynamic_window(delta, max_steer, max_d_dot, dt):
     udb = min(max_steer, delta+dt*max_d_dot)
     ldb = max(-max_steer, delta-dt*max_d_dot)
 
     n_delta_pts = 50 
-    
     ds = np.linspace(ldb, udb, n_delta_pts)
 
     return ds
