@@ -206,7 +206,12 @@ class SafetyCar(SafetyPP):
         # x1, y1 = segment_lidar_scan(scan)
         x1, y1 = convert_scan_xy(scan)
 
-        new_action = modify_action(pp_action, valid_window, dw_ds)
+        if not valid_window.any():
+            print(f"Massive problem: no valid answers")
+            return pp_action
+        
+        valid_dt = edt(valid_window)
+        new_action = modify_action(pp_action, valid_window, dw_ds, valid_dt)
 
         # self.plot_valid_window(dw_ds, valid_window, pp_action, new_action)
 
@@ -327,28 +332,23 @@ def segment_lidar_scan(scan):
     return x_pts, y_pts
 
 
-# @jit(cache=True, nopython=False)
-def modify_action(pp_action, valid_window, dw_ds):
+@jit(cache=True)
+def modify_action(pp_action, valid_window, dw_ds, valid_dt):
     d_idx = np.count_nonzero(dw_ds[dw_ds<pp_action[0]])
-    if not valid_window.any():
-        print(f"Massive problem: no valid answers")
-
-        return pp_action
     if check_action_safe(valid_window, d_idx):
-        return pp_action 
+        new_action = pp_action 
     else: 
         d_idx_search = np.argmin(np.abs(dw_ds))
-        d_idx = find_new_action(valid_window, d_idx_search)
+        d_idx = int(find_new_action(valid_window, d_idx_search, valid_dt))
         new_action = np.array([dw_ds[d_idx], 3])
-        return new_action
+        new_action = new_action
+    return new_action
 
 
-# @jit(cache=True, nopython=False)
-# can't jit due to edt call
-def find_new_action(valid_window, d_idx):
+@jit(cache=True)
+def find_new_action(valid_window, d_idx, valid_dt):
     d_size = len(valid_window)
-    dt = edt(valid_window)
-    window_sz = int(min(5, max(dt)-1))
+    window_sz = int(min(5, max(valid_dt)-1))
     for i in range(len(valid_window)): # search d space
         p_d = min(d_size-1, d_idx+i)
         if check_action_safe(valid_window, p_d, window_sz):
