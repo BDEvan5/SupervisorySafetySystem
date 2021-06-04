@@ -329,7 +329,7 @@ def segment_lidar_scan(scan):
 
 # @jit(cache=True, nopython=False)
 def modify_action(pp_action, valid_window, dw_ds):
-    d_idx = action_to_ind(pp_action, dw_ds)
+    d_idx = np.count_nonzero(dw_ds[dw_ds<pp_action[0]])
     if not valid_window.any():
         print(f"Massive problem: no valid answers")
 
@@ -369,35 +369,33 @@ def build_dynamic_window(v, delta, max_v, max_steer, max_a, max_d_dot, dt):
 
     return ds
 
+@njit(cache=True) 
 def check_dw_vo(scan, dw_ds):
     d_cone = 1.6
+    L = 0.33
 
-    angles = get_angles()
+    angles = np.arange(1000) * np.pi / 999 -  np.ones(1000) * np.pi/2 
 
-    inds = np.arange(1000)
-    invalids = inds[scan<d_cone]
     valid_ds = np.ones_like(dw_ds)
+    inds = np.arange(1000)
 
-    starts, ends = [invalids[0]], []
-    for i in range(1, len(invalids)):
-        if invalids[i] == invalids[i-1] + 1:
-            continue
-
-        ends.append(invalids[i-1])
-        starts.append(invalids[i])
-    ends.append(invalids[-1])
+    invalids = inds[scan<d_cone]
+    starts1 = invalids[1:][invalids[1:] != invalids[:-1] + 1]
+    starts = np.concatenate((np.zeros(1), starts1))
+    ends1 = invalids[:-1][invalids[1:] != invalids[:-1] + 1]
+    ends = np.append(ends1, invalids[-1])
 
     for s, e in zip(starts, ends):
-        L = 0.33
-        
+        s = int(s)
+        e = int(e)
         d_min = np.arctan(2*L*np.sin(angles[s])/scan[s])
         d_max = np.arctan(2*L*np.sin(angles[e])/scan[e])
 
         d_min = max(d_min, dw_ds[0])
         d_max = min(d_max, dw_ds[-1]+0.001)
 
-        i_min = steer_to_ind(d_min, dw_ds) 
-        i_max = steer_to_ind(d_max, dw_ds) 
+        i_min = np.count_nonzero(dw_ds[dw_ds<d_min])
+        i_max = np.count_nonzero(dw_ds[dw_ds<d_max])
 
         valid_ds[i_min:i_max] = False
 
@@ -405,37 +403,13 @@ def check_dw_vo(scan, dw_ds):
         
 
 @njit(cache=True)
-def convert_xys_rths(xs, ys):
-    rs = np.sqrt(np.power(xs, 2) + np.power(ys, 2))
-    ths = np.arctan(xs/ys)
-
-    return rs, ths
-
-@njit(cache=True)
-def convert_polar_xy(rs, ths):
-    xs = rs * np.sin(ths)
-    ys = rs * np.cos(ths)
-
-    return xs, ys
-
-
-@njit(cache=True)
 def get_angles(n_beams=1000, fov=np.pi):
-    angles = np.empty(n_beams)
-    for i in range(n_beams):
-        angles[i] = -fov/2 + fov/(n_beams-1) * i
-
-    return angles
+    return np.arange(n_beams) * fov / 999 -  np.ones(n_beams) * fov /2 
 
 @njit(cache=True)
 def get_trigs(n_beams, fov=np.pi):
-    angles = np.empty(n_beams)
-    for i in range(n_beams):
-        angles[i] = -fov/2 + fov/(n_beams-1) * i
-    sines = np.sin(angles)
-    cosines = np.cos(angles)
-
-    return sines, cosines
+    angles = np.arange(n_beams) * fov / 999 -  np.ones(n_beams) * fov /2 
+    return np.sin(angles), np.cos(angles)
 
 @njit(cache=True)
 def convert_scan_xy(scan):
@@ -453,13 +427,4 @@ def check_action_safe(valid_window, d_idx, window=5):
         return True 
     return False
 
-@njit(cache=True)
-def action_to_ind(action, dw_ds):
-    d_idx = np.count_nonzero(dw_ds[dw_ds<action[0]])
-    return d_idx
-
-@njit(cache=True)
-def steer_to_ind(steer, dw_ds):
-    d_idx = np.count_nonzero(dw_ds[dw_ds<steer])
-    return d_idx
 
