@@ -4,7 +4,7 @@ import os
 from numba import njit
 
 import LearningLocalPlanning.LibFunctions as lib
-from LearningLocalPlanning.Simulator.LaserScanner import ScanSimulator
+from SupervisorySafetySystem.Simulator.LaserScanner import ScanSimulator
 
 
 class CarModel:
@@ -379,12 +379,13 @@ class BaseSim:
         """
         car_obs = self.state
         pose = car_obs[0:3]
-        scan = self.scan_sim.scan(pose)
+        scan = self.scan_sim.scan(pose,10)
         target = self.get_target_obs()
 
         observation = {}
         observation['state'] = car_obs
         observation['scan'] = scan 
+        observation['full_scan'] = self.scan_sim.scan(pose, 1000)
         observation['target'] = target
         observation['reward'] = self.reward
 

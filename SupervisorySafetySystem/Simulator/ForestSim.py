@@ -6,7 +6,7 @@ from scipy import ndimage
 from argparse import Namespace
 
 
-from LearningLocalPlanning.Simulator.BaseSimClasses import BaseSim
+from SupervisorySafetySystem.Simulator.BaseSimClasses import BaseSim
 
 
 

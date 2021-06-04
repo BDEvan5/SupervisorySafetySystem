@@ -53,7 +53,7 @@ def test_single_vehicle(env, vehicle, show=False, laps=100, add_obs=True, wait=F
             pass
         while not done:
             a = vehicle.plan_act(state)
-            s_p, r, done, _ = env.step(a)
+            s_p, r, done, _ = env.step_plan(a)
             state = s_p
             # env.render(False)
         if show:
