@@ -161,8 +161,8 @@ class SafetyCar(SafetyPP):
         self.step += 1
 
         # pp_action[1] = max(pp_action[1], state[3])
-        # action = self.run_safety_check(obs, pp_action)
-        action = run_safety_check(obs, pp_action, self.max_steer, self.max_d_dot)
+        action = self.run_safety_check(obs, pp_action)
+        # action = run_safety_check(obs, pp_action, self.max_steer, self.max_d_dot)
 
         self.old_steers.append(pp_action[0])
         self.new_steers.append(action[0])
@@ -195,12 +195,12 @@ class SafetyCar(SafetyPP):
 
     def run_safety_check(self, obs, pp_action):
 
-        scan = obs['scan']
+        scan = obs['full_scan']
         state = obs['state']
 
-        v = state[3]
         d = state[4]
-        dw_ds = build_dynamic_window(v, d, self.max_v, self.max_steer, self.max_a, self.max_d_dot, 0.1)
+        dw_ds = build_dynamic_window(d, self.max_steer, self.max_d_dot, 0.1)
+        # dw_ds = build_dynamic_window(v, d, self.max_v, self.max_steer, self.max_a, self.max_d_dot, 0.1)
 
         valid_window, starts, ends = check_dw_vo(scan, dw_ds)
 
@@ -219,8 +219,6 @@ class SafetyCar(SafetyPP):
         # self.plot_lidar_scan_vo(x1, y1, scan, starts, ends)
 
         return new_action
-
-
 
     def plot_valid_window(self, dw_ds, valid_window, pp_action, new_action):
         plt.figure(1)
@@ -399,7 +397,7 @@ def check_dw_vo(scan, dw_ds):
 
     invalids = inds[scan<d_cone]
     starts1 = invalids[1:][invalids[1:] != invalids[:-1] + 1]
-    starts = np.concatenate((np.zeros(1), starts1))
+    starts = np.concatenate((np.zeros(1, dtype=np.uint8), starts1))
     ends1 = invalids[:-1][invalids[1:] != invalids[:-1] + 1]
     ends = np.append(ends1, invalids[-1])
 
@@ -429,7 +427,7 @@ def get_trigs(n_beams, fov=np.pi):
     angles = np.arange(n_beams) * fov / 999 -  np.ones(n_beams) * fov /2 
     return np.sin(angles), np.cos(angles)
 
-@njit(cache=True)
+# @njit(cache=True)
 def convert_scan_xy(scan):
     sines, cosines = get_trigs(len(scan))
     xs = scan * sines

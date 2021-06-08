@@ -14,3 +14,5 @@ SupervisorySafetySystem.egg-info/
 DevelScripts/__pycache__/
 
 SupervisorySafetySystem/SafetySys/__pycache__/
+
+SafeData/

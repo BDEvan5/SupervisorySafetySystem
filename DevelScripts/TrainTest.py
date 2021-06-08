@@ -60,6 +60,7 @@ def test_single_vehicle(env, vehicle, show=False, laps=100, add_obs=True, wait=F
             # vehicle.show_history(False)
             env.render(wait=wait, name=vehicle.name)
 
+        vehicle.history.save_states(i)
         if r == -1:
             # vehicle.vis.play_visulisation()
             crashes += 1

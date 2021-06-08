@@ -10,6 +10,8 @@ from SupervisorySafetySystem.Simulator.ForestSim import ForestSim
 from SupervisorySafetySystem.SafetySys.VelObs import SafetyCar
 from SupervisorySafetySystem.NavAgents.RandoCar import RandoCar
 
+from SupervisorySafetySystem.Histories import HistoryManager
+
 from TrainTest import *
 
 
@@ -38,11 +40,16 @@ def test_forest_system():
 
     test_single_vehicle(env, vehicle, True, 100)
 
-
+def run_data_bag():
+    his_manager = HistoryManager()
+    his_manager.open_history(90)
+    his_manager.step_run()
 
 if __name__ == "__main__":
     # test_safety_system()
-    test_safety_system_random()
+    # test_safety_system_random()
     # test_forest_system()
+
+    run_data_bag()
 
 

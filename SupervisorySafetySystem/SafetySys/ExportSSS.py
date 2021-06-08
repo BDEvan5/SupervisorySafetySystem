@@ -6,7 +6,7 @@ from matplotlib import pyplot as plt
 from scipy.ndimage import distance_transform_edt as edt
 
 
-def run_safety_check(obs, pp_action, max_steer, max_d_dot):
+def run_safety_check(obs, pp_action, max_steer, max_d_dot, show=False):
     scan = obs['full_scan']
     state = obs['state']
 
@@ -16,14 +16,18 @@ def run_safety_check(obs, pp_action, max_steer, max_d_dot):
 
     if not valid_window.any():
         print(f"Massive problem: no valid answers")
-        # plot_safety_scan(scan, starts, ends, dw_ds, valid_window, pp_action, pp_action)
-        # plt.show()
+        if show:
+            plot_safety_scan(scan, starts, ends, dw_ds, valid_window, pp_action, pp_action)
+            plt.show()
         return pp_action, -1
     
     valid_dt = edt(valid_window)
     new_action = modify_action(pp_action, valid_window, dw_ds, valid_dt)
 
-    # plot_safety_scan(scan, starts, ends, dw_ds, valid_window, pp_action, new_action)
+    if show:
+        plot_safety_scan(scan, starts, ends, dw_ds, valid_window, pp_action, new_action)
+        # plt.pause(1)
+        plt.show()
 
     modified_flag = 0
     if new_action[0] != pp_action[0]: 
@@ -45,7 +49,7 @@ def build_dynamic_window(delta, max_steer, max_d_dot, dt):
 def check_dw_vo(scan, dw_ds):
     # tuneable parameters
     d_cone = 1.6
-    angle_buffer = 0.06
+    angle_buffer = 0.0
     L = 0.33
 
     angles = np.arange(1000) * np.pi / 999 -  np.ones(1000) * np.pi/2 
@@ -95,7 +99,7 @@ def modify_action(pp_action, valid_window, dw_ds, valid_dt):
 @jit(cache=True)
 def find_new_action(valid_window, d_idx, valid_dt):
     d_size = len(valid_window)
-    window_sz = int(min(5, max(valid_dt)-1))
+    window_sz = int(min(5, max(valid_dt)-1)) # min window size is 1. 
     for i in range(len(valid_window)): # search d space
         p_d = min(d_size-1, d_idx+i)
         if check_action_safe(valid_window, p_d, window_sz):
@@ -126,7 +130,7 @@ def convert_scan_xy(scan):
 @njit(cache=True)
 def check_action_safe(valid_window, d_idx, window=5):
     i_min = max(0, d_idx-window)
-    i_max = min(len(valid_window)-1, d_idx+window)
+    i_max = min(len(valid_window)-1, d_idx+1+window)
     valids = valid_window[i_min:i_max]
     if valids.all():
         return True 
