@@ -214,9 +214,9 @@ class SafetyCar(SafetyPP):
         valid_dt = edt(valid_window)
         new_action = modify_action(pp_action, valid_window, dw_ds, valid_dt)
 
-        # self.plot_valid_window(dw_ds, valid_window, pp_action, new_action)
+        self.plot_valid_window(dw_ds, valid_window, pp_action, new_action)
 
-        # self.plot_lidar_scan_vo(x1, y1, scan, starts, ends)
+        self.plot_lidar_scan_vo(x1, y1, scan, starts, ends)
 
         return new_action
 
@@ -427,7 +427,7 @@ def get_trigs(n_beams, fov=np.pi):
     angles = np.arange(n_beams) * fov / 999 -  np.ones(n_beams) * fov /2 
     return np.sin(angles), np.cos(angles)
 
-# @njit(cache=True)
+@njit(cache=True)
 def convert_scan_xy(scan):
     sines, cosines = get_trigs(len(scan))
     xs = scan * sines

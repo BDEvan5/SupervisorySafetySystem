@@ -20,8 +20,8 @@ def test_safety_system():
     env = ForestSim("forest2", sim_conf)
     vehicle = SafetyCar(sim_conf)
 
-    # test_single_vehicle(env, vehicle, True, 100, wait=False)
-    test_single_vehicle(env, vehicle, False, 100, wait=False)
+    test_single_vehicle(env, vehicle, True, 100, wait=False)
+    # test_single_vehicle(env, vehicle, False, 100, wait=False)
 
 
 def test_safety_system_random():
@@ -46,10 +46,10 @@ def run_data_bag():
     his_manager.step_run()
 
 if __name__ == "__main__":
-    # test_safety_system()
+    test_safety_system()
     # test_safety_system_random()
     # test_forest_system()
 
-    run_data_bag()
+    # run_data_bag()
 
 
