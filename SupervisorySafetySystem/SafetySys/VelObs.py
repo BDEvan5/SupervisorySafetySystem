@@ -340,7 +340,7 @@ def run_safety_check(obs, pp_action, max_steer, max_d_dot):
         d = state[4]
         dw_ds = build_dynamic_window(d, max_steer, max_d_dot, 0.1)
 
-        valid_window, starts, ends = check_dw_vo(scan, dw_ds)
+        valid_window, starts, ends = check_dw_vo(scan, dw_ds, d)
 
         if not valid_window.any():
             print(f"Massive problem: no valid answers")
@@ -388,9 +388,10 @@ def build_dynamic_window(delta, max_steer, max_d_dot, dt):
     return ds
 
 @njit(cache=True) 
-def check_dw_vo(scan, dw_ds):
+def check_dw_vo(scan, dw_ds, d0):
     d_cone = 1.6
     L = 0.33
+    u = 3 
 
     angles = np.arange(1000) * np.pi / 999 -  np.ones(1000) * np.pi/2 
 
@@ -406,8 +407,11 @@ def check_dw_vo(scan, dw_ds):
     for s, e in zip(starts, ends):
         s = int(s)
         e = int(e)
-        d_min = np.arctan(2*L*np.sin(angles[s])/scan[s])
-        d_max = np.arctan(2*L*np.sin(angles[e])/scan[e])
+        # d_min = np.arctan(2*L*np.sin(angles[s])/scan[s])
+        # d_max = np.arctan(2*L*np.sin(angles[e])/scan[e])
+
+        d_min = angles[s] - d0 - u/L * np.tan(d0)
+        d_max = angles[e] - d0 - u/L * np.tan(d0)
 
         d_min = max(d_min, dw_ds[0])
         d_max = min(d_max, dw_ds[-1]+0.001)
