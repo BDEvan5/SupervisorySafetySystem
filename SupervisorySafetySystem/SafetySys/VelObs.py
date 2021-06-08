@@ -161,8 +161,8 @@ class SafetyCar(SafetyPP):
         self.step += 1
 
         # pp_action[1] = max(pp_action[1], state[3])
-        # action = self.run_safety_check(obs, pp_action)
-        action = run_safety_check(obs, pp_action, self.max_steer, self.max_d_dot)
+        action = self.run_safety_check(obs, pp_action)
+        # action = run_safety_check(obs, pp_action, self.max_steer, self.max_d_dot)
 
         self.old_steers.append(pp_action[0])
         self.new_steers.append(action[0])
@@ -200,9 +200,9 @@ class SafetyCar(SafetyPP):
 
         v = state[3]
         d = state[4]
-        dw_ds = build_dynamic_window(v, d, self.max_v, self.max_steer, self.max_a, self.max_d_dot, 0.1)
+        dw_ds = build_dynamic_window(d, self.max_steer, self.max_d_dot, 0.1)
 
-        valid_window, starts, ends = check_dw_vo(scan, dw_ds)
+        valid_window, starts, ends = check_dw_vo(scan, dw_ds, d)
 
         # x1, y1 = segment_lidar_scan(scan)
         x1, y1 = convert_scan_xy(scan)
@@ -214,15 +214,15 @@ class SafetyCar(SafetyPP):
         valid_dt = edt(valid_window)
         new_action = modify_action(pp_action, valid_window, dw_ds, valid_dt)
 
-        # self.plot_valid_window(dw_ds, valid_window, pp_action, new_action)
+        self.plot_valid_window(dw_ds, valid_window, pp_action, new_action, d)
 
-        # self.plot_lidar_scan_vo(x1, y1, scan, starts, ends)
+        self.plot_lidar_scan_vo(x1, y1, scan, starts, ends, d)
 
         return new_action
 
 
 
-    def plot_valid_window(self, dw_ds, valid_window, pp_action, new_action):
+    def plot_valid_window(self, dw_ds, valid_window, pp_action, new_action, d0):
         plt.figure(1)
         plt.clf()
         plt.title("Valid window")
@@ -237,13 +237,14 @@ class SafetyCar(SafetyPP):
             else:
                 plt.plot(d, 1, 'x', color='red', markersize=14)
 
-        plt.plot(pp_action[0], 1, '+', color='red', markersize=22)
-        plt.plot(new_action[0], 1, '*', color='green', markersize=16)
+        plt.plot(pp_action[0], 0.5, '+', color='red', markersize=22)
+        plt.plot(new_action[0], 0.5, '*', color='green', markersize=16)
+        plt.plot(d0, 1.5, '*', color='green', markersize=16)
 
         # plt.show()
         plt.pause(0.0001)
 
-    def plot_lidar_scan_vo(self, xs, ys, scan, starts, ends):
+    def plot_lidar_scan_vo(self, xs, ys, scan, starts, ends, d):
         plt.figure(2)
         plt.clf()
         plt.title(f'Lidar Scan: {self.step}')
@@ -254,6 +255,10 @@ class SafetyCar(SafetyPP):
         # plt.xlim([-1.5, 1.5])
         # plt.ylim([0, 3])
         plt.plot(xs, ys, '-+')
+
+        v_vec_x = [0, np.sin(d)]
+        v_vec_y = [0, np.cos(d)]
+        plt.plot(v_vec_x, v_vec_y, linewidth=4)
 
         sines, cosines = get_trigs(len(scan))
         for s, e in zip(starts, ends):
@@ -387,7 +392,7 @@ def build_dynamic_window(delta, max_steer, max_d_dot, dt):
 
     return ds
 
-@njit(cache=True) 
+# @njit(cache=True) 
 def check_dw_vo(scan, dw_ds, d0):
     d_cone = 1.6
     L = 0.33
@@ -400,7 +405,7 @@ def check_dw_vo(scan, dw_ds, d0):
 
     invalids = inds[scan<d_cone]
     starts1 = invalids[1:][invalids[1:] != invalids[:-1] + 1]
-    starts = np.concatenate((np.zeros(1), starts1))
+    starts = np.concatenate((np.zeros(1, dtype=np.uint8), starts1))
     ends1 = invalids[:-1][invalids[1:] != invalids[:-1] + 1]
     ends = np.append(ends1, invalids[-1])
 
@@ -410,8 +415,11 @@ def check_dw_vo(scan, dw_ds, d0):
         # d_min = np.arctan(2*L*np.sin(angles[s])/scan[s])
         # d_max = np.arctan(2*L*np.sin(angles[e])/scan[e])
 
-        d_min = angles[s] - d0 - u/L * np.tan(d0)
-        d_max = angles[e] - d0 - u/L * np.tan(d0)
+        d_min = angles[s] - d0 - u/L * np.tan(d0) * 0.1
+        d_max = angles[e] - d0 - u/L * np.tan(d0) * 0.1
+
+        if d_max < -0.32 or d_min > 0.32:
+            continue
 
         d_min = max(d_min, dw_ds[0])
         d_max = min(d_max, dw_ds[-1]+0.001)
