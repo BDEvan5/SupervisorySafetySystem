@@ -194,10 +194,10 @@ class SafetyCar(SafetyPP):
         pass
 
     def run_safety_check(self, obs, pp_action):
-        scan = obs['scan']
+
+        scan = obs['full_scan']
         state = obs['state']
 
-        v = state[3]
         d = state[4]
         dw_ds = build_dynamic_window(d, self.max_steer, self.max_d_dot, 0.1)
 
@@ -246,9 +246,7 @@ class SafetyCar(SafetyPP):
 
         return new_action
 
-
-
-    def plot_valid_window(self, dw_ds, valid_window, pp_action, new_action, d0):
+    def plot_valid_window(self, dw_ds, valid_window, pp_action, new_action):
         plt.figure(1)
         plt.clf()
         plt.title("Valid window")

@@ -35,13 +35,15 @@ class ScanSimulator:
 
         self.dt = env_map.dt_img
 
-    def scan(self, pose):
-        scan = get_scan(pose, self.number_of_beams, self.dth, self.dt, self.fov, self.orig_x, self.orig_y, self.resoltuion, self.map_height, self.map_width, self.eps, self.max_range)
+    def scan(self, pose, n_beams=None): 
+        if n_beams is None:
+            n_beams = self.number_of_beams
+        dth = self.fov / (n_beams -1)
+        scan = get_scan(pose, n_beams, dth, self.dt, self.fov, self.orig_x, self.orig_y, self.resoltuion, self.map_height, self.map_width, self.eps, self.max_range)
 
-        noise = self.rng.normal(0., self.std_noise, size=self.number_of_beams)
+        noise = self.rng.normal(0., self.std_noise, size=n_beams)
         final_scan = scan + noise
         return final_scan
-
 
 @njit(cache=True)
 def get_scan(pose, num_beams, th_increment, dt, fov, orig_x, orig_y, resolution, height, width, eps, max_range):
