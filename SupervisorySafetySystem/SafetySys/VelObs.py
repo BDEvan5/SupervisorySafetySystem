@@ -160,8 +160,9 @@ class SafetyCar(SafetyPP):
         pp_action = self.act_pp(state)
         self.step += 1
 
-        # pp_action[1] = max(pp_action[1], state[3])
         action = self.run_safety_check(obs, pp_action)
+        # action = self.run_safety_check_plot(obs, pp_action)
+        # action = run_safety_check(obs, pp_action, self.max_steer, self.max_d_dot)
 
         self.old_steers.append(pp_action[0])
         self.new_steers.append(action[0])
@@ -193,15 +194,14 @@ class SafetyCar(SafetyPP):
         pass
 
     def run_safety_check(self, obs, pp_action):
-
         scan = obs['scan']
         state = obs['state']
 
         v = state[3]
         d = state[4]
-        dw_ds = build_dynamic_window(v, d, self.max_v, self.max_steer, self.max_a, self.max_d_dot, 0.1)
+        dw_ds = build_dynamic_window(d, self.max_steer, self.max_d_dot, 0.1)
 
-        valid_window, starts, ends = check_dw_vo(scan, dw_ds)
+        valid_window, starts, ends, v_valids = check_dw_vo(scan, dw_ds, d)
 
         # x1, y1 = segment_lidar_scan(scan)
         x1, y1 = convert_scan_xy(scan)
@@ -213,15 +213,42 @@ class SafetyCar(SafetyPP):
         valid_dt = edt(valid_window)
         new_action = modify_action(pp_action, valid_window, dw_ds, valid_dt)
 
-        # self.plot_valid_window(dw_ds, valid_window, pp_action, new_action)
+        return new_action
 
-        # self.plot_lidar_scan_vo(x1, y1, scan, starts, ends)
+
+    def run_safety_check_plot(self, obs, pp_action):
+        scan = obs['scan']
+        state = obs['state']
+
+        d = state[4]
+        dw_ds = build_dynamic_window(d, self.max_steer, self.max_d_dot, 0.1)
+
+        valid_window, starts, ends, v_valids = check_dw_vo(scan, dw_ds, d)
+
+        # x1, y1 = segment_lidar_scan(scan)
+        x1, y1 = convert_scan_xy(scan)
+
+        if not valid_window.any():
+            print(f"Massive problem: no valid answers")
+            return pp_action
+        
+        valid_dt = edt(valid_window)
+        new_action = modify_action(pp_action, valid_window, dw_ds, valid_dt)
+
+        self.plot_valid_window(dw_ds, valid_window, pp_action, new_action, d)
+
+        self.plot_lidar_scan_vo(x1, y1, scan, starts, ends)
+
+        self.plot_v_valids(v_valids,  d, new_action[0])
+
+        # if pp_action[0] != new_action[0]:
+        #     plt.show()
 
         return new_action
 
 
 
-    def plot_valid_window(self, dw_ds, valid_window, pp_action, new_action):
+    def plot_valid_window(self, dw_ds, valid_window, pp_action, new_action, d0):
         plt.figure(1)
         plt.clf()
         plt.title("Valid window")
@@ -236,8 +263,9 @@ class SafetyCar(SafetyPP):
             else:
                 plt.plot(d, 1, 'x', color='red', markersize=14)
 
-        plt.plot(pp_action[0], 1, '+', color='red', markersize=22)
-        plt.plot(new_action[0], 1, '*', color='green', markersize=16)
+        plt.plot(pp_action[0], 0.5, '+', color='red', markersize=22)
+        plt.plot(new_action[0], 0.5, '*', color='green', markersize=16)
+        plt.plot(d0, 1.5, '*', color='green', markersize=16)
 
         # plt.show()
         plt.pause(0.0001)
@@ -254,11 +282,43 @@ class SafetyCar(SafetyPP):
         # plt.ylim([0, 3])
         plt.plot(xs, ys, '-+')
 
+
         sines, cosines = get_trigs(len(scan))
         for s, e in zip(starts, ends):
             xss = [0, scan[s]*sines[s], scan[e]*sines[e], 0]
             yss = [0, scan[s]*cosines[s], scan[e]*cosines[e], 0]
             plt.plot(xss, yss, '-+')
+
+        plt.pause(0.0001)
+        # plt.pause(0.1)
+
+    def plot_v_valids(self, v_valids, d, new_d):
+        plt.figure(3)
+        plt.clf()
+        plt.ylim([0, 2])
+        plt.title("Valid Velocity Directions")
+
+        xs = np.linspace(-np.pi/2, np.pi/2, 50)
+        for j, x in enumerate(xs):
+            x_p = np.sin(x)
+            y_p = np.cos(x)
+            if v_valids[j]:
+                plt.plot(x_p, y_p, 'x', color='green', markersize=14)
+            else:
+                plt.plot(x_p, y_p, 'x', color='red', markersize=14)
+
+
+        v_vec_x = [0, np.sin(d)]
+        v_vec_y = [0, np.cos(d)]
+        plt.plot(v_vec_x, v_vec_y, linewidth=4)
+
+        # alpha = d + new_d + 3 / 0.33 * 0.1 * np.tan(d)
+        alpha = np.arcsin(np.tan(new_d) * 0.9 / 0.66)
+
+        v_vec_x = [np.sin(d), np.sin(alpha)]
+        v_vec_y = [np.cos(d), np.cos(alpha)]
+        plt.plot(v_vec_x, v_vec_y, linewidth=4)
+
 
         plt.pause(0.0001)
 
@@ -331,6 +391,24 @@ def segment_lidar_scan(scan):
 
     return x_pts, y_pts
 
+def run_safety_check(obs, pp_action, max_steer, max_d_dot):
+        scan = obs['scan']
+        state = obs['state']
+
+        v = state[3]
+        d = state[4]
+        dw_ds = build_dynamic_window(d, max_steer, max_d_dot, 0.1)
+
+        valid_window, starts, ends = check_dw_vo(scan, dw_ds, d)
+
+        if not valid_window.any():
+            print(f"Massive problem: no valid answers")
+            return pp_action
+        
+        valid_dt = edt(valid_window)
+        new_action = modify_action(pp_action, valid_window, dw_ds, valid_dt)
+
+        return new_action
 
 @jit(cache=True)
 def modify_action(pp_action, valid_window, dw_ds, valid_dt):
@@ -348,7 +426,8 @@ def modify_action(pp_action, valid_window, dw_ds, valid_dt):
 @jit(cache=True)
 def find_new_action(valid_window, d_idx, valid_dt):
     d_size = len(valid_window)
-    window_sz = int(min(5, max(valid_dt)-1))
+    max_window_size = 10 
+    window_sz = int(min(max_window_size, max(valid_dt)-1))
     for i in range(len(valid_window)): # search d space
         p_d = min(d_size-1, d_idx+i)
         if check_action_safe(valid_window, p_d, window_sz):
@@ -359,20 +438,24 @@ def find_new_action(valid_window, d_idx, valid_dt):
     print(f"No Action Found: redo Search")
 
 @njit(cache=True) 
-def build_dynamic_window(v, delta, max_v, max_steer, max_a, max_d_dot, dt):
+def build_dynamic_window(delta, max_steer, max_d_dot, dt):
     udb = min(max_steer, delta+dt*max_d_dot)
     ldb = max(-max_steer, delta-dt*max_d_dot)
 
     n_delta_pts = 50 
-    
     ds = np.linspace(ldb, udb, n_delta_pts)
 
     return ds
 
-@njit(cache=True) 
-def check_dw_vo(scan, dw_ds):
+# @njit(cache=True) 
+def check_dw_vo(scan, dw_ds, d0):
     d_cone = 1.6
     L = 0.33
+    u = 3 
+    dt = 0.1
+
+    v_window = np.linspace(-np.pi/2, np.pi/2, 50)
+    v_valids = np.ones_like(v_window)
 
     angles = np.arange(1000) * np.pi / 999 -  np.ones(1000) * np.pi/2 
 
@@ -381,25 +464,43 @@ def check_dw_vo(scan, dw_ds):
 
     invalids = inds[scan<d_cone]
     starts1 = invalids[1:][invalids[1:] != invalids[:-1] + 1]
-    starts = np.concatenate((np.zeros(1), starts1))
+    starts = np.concatenate((np.zeros(1, dtype=np.uint8), starts1))
     ends1 = invalids[:-1][invalids[1:] != invalids[:-1] + 1]
     ends = np.append(ends1, invalids[-1])
 
+    l_d = u * 0.3
     for s, e in zip(starts, ends):
         s = int(s)
         e = int(e)
-        d_min = np.arctan(2*L*np.sin(angles[s])/scan[s])
-        d_max = np.arctan(2*L*np.sin(angles[e])/scan[e])
+
+        i_min = np.count_nonzero(v_window[v_window<angles[s]])
+        i_max = np.count_nonzero(v_window[v_window<angles[e]])
+        v_valids[i_min:i_max] = False
+
+        # d_min = np.arctan(2*L*np.sin(angles[s])/scan[s])
+        # d_max = np.arctan(2*L*np.sin(angles[e])/scan[e])
+
+        d_min = np.arctan(2*L*np.sin(angles[s])/l_d)
+        d_max = np.arctan(2*L*np.sin(angles[e])/l_d)
+
+        # d_min = angles[s] - d0 - u/L * np.tan(d0) * 0.1
+        # d_max = angles[e] - d0 - u/L * np.tan(d0) * 0.1
+
+        if d_max < -0.32 or d_min > 0.32:
+            continue
 
         d_min = max(d_min, dw_ds[0])
         d_max = min(d_max, dw_ds[-1]+0.001)
 
         i_min = np.count_nonzero(dw_ds[dw_ds<d_min])
         i_max = np.count_nonzero(dw_ds[dw_ds<d_max])
-
         valid_ds[i_min:i_max] = False
 
-    return valid_ds, starts, ends
+
+
+        
+
+    return valid_ds, starts, ends, v_valids
         
 
 @njit(cache=True)
