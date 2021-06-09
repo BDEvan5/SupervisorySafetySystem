@@ -160,8 +160,8 @@ class SafetyCar(SafetyPP):
         pp_action = self.act_pp(state)
         self.step += 1
 
-        action = self.run_safety_check(obs, pp_action)
-        # action = self.run_safety_check_plot(obs, pp_action)
+        # action = self.run_safety_check(obs, pp_action)
+        action = self.run_safety_check_plot(obs, pp_action)
         # action = run_safety_check(obs, pp_action, self.max_steer, self.max_d_dot)
 
         self.old_steers.append(pp_action[0])
@@ -217,7 +217,7 @@ class SafetyCar(SafetyPP):
 
 
     def run_safety_check_plot(self, obs, pp_action):
-        scan = obs['scan']
+        scan = obs['full_scan']
         state = obs['state']
 
         d = state[4]
@@ -230,8 +230,7 @@ class SafetyCar(SafetyPP):
 
         if not valid_window.any():
             print(f"Massive problem: no valid answers")
-            return pp_action
-        
+            return np.array([0, 0])        
         valid_dt = edt(valid_window)
         new_action = modify_action(pp_action, valid_window, dw_ds, valid_dt)
 
@@ -246,7 +245,7 @@ class SafetyCar(SafetyPP):
 
         return new_action
 
-    def plot_valid_window(self, dw_ds, valid_window, pp_action, new_action):
+    def plot_valid_window(self, dw_ds, valid_window, pp_action, new_action, d0):
         plt.figure(1)
         plt.clf()
         plt.title("Valid window")
@@ -478,8 +477,11 @@ def check_dw_vo(scan, dw_ds, d0):
         # d_min = np.arctan(2*L*np.sin(angles[s])/scan[s])
         # d_max = np.arctan(2*L*np.sin(angles[e])/scan[e])
 
-        d_min = np.arctan(2*L*np.sin(angles[s])/l_d)
-        d_max = np.arctan(2*L*np.sin(angles[e])/l_d)
+        # ld_s = min(scan[s], l_d)
+        # ld_e = min(scan[e], l_d)
+        ld_e = min(min(scan[s:e+1]), l_d)
+        d_min = np.arctan(2*L*np.sin(angles[s])/ld_e)
+        d_max = np.arctan(2*L*np.sin(angles[e])/ld_e)
 
         # d_min = angles[s] - d0 - u/L * np.tan(d0) * 0.1
         # d_max = angles[e] - d0 - u/L * np.tan(d0) * 0.1
