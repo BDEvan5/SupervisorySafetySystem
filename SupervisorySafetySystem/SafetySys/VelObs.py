@@ -230,20 +230,63 @@ class SafetyCar(SafetyPP):
 
         if not valid_window.any():
             print(f"Massive problem: no valid answers")
+            self.plot_lidar_scan_vo(x1, y1, scan, starts, ends)
+            self.plot_vd_window(v_valids, dw_ds, valid_window, pp_action, new_action, d)
+            plt.show()
             return np.array([0, 0])        
         valid_dt = edt(valid_window)
         new_action = modify_action(pp_action, valid_window, dw_ds, valid_dt)
 
-        self.plot_valid_window(dw_ds, valid_window, pp_action, new_action, d)
+        # self.plot_valid_window(dw_ds, valid_window, pp_action, new_action, d)
 
         self.plot_lidar_scan_vo(x1, y1, scan, starts, ends)
+        self.plot_vd_window(v_valids, dw_ds, valid_window, pp_action, new_action, d)
 
-        self.plot_v_valids(v_valids,  d, new_action[0])
+        # self.plot_v_valids(v_valids,  d, new_action[0])
 
         # if pp_action[0] != new_action[0]:
         #     plt.show()
 
         return new_action
+
+    def plot_vd_window(self, v_valids, dw_ds, valid_window, pp_action, new_action, d0):
+        plt.figure(1)
+        plt.clf()
+        plt.title("Valid windows")
+
+        plt.ylim([0, 2])
+
+        for j, d in enumerate(dw_ds):
+            if valid_window[j]:
+                plt.plot(d, 1.5, 'x', color='green', markersize=14)
+            else:
+                plt.plot(d, 1.5, 'x', color='red', markersize=14)
+
+        plt.plot(pp_action[0], 1.3, '+', color='red', markersize=22)
+        plt.plot(new_action[0], 1.3, '*', color='green', markersize=16)
+        plt.plot(d0, 1.7, '*', color='green', markersize=16)
+        
+        xs = np.linspace(-np.pi/2, np.pi/2, 50)
+        for j, x in enumerate(xs):
+            x_p = np.sin(x)
+            y_p = np.cos(x)
+            if v_valids[j]:
+                plt.plot(x_p, y_p, 'x', color='green', markersize=14)
+            else:
+                plt.plot(x_p, y_p, 'x', color='red', markersize=14)
+
+        v_vec_x = [0, np.sin(d0)]
+        v_vec_y = [0, np.cos(d0)]
+        plt.plot(v_vec_x, v_vec_y, linewidth=4)
+
+        alpha = np.arcsin(np.tan(new_action[0]) * 0.9 / 0.66)
+
+        v_vec_x = [np.sin(d0), np.sin(alpha)]
+        v_vec_y = [np.cos(d0), np.cos(alpha)]
+        plt.plot(v_vec_x, v_vec_y, linewidth=4)
+
+        # plt.show()
+        plt.pause(0.0001)
 
     def plot_valid_window(self, dw_ds, valid_window, pp_action, new_action, d0):
         plt.figure(1)
