@@ -1,15 +1,7 @@
 
 import numpy as np 
 from numba import njit
-
-def test():
-    state = [0, 0, 0, 3, 0]
-    ref = [0.4, 3]
-
-    for i in range(10):
-        u = control_system(state, ref)
-        x = update_kinematic_state(x, u, 0.01, 0.33, 0.4, 7)
-
+from matplotlib import pyplot as plt
 
 
 #Dynamics functions
@@ -74,7 +66,114 @@ def control_system(state, action, max_v, max_steer, max_a, max_d_dot):
 
     return u
 
+def test():
+    x = np.array([0, 0, 0, 3, 0])
+    a = np.array([0.4, 3])
+
+    for i in range(10):
+        u = control_system(x, a, 7, 0.4, 8, 3.2)
+        x = update_kinematic_state(x, u, 0.01, 0.33, 0.4, 7)
+
+        print(f"{i}: State: {x} -> control: {u}")
+        
+def test():
+    d0 = np.linspace(0, 0.4, 100)
+    d0 = 0.4
+    du = 0.4
+    x = np.array([0, 0, 0, 3, d0])
+    a = np.array([du, 3])
+
+    for i in range(10):
+        u = control_system(x, a, 7, 0.4, 8, 3.2)
+        x = update_kinematic_state(x, u, 0.01, 0.33, 0.4, 7)
+
+    # for i in range(1):
+    #     u = control_system(x, a, 7, 0.4, 8, 3.2)
+    #     x = update_kinematic_state(x, u, 0.1, 0.33, 0.4, 7)
+
+    #     print(f"SingleStep: State: {x} -> control: {u}")
+
+    deg = np.arctan(x[0]/x[1]) * 180 / np.pi 
+    print(f"Ref: {a} --> State: {x} ->  Deg: {deg} -> th: {x[2]*180/np.pi}")
+
+    alpha = np.arcsin(np.tan(d0)*3*0.1/0.66)* 180 / np.pi 
+    beta = np.arcsin(np.tan(du)*3*0.1/0.66)* 180 / np.pi 
+    angle = alpha + beta
+    print(f"Model Angle: {angle} --> alpha: {alpha} - beta: {beta}")
+
+    # y = 0.33 / np.tan(d0) * np.sin(3 * np.tan(d0)*0.1)
+    # x = 0.33 / np.tan(d0) * (1 - np.cos(3 * np.tan(d0)*0.1))
+
+    # th = np.arctan(x / y) * 180 / np.pi 
+    # print(f"Model: {th}")
+
+    # x = np.array([0, 0, 0, 3, 0])
+    # a = np.array([0.4, 3])
+
+    # for i in range(1):
+    #     u = control_system(x, a, 7, 0.4, 8, 3.2)
+    #     x = update_kinematic_state(x, u, 0.1, 0.33, 0.4, 7)
+
+    #     print(f"SingleStep: State: {x} -> control: {u}")
 
 
+def test_d0():
+    d0s = np.linspace(0, 0.4, 100)
+    degs = np.zeros_like(d0s)
+    for j, d0 in enumerate(d0s):
+        du = 0.4
+        x = np.array([0, 0, 0, 3, d0])
+        a = np.array([du, 3])
+
+        for i in range(10):
+            u = control_system(x, a, 7, 0.4, 8, 3.2)
+            x = update_kinematic_state(x, u, 0.01, 0.33, 0.4, 7)
+
+        deg = np.arctan(x[0]/x[1]) * 180 / np.pi 
+        print(f"Ref: {a} --> State: {x} ->  Deg: {deg} -> th: {x[2]*180/np.pi}")
+
+        degs[j] = deg
+
+    mod_degs = d0s * 20+ du*6
+
+    plt.figure(1)
+    plt.title(f"O steering for input du={du}")
+    plt.plot(d0s, degs)
+    plt.plot(d0s, mod_degs)
+    plt.xlabel('O steering')
+    # plt.show()
+    plt.pause(0.0001)
 
 
+def test_du():
+    dus = np.linspace(0, 0.4, 100)
+    degs = np.zeros_like(dus)
+    for j, du in enumerate(dus):
+        d0 = 0.4
+        x = np.array([0, 0, 0, 3, d0])
+        a = np.array([du, 3])
+
+        for i in range(10):
+            u = control_system(x, a, 7, 0.4, 8, 3.2)
+            x = update_kinematic_state(x, u, 0.01, 0.33, 0.4, 7)
+
+        deg = np.arctan(x[0]/x[1]) * 180 / np.pi 
+        print(f"Ref: {a} --> State: {x} ->  Deg: {deg} -> th: {x[2]*180/np.pi}")
+
+        degs[j] = deg
+
+    # mod_degs = dus * 5 + d0 * 20
+    mod_degs = 0.02* 150000**dus + d0 * 19
+
+    plt.figure(2)
+    plt.title(f'Du: input steering for: d0={d0}')
+    plt.plot(dus, degs)
+    plt.plot(dus, mod_degs)
+    plt.xlabel('Input steering')
+    plt.show()
+
+
+if __name__ == "__main__":
+    # test()
+    test_d0()
+    test_du()
