@@ -465,7 +465,7 @@ def check_dw_vo(scan, dw_ds, d0):
     ends1 = invalids[:-1][invalids[1:] != invalids[:-1] + 1]
     ends = np.append(ends1, invalids[-1])
 
-    l_d = u * 0.3
+    l_d = u * 0.1
     for s, e in zip(starts, ends):
         s = int(s)
         e = int(e)

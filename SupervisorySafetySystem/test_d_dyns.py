@@ -5,8 +5,8 @@ from matplotlib import pyplot as plt
 
 
 #Dynamics functions
-@njit(cache=True)
-def update_kinematic_state(x, u, dt, whlb, max_steer, max_v):
+# @njit(cache=True)
+def update_kinematic_state(x, u, dt, whlb, max_steer):
     """
     Updates the kinematic state according to bicycle model
 
@@ -16,23 +16,22 @@ def update_kinematic_state(x, u, dt, whlb, max_steer, max_v):
     Returns
         new_state: updated state of vehicle
     """
-    dx = np.array([x[3]*np.sin(x[2]), # x
-                x[3]*np.cos(x[2]), # y
-                x[3]/whlb * np.tan(x[4]), # theta
-                u[1], # velocity
+    velocity = 3
+    dx = np.array([velocity*np.sin(x[2]), # x
+                velocity*np.cos(x[2]), # y
+                velocity/whlb * np.tan(x[3]), # theta
                 u[0]]) # steering
 
     new_state = x + dx * dt 
 
     # check limits
-    new_state[4] = min(new_state[4], max_steer)
-    new_state[4] = max(new_state[4], -max_steer)
-    new_state[3] = min(new_state[3], max_v)
+    new_state[3] = min(new_state[3], max_steer)
+    new_state[3] = max(new_state[3], -max_steer)
 
     return new_state
 
 @njit(cache=True)
-def control_system(state, action, max_v, max_steer, max_a, max_d_dot):
+def control_system(state, action, max_steer, max_d_dot):
     """
     Generates acceleration and steering velocity commands to follow a reference
     Note: the controller gains are hand tuned in the fcn
@@ -46,46 +45,39 @@ def control_system(state, action, max_v, max_steer, max_a, max_d_dot):
         d_dot: the change in delta = steering velocity
     """
     # clip action
-    v_ref = min(action[1], max_v)
     d_ref = max(action[0], -max_steer)
     d_ref = min(action[0], max_steer)
-
-    kp_a = 10
-    a = (v_ref-state[3])*kp_a
     
-    kp_delta = 40
-    d_dot = (d_ref-state[4])*kp_delta
+    kp_delta = 100
+    d_dot = (d_ref-state[3])*kp_delta
 
-    # clip actions
-    a = min(a, max_a)
-    a = max(a, -max_a)
     d_dot = min(d_dot, max_d_dot)
     d_dot = max(d_dot, -max_d_dot)
     
-    u = np.array([d_dot, a])
+    u = np.array([d_dot])
 
     return u
 
-def test():
-    x = np.array([0, 0, 0, 3, 0])
-    a = np.array([0.4, 3])
+# def test():
+#     x = np.array([0, 0, 0, 0])
+#     a = np.array([0.4, 3])
 
-    for i in range(10):
-        u = control_system(x, a, 7, 0.4, 8, 3.2)
-        x = update_kinematic_state(x, u, 0.01, 0.33, 0.4, 7)
+#     for i in range(10):
+#         u = control_system(x, a, 0.4, 3.2)
+#         x = update_kinematic_state(x, u, 0.01, 0.33, 0.4)
 
-        print(f"{i}: State: {x} -> control: {u}")
+#         print(f"{i}: State: {x} -> control: {u}")
         
 def test():
     d0 = np.linspace(0, 0.4, 100)
     d0 = 0.2
     du = 0.4
-    x = np.array([0, 0, 0, 3, d0])
+    x = np.array([0, 0, 0, d0])
     a = np.array([du, 3])
 
     for i in range(10):
-        u = control_system(x, a, 7, 0.4, 8, 3.2)
-        x = update_kinematic_state(x, u, 0.01, 0.33, 0.4, 7)
+        u = control_system(x, a, 0.4, 3.2)
+        x = update_kinematic_state(x, u, 0.01, 0.33, 0.4)
 
     # for i in range(1):
     #     u = control_system(x, a, 7, 0.4, 8, 3.2)
