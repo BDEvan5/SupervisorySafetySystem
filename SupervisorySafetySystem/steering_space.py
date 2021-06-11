@@ -151,22 +151,29 @@ def single_model():
         if t > t_transient:
             d_follow = (2*d0+du) / 3
             alpha_trans = np.arcsin(np.tan(d_follow)*speed*t_transient/0.66)
+            theta = speed / 0.33 * np.tan(d_follow) * t_transient 
 
             alpha_prime = np.arcsin(np.tan(du)*speed*(t-t_transient)/0.66)
 
-            theta = speed / 0.33 * np.tan(d_follow) * t_transient
-
-            alpha = alpha_trans + alpha_prime +theta
+            alpha = alpha_trans + alpha_prime 
 
         alphas[i] = alpha
-
-    lds = speed * ts
-    plt.plot(lds*np.sin(alphas), lds*np.cos(alphas), '-x', linewidth=2)
 
     d_follow = (2*d0+du) / 3
     alpha_trans = np.arcsin(np.tan(d_follow)*speed*t_transient/0.66)
     ld_trans = speed * t_transient
     plt.plot(ld_trans*np.sin(alpha_trans), ld_trans*np.cos(alpha_trans), 'x', markersize=20)
+    
+    lds = speed * ts[ts<t_transient]
+    plt.plot(lds*np.sin(alphas[ts<t_transient]), lds*np.cos(alphas[ts<t_transient]), '-x', linewidth=2)
+
+    lds = speed * (ts[ts>=t_transient] - np.ones_like(ts[ts>=t_transient])*t_transient)
+    x_trans = ld_trans*np.sin(alpha_trans)
+    y_trans = ld_trans*np.cos(alpha_trans)
+    xs = x_trans + lds * np.sin(alphas[ts>=t_transient])
+    ys = y_trans + lds * np.cos(alphas[ts>=t_transient])
+
+    plt.plot(xs, ys, '-x')
 
     print(f"--------------------------------")
 
