@@ -233,7 +233,8 @@ class SafetyCar(SafetyPP):
             self.plot_lidar_scan_vo(x1, y1, scan, starts, ends)
             self.plot_vd_window(v_valids, dw_ds, valid_window, pp_action, [0, 0], d)
             plt.show()
-            return np.array([0, 0])        
+            return np.array([0, 0])  
+                  
         valid_dt = edt(valid_window)
         new_action = modify_action(pp_action, valid_window, dw_ds, valid_dt)
 
