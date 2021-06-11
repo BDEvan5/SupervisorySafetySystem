@@ -217,7 +217,7 @@ class SafetyCar(SafetyPP):
 
 
     def run_safety_check_plot(self, obs, pp_action):
-        scan = obs['full_scan']
+        scan = obs['full_scan'] * 0.95
         state = obs['state']
 
         d = state[4]
@@ -231,7 +231,7 @@ class SafetyCar(SafetyPP):
         if not valid_window.any():
             print(f"Massive problem: no valid answers")
             self.plot_lidar_scan_vo(x1, y1, scan, starts, ends)
-            self.plot_vd_window(v_valids, dw_ds, valid_window, pp_action, new_action, d)
+            self.plot_vd_window(v_valids, dw_ds, valid_window, pp_action, [0, 0], d)
             plt.show()
             return np.array([0, 0])        
         valid_dt = edt(valid_window)
@@ -509,6 +509,7 @@ def check_dw_vo(scan, dw_ds, d0):
     ends = np.append(ends1, invalids[-1])
 
     l_d = u * 0.1
+
     for s, e in zip(starts, ends):
         s = int(s)
         e = int(e)
@@ -517,17 +518,9 @@ def check_dw_vo(scan, dw_ds, d0):
         i_max = np.count_nonzero(v_window[v_window<angles[e]])
         v_valids[i_min:i_max] = False
 
-        # d_min = np.arctan(2*L*np.sin(angles[s])/scan[s])
-        # d_max = np.arctan(2*L*np.sin(angles[e])/scan[e])
-
-        # ld_s = min(scan[s], l_d)
-        # ld_e = min(scan[e], l_d)
         ld_e = min(min(scan[s:e+1]), l_d)
         d_min = np.arctan(2*L*np.sin(angles[s])/ld_e)
         d_max = np.arctan(2*L*np.sin(angles[e])/ld_e)
-
-        # d_min = angles[s] - d0 - u/L * np.tan(d0) * 0.1
-        # d_max = angles[e] - d0 - u/L * np.tan(d0) * 0.1
 
         if d_max < -0.32 or d_min > 0.32:
             continue
@@ -540,7 +533,8 @@ def check_dw_vo(scan, dw_ds, d0):
         valid_ds[i_min:i_max] = False
 
 
-
+    if not valid_ds.any():
+        print(f"Problem in check do: no options")
         
 
     return valid_ds, starts, ends, v_valids
