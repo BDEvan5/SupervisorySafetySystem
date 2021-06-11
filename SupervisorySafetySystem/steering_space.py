@@ -180,6 +180,68 @@ def single_model():
     # plt.gca().set_aspect('equal', adjustable='box')
     plt.show()
 
+def sinlge_function():
+    plt.figure(1)
+    plt.title("Steering angles")
+
+    speed = 3
+    ts = np.linspace(0, 0.5, 40)
+    
+    du = -0.4 
+    d0 = 0.4
+
+    a = np.array([du, 3])
+    x = np.array([0, 0, 0, 3, d0])
+
+    xs, ys = [0], [0]
+    for i in range(5):
+        x = run_step(x, a)
+        xs.append(x[0])
+        ys.append(x[1])
+
+    plt.plot(xs, ys, '-+', linewidth=2)
+
+    alphas = np.zeros_like(ts)
+    lds = np.zeros_like(ts)
+    for i, t in enumerate(ts):
+        t_transient = (du-d0)/3.2
+        sign = t_transient / abs(t_transient)
+        t_transient = abs(t_transient)
+
+        d_follow = (3*d0 + 3.2*t * sign) / 3
+        alpha = np.arcsin(np.tan(d_follow)*speed*min(t, t_transient)/0.66) + \
+            np.arcsin(np.tan(du)*speed*max(t-t_transient, 0)/0.66)
+
+        alphas[i] = alpha
+
+        ld = 0.33*np.tan(d_follow)*2*alpha 
+
+
+    d_follow = (2*d0+du) / 3
+    alpha_trans = np.arcsin(np.tan(d_follow)*speed*t_transient/0.66)
+    ld_trans = speed * t_transient
+    plt.plot(ld_trans*np.sin(alpha_trans), ld_trans*np.cos(alpha_trans), 'x', markersize=20)
+    
+    lds = speed * ts[ts<t_transient]
+    plt.plot(lds*np.sin(alphas[ts<t_transient]), lds*np.cos(alphas[ts<t_transient]), '-x', linewidth=2)
+
+    lds = speed * (ts[ts>=t_transient] - np.ones_like(ts[ts>=t_transient])*t_transient)
+    x_trans = ld_trans*np.sin(alpha_trans)
+    y_trans = ld_trans*np.cos(alpha_trans)
+    xs = x_trans + lds * np.sin(alphas[ts>=t_transient])
+    ys = y_trans + lds * np.cos(alphas[ts>=t_transient])
+
+    plt.plot(xs, ys, '-x')
+
+    print(f"--------------------------------")
+
+    # plt.gca().set_aspect('equal', adjustable='box')
+    plt.show()
+
+# def project_point(x, a):
+
+
+
 # def inverse_step()
 
 def inverse_model(x, alpha, ld):
@@ -197,7 +259,7 @@ def inverse_model(x, alpha, ld):
 # plot_steering_angles_fine()
 single_model()
     
-
+sinlge_function()
 
 
 
