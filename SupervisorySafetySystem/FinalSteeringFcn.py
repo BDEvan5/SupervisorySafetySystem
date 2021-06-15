@@ -1,3 +1,4 @@
+from operator import mod
 from matplotlib import pyplot as plt
 import numpy as np
 from numba import njit
@@ -75,6 +76,10 @@ def model(d0, du, t):
         print(f"t: {t} -> dfollow: {d_follow}")
         alpha = np.arcsin(np.tan(d_follow)*speed*t/0.66)
 
+        ld = speed * t 
+        x = ld * np.sin(alpha)
+        y = ld * np.cos(alpha)
+
     if t >= t_transient:
         d_follow = (2*d0+du) / 3
         alpha_trans = np.arcsin(np.tan(d_follow)*speed*t_transient/0.66)
@@ -84,7 +89,14 @@ def model(d0, du, t):
 
         alpha = alpha_trans + alpha_prime 
 
-    return alpha
+        ld_trans = speed * t_transient
+        ld_prime = speed * (t-t_transient)
+        x = ld_trans * np.sin(alpha_trans) + ld_prime*np.sin(alpha)
+        y = ld_trans * np.cos(alpha_trans) + ld_prime*np.cos(alpha)
+
+    return x, y
+
+    # return alpha
 
 def run_calc_fcn():
     plt.figure(1)
@@ -113,46 +125,31 @@ def run_calc_fcn():
 
     for i in range(len(ts)):
         # xs[i], ys[i] = run_model(d0, du, ts[i])
-        alphas[i] = run_model(d0, du, ts[i])
+        xs[i], ys[i] = model(d0, du, ts[i])
+        # alphas[i] = run_model(d0, du, ts[i])
+        # alphas[i] = model(d0, du, ts[i])
         
-    # plt.plot(xs, ys, '-+', linewidth=2)
-
-    d_follow = (2*d0+du) / 3
-    t_transient = abs(d0-du)/3.2
-    alpha_trans = np.arcsin(np.tan(d_follow)*speed*t_transient/0.66)
-    ld_trans = speed * t_transient
-    plt.plot(ld_trans*np.sin(alpha_trans), ld_trans*np.cos(alpha_trans), 'x', markersize=20)
-    
-    lds = speed * ts[ts<t_transient]
-    plt.plot(lds*np.sin(alphas[ts<t_transient]), lds*np.cos(alphas[ts<t_transient]), '-x', linewidth=2)
-
-    lds = speed * (ts[ts>=t_transient] - np.ones_like(ts[ts>=t_transient])*t_transient)
-    x_trans = ld_trans*np.sin(alpha_trans)
-    y_trans = ld_trans*np.cos(alpha_trans)
-    xs = x_trans + lds * np.sin(alphas[ts>=t_transient])
-    ys = y_trans + lds * np.cos(alphas[ts>=t_transient])
-
     plt.plot(xs, ys, '-x')
 
     plt.show()
 
-def run_model(d0, du, t):
-    sv = 3.2 
-    speed = 3
-    L = 0.33
+# def run_model(d0, du, t):
+#     sv = 3.2 
+#     speed = 3
+#     L = 0.33
 
-    t_transient = (du-d0)/sv
-    sign = t_transient / abs(t_transient)
-    t_transient = abs(t_transient)
+#     t_transient = (du-d0)/sv
+#     sign = t_transient / abs(t_transient)
+#     t_transient = abs(t_transient)
 
-    d_follow = (3*d0 + sv*t * sign) / 3
-    alpha = np.arcsin(np.tan(d_follow)*speed*min(t, t_transient)/(L*2)) + \
-        np.arcsin(np.tan(du)*speed*max(t-t_transient, 0)/(L*2))
+#     d_follow = (3*d0 + sv*t * sign) / 3
+#     alpha = np.arcsin(np.tan(d_follow)*speed*min(t, t_transient)/(L*2)) + \
+#         np.arcsin(np.tan(du)*speed*max(t-t_transient, 0)/(L*2))
 
-    return alpha
-
-
+#     return alpha
 
 
-single_model()
-# run_calc_fcn()
+
+
+# single_model()
+run_calc_fcn()
