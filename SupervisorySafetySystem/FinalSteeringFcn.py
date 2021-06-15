@@ -34,27 +34,9 @@ def single_model():
 
     alphas = np.zeros_like(ts)
     for i, t in enumerate(ts):
-        t_transient = abs(d0-du)/3.2
-        sign = 1
-        if du < d0:
-            sign = -1
-
-        if t < t_transient:
-            d_follow = (3*d0 + 3.2*t * sign) / 3
-            # d_follow = d0
-            print(f"t: {t} -> dfollow: {d_follow}")
-            alpha = np.arcsin(np.tan(d_follow)*speed*t/0.66)
-
-        if t > t_transient:
-            d_follow = (2*d0+du) / 3
-            alpha_trans = np.arcsin(np.tan(d_follow)*speed*t_transient/0.66)
-            # theta = speed / 0.33 * np.tan(d_follow) * t_transient 
-
-            alpha_prime = np.arcsin(np.tan(du)*speed*(t-t_transient)/0.66)
-
-            alpha = alpha_trans + alpha_prime 
-
+        alpha = model(d0, du, t)
         alphas[i] = alpha
+    t_transient = abs(d0-du)/3.2
 
     d_follow = (2*d0+du) / 3
     alpha_trans = np.arcsin(np.tan(d_follow)*speed*t_transient/0.66)
@@ -77,6 +59,32 @@ def single_model():
     # plt.gca().set_aspect('equal', adjustable='box')
     plt.show()
 
+# def redo_model():
+
+
+def model(d0, du, t):
+    speed = 3
+    t_transient = abs(d0-du)/3.2
+    sign = 1
+    if du < d0:
+        sign = -1
+
+    if t < t_transient:
+        d_follow = (3*d0 + 3.2*t * sign) / 3
+        # d_follow = d0
+        print(f"t: {t} -> dfollow: {d_follow}")
+        alpha = np.arcsin(np.tan(d_follow)*speed*t/0.66)
+
+    if t >= t_transient:
+        d_follow = (2*d0+du) / 3
+        alpha_trans = np.arcsin(np.tan(d_follow)*speed*t_transient/0.66)
+        # theta = speed / 0.33 * np.tan(d_follow) * t_transient 
+
+        alpha_prime = np.arcsin(np.tan(du)*speed*(t-t_transient)/0.66)
+
+        alpha = alpha_trans + alpha_prime 
+
+    return alpha
 
 def run_calc_fcn():
     plt.figure(1)
@@ -147,4 +155,4 @@ def run_model(d0, du, t):
 
 
 single_model()
-run_calc_fcn()
+# run_calc_fcn()

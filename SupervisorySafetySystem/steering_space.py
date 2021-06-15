@@ -214,8 +214,8 @@ def sinlge_function():
 
         alphas[i] = alpha
 
-        ld = 0.33*np.tan(d_follow)*2*alpha 
-        lds[i] = ld
+        # ld = 0.33*np.tan(d_follow)*2*alpha 
+        # lds[i] = ld
 
     # plt.plot()
 
