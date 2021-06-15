@@ -215,7 +215,9 @@ def sinlge_function():
         alphas[i] = alpha
 
         ld = 0.33*np.tan(d_follow)*2*alpha 
+        lds[i] = ld
 
+    # plt.plot()
 
     d_follow = (2*d0+du) / 3
     alpha_trans = np.arcsin(np.tan(d_follow)*speed*t_transient/0.66)
@@ -232,6 +234,7 @@ def sinlge_function():
     ys = y_trans + lds * np.cos(alphas[ts>=t_transient])
 
     plt.plot(xs, ys, '-x')
+
 
     print(f"--------------------------------")
 
@@ -257,7 +260,7 @@ def inverse_model(x, alpha, ld):
 
 # plot_steering_angles()
 # plot_steering_angles_fine()
-single_model()
+# single_model()
     
 sinlge_function()
 
