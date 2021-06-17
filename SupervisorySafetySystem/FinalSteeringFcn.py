@@ -14,30 +14,26 @@ def run_step(x, a):
 
 
 
-def steering_model(d0, du, t):
+
+def steering_model_clean(d0, du, t):
     speed = 3
+    L = 0.33
+
     t_transient = (du-d0)/3.2
     sign = t_transient / abs(t_transient)
     t_transient = abs(t_transient)
 
-    if t < t_transient:
-        d_follow = (3*d0 + 3.2*t * sign) / 3
-        alpha = np.arcsin(np.tan(d_follow)*speed*t/0.66)
+    ld_trans = speed * min(t, t_transient)
+    d_follow = (3*d0 + 3.2*min(t, t_transient) * sign) / 3
+    alpha_trans = np.arcsin(np.tan(d_follow)*ld_trans/(2*L))
 
-        ld = speed * t 
-        x = ld * np.sin(alpha)
-        y = ld * np.cos(alpha)
+    ld_prime = speed * max(t-t_transient, 0)
+    alpha_prime = np.arcsin(np.tan(du)*ld_prime/(2*L))
+    # reason for adding them is the old alpha is the base theta for the next step
+    alpha_ss = alpha_trans + alpha_prime 
 
-    if t >= t_transient:
-        d_follow = (2*d0+du) / 3
-        alpha_trans = np.arcsin(np.tan(d_follow)*speed*t_transient/0.66)
-        alpha_prime = np.arcsin(np.tan(du)*speed*(t-t_transient)/0.66)
-        alpha = alpha_trans + alpha_prime 
-
-        ld_trans = speed * t_transient
-        ld_prime = speed * (t-t_transient)
-        x = ld_trans * np.sin(alpha_trans) + ld_prime*np.sin(alpha)
-        y = ld_trans * np.cos(alpha_trans) + ld_prime*np.cos(alpha)
+    x = ld_trans * np.sin(alpha_trans) + ld_prime*np.sin(alpha_ss)
+    y = ld_trans * np.cos(alpha_trans) + ld_prime*np.cos(alpha_ss)
 
     return x, y
 
@@ -64,10 +60,10 @@ def run_calc_fcn():
     xs, ys = np.zeros_like(ts), np.zeros_like(ts)
 
     for i in range(len(ts)):
-        xs[i], ys[i] = steering_model(d0, du, ts[i])
+        xs[i], ys[i] = steering_model_clean(d0, du, ts[i])
         
     plt.plot(xs, ys, '-x')
-    x, y = steering_model(d0, du, abs(d0-du)/3.2)
+    x, y = steering_model_clean(d0, du, abs(d0-du)/3.2)
     plt.plot(x, y, 'x', markersize=20)
     # plt.gca().set_aspect('equal', adjustable='box')
 
