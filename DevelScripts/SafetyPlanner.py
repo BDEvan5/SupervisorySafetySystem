@@ -1,5 +1,4 @@
 # from toy_auto_race.NavAgents.FollowTheGap import ForestFGM
-from toy_auto_race.Utils import LibFunctions as lib
 from SupervisorySafetySystem.Simulator.ForestSim import ForestSim
 # from toy_auto_race.NavAgents.SafetyCar import SafetyCar
 # from toy_auto_race.NavAgents.SafetyEnvelope import SafetyCar
@@ -13,6 +12,17 @@ from SupervisorySafetySystem.NavAgents.RandoCar import RandoCar
 from SupervisorySafetySystem.Histories import HistoryManager
 
 from TrainTest import *
+
+
+def load_conf(path, fname):
+    full_path = path + '/config/' + fname + '.yaml'
+    with open(full_path) as file:
+        conf_dict = yaml.load(file, Loader=yaml.FullLoader)
+
+    conf = Namespace(**conf_dict)
+
+    return conf
+
 
 
 def test_safety_system():

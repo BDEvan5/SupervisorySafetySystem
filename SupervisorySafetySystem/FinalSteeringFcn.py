@@ -11,12 +11,8 @@ def run_step(x, a):
 
     return x 
 
-
-
-
-
 def steering_model_clean(d0, du, t):
-    speed = 3
+    speed = 0.5
     L = 0.33
 
     t_transient = (du-d0)/3.2
@@ -46,8 +42,8 @@ def run_calc_fcn():
     du = -0.4 
     d0 = 0.4
 
-    a = np.array([du, 3])
-    x = np.array([0, 0, 0, 3, d0])
+    a = np.array([du, 0.5])
+    x = np.array([0, 0, 0, 0.5, d0])
     xs, ys = [0], [0]
     for i in range(5):
         x = run_step(x, a)
@@ -68,6 +64,20 @@ def run_calc_fcn():
     # plt.gca().set_aspect('equal', adjustable='box')
 
     plt.show()
+
+
+def inverse_model(x, x_p):
+    """
+    Calculates the required steering input for a vehicle to move from the current state to the following state.
+
+    Args:
+        x: state of dim=5
+        x_p: next state of dim=5
+
+    Returns
+        du: steering control input 
+    """
+
 
 
 run_calc_fcn()

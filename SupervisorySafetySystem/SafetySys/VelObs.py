@@ -6,9 +6,8 @@ from matplotlib import pyplot as plt
 import csv
 from scipy.ndimage import distance_transform_edt as edt
 
-import toy_auto_race.Utils.LibFunctions as lib
+import SupervisorySafetySystem.LibFunctions as lib
 
-from toy_auto_race.speed_utils import calculate_speed, calculate_safe_speed
 from toy_auto_race.Utils import pure_pursuit_utils
 
 from toy_auto_race.lidar_viz import *
@@ -215,15 +214,15 @@ class SafetyCar(SafetyPP):
 
         return new_action
 
-
     def run_safety_check_plot(self, obs, pp_action):
-        scan = obs['full_scan'] * 0.95
+        scan = obs['full_scan'] 
         state = obs['state']
 
         d = state[4]
         dw_ds = build_dynamic_window(d, self.max_steer, self.max_d_dot, 0.1)
 
-        valid_window, starts, ends, v_valids = check_dw_vo(scan, dw_ds, d)
+        # valid_window, starts, ends, v_valids = check_dw_vo(scan, dw_ds, d)
+        valid_window, starts, ends, v_valids = check_dw_model(scan, dw_ds, d)
 
         # x1, y1 = segment_lidar_scan(scan)
         x1, y1 = convert_scan_xy(scan)
@@ -240,13 +239,14 @@ class SafetyCar(SafetyPP):
 
         # self.plot_valid_window(dw_ds, valid_window, pp_action, new_action, d)
 
-        self.plot_lidar_scan_vo(x1, y1, scan, starts, ends)
+        # self.plot_lidar_scan_vo(x1, y1, scan, starts, ends)
+        self.plot_flower(scan, starts, ends, d, dw_ds, new_action)
         self.plot_vd_window(v_valids, dw_ds, valid_window, pp_action, new_action, d)
 
         # self.plot_v_valids(v_valids,  d, new_action[0])
 
-        # if pp_action[0] != new_action[0]:
-        #     plt.show()
+        if pp_action[0] != new_action[0]:
+            plt.show()
 
         return new_action
 
@@ -276,15 +276,26 @@ class SafetyCar(SafetyPP):
             else:
                 plt.plot(x_p, y_p, 'x', color='red', markersize=14)
 
-        v_vec_x = [0, np.sin(d0)]
-        v_vec_y = [0, np.cos(d0)]
+        t = 0.3
+        x0, y0, _ = steering_model_clean(d0, pp_action[0], t)
+        v_vec_x = [0, x0]
+        v_vec_y = [0, y0]
         plt.plot(v_vec_x, v_vec_y, linewidth=4)
 
-        alpha = np.arcsin(np.tan(new_action[0]) * 0.9 / 0.66)
+        x1, y1, _ = steering_model_clean(d0, new_action[0], t)
 
-        v_vec_x = [np.sin(d0), np.sin(alpha)]
-        v_vec_y = [np.cos(d0), np.cos(alpha)]
+        v_vec_x = [x0, x1]
+        v_vec_y = [y0, y1]
         plt.plot(v_vec_x, v_vec_y, linewidth=4)
+
+        ts = np.linspace(0, 0.3, 10)
+        dus = np.linspace(dw_ds[0], dw_ds[-1], 11)
+        for du in dus:
+            xs, ys = run_model(d0, du, ts)
+            plt.plot(xs, ys, '--')      
+
+        plt.text(-0.9, 1.8, f"d0: {d0:.4f}")
+        plt.text(0, 1.8, f"du: {new_action[0]:.4f}")
 
         # plt.show()
         plt.pause(0.0001)
@@ -363,6 +374,35 @@ class SafetyCar(SafetyPP):
 
         plt.pause(0.0001)
 
+    def plot_flower(self, scan, starts, ends, d0, dw_ds, new_action):
+        plt.figure(2)
+        plt.clf()
+        plt.title(f'Lidar Scan: {self.step}')
+
+        plt.ylim([0, 3])
+        plt.xlim([-1.5, 1.5])
+        xs, ys = convert_scan_xy(scan)
+        plt.plot(xs, ys, '-+')
+
+        sines, cosines = get_trigs(len(scan))
+        for s, e in zip(starts, ends):
+            xss = [0, scan[s]*sines[s], scan[e]*sines[e], 0]
+            yss = [0, scan[s]*cosines[s], scan[e]*cosines[e], 0]
+            plt.plot(xss, yss, '-+')
+
+        ts = np.linspace(0, 0.5, 10)
+        dus = np.linspace(dw_ds[0], dw_ds[-1], 7)
+        for du in dus:
+            xs, ys = run_model(d0, du, ts)
+            plt.plot(xs, ys, '--')   
+
+        ts = np.linspace(0, 0.6, 10)
+        du = new_action[0]
+        xs, ys = run_model(d0, du, ts)
+        plt.plot(xs, ys, linewidth=2)            
+
+        plt.pause(0.0001)
+        # plt.pause(0.1)
 
 # @njit(cache=True)
 def segment_lidar_scan2(scan):
@@ -467,7 +507,7 @@ def modify_action(pp_action, valid_window, dw_ds, valid_dt):
 @jit(cache=True)
 def find_new_action(valid_window, d_idx, valid_dt):
     d_size = len(valid_window)
-    max_window_size = 10 
+    max_window_size = 5
     window_sz = int(min(max_window_size, max(valid_dt)-1))
     for i in range(len(valid_window)): # search d space
         p_d = min(d_size-1, d_idx+i)
@@ -487,6 +527,95 @@ def build_dynamic_window(delta, max_steer, max_d_dot, dt):
     ds = np.linspace(ldb, udb, n_delta_pts)
 
     return ds
+
+def run_model(d0, du, ts):
+    xs, ys = np.ones_like(ts), np.ones_like(ts)
+    for i, t in enumerate(ts):
+        xs[i], ys[i], _ = steering_model_clean(d0, du, t)
+
+    return xs, ys
+
+def steering_model_clean(d0, du, t):
+    speed = 3
+    L = 0.33
+
+    if du == d0:
+        t_transient = 0 
+        sign = 0
+    else:
+        t_transient = (du-d0)/3.2
+        sign = t_transient / abs(t_transient)
+        t_transient = abs(t_transient)
+
+    ld_trans = speed * min(t, t_transient)
+    d_follow = (3*d0 + 3.2*min(t, t_transient) * sign) / 3
+    alpha_trans = np.arcsin(np.tan(d_follow)*ld_trans/(2*L))
+
+    ld_prime = speed * max(t-t_transient, 0)
+    alpha_prime = np.arcsin(np.tan(du)*ld_prime/(2*L))
+    # reason for adding them is the old alpha is the base theta for the next step
+    alpha_ss = alpha_trans + alpha_prime 
+
+    x = ld_trans * np.sin(alpha_trans) + ld_prime*np.sin(alpha_ss)
+    y = ld_trans * np.cos(alpha_trans) + ld_prime*np.cos(alpha_ss)
+
+    th = speed / L * np.tan(du) * max(t-t_transient, 0) + speed / L * np.tan(d_follow) * t_transient 
+
+    return x, y, th
+
+def check_dw_model(scan, dw_ds, d0):
+    # scan = np.copy(scan_in) - np.ones_like(scan_in) * 0.15
+    d_cone = 1.6
+    speed = 3
+
+    v_window = np.linspace(-np.pi/2, np.pi/2, 50)
+    v_valids = np.ones_like(v_window)
+
+    angles = np.arange(1000) * np.pi / 999 -  np.ones(1000) * np.pi/2 
+
+    valid_ds = np.ones_like(dw_ds)
+    inds = np.arange(1000)
+
+    invalids = inds[scan<d_cone]
+    starts1 = invalids[1:][invalids[1:] != invalids[:-1] + 1]
+    starts = np.concatenate((np.zeros(1, dtype=np.uint8), starts1))
+    ends1 = invalids[:-1][invalids[1:] != invalids[:-1] + 1]
+    ends = np.append(ends1, invalids[-1])
+
+    for s, e in zip(starts, ends):
+        s = int(s)
+        e = int(e)
+
+        i_min = np.count_nonzero(v_window[v_window<angles[s]])
+        i_max = np.count_nonzero(v_window[v_window<angles[e]])
+        v_valids[i_min:i_max] = False
+
+    
+    t = min(scan) / speed
+    # t = 0.3
+    for i, du in enumerate(dw_ds):
+        x, y, th = steering_model_clean(d0, du, 0.15)
+        angle = np.arctan(x/y) 
+        scan_idx = np.count_nonzero(angles[angles<angle])
+        t = min(scan[scan_idx] / speed, 0.5) 
+        
+        x, y, th = steering_model_clean(d0, du, t)
+        angle = np.arctan(x/y) 
+        
+        # if angle > 0:
+        #     angle += 0.15 
+        # else:
+        #     angle -= 0.15 
+        v_idx = np.count_nonzero(v_window[v_window<angle])
+        if not v_valids[v_idx:v_idx+1].all():
+            valid_ds[i] = False
+
+    if not valid_ds.any():
+        print(f"Problem in check do: no options")
+        
+    return valid_ds, starts, ends, v_valids
+        
+
 
 # @njit(cache=True) 
 def check_dw_vo(scan, dw_ds, d0):
@@ -509,7 +638,7 @@ def check_dw_vo(scan, dw_ds, d0):
     ends1 = invalids[:-1][invalids[1:] != invalids[:-1] + 1]
     ends = np.append(ends1, invalids[-1])
 
-    l_d = u * 0.1
+    l_d = u * 0.5
 
     for s, e in zip(starts, ends):
         s = int(s)
