@@ -77,6 +77,9 @@ def inverse_model(x, x_p):
     Returns
         du: steering control input 
     """
+    if x_p[0] > x[0]:
+        # moving tot he right, delta is positive
+        
 
 
 

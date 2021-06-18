@@ -535,6 +535,7 @@ def run_model(d0, du, ts):
 
     return xs, ys
 
+@njit(cache=True) 
 def steering_model_clean(d0, du, t):
     speed = 3
     L = 0.33
@@ -567,6 +568,7 @@ def check_dw_model(scan, dw_ds, d0):
     # scan = np.copy(scan_in) - np.ones_like(scan_in) * 0.15
     d_cone = 1.6
     speed = 3
+    xs, ys = convert_scan_xy(scan)
 
     v_window = np.linspace(-np.pi/2, np.pi/2, 50)
     v_valids = np.ones_like(v_window)
@@ -590,32 +592,61 @@ def check_dw_model(scan, dw_ds, d0):
         i_max = np.count_nonzero(v_window[v_window<angles[e]])
         v_valids[i_min:i_max] = False
 
+        sx, sy = xs[s], ys[s]
+        d_min = find_delta_angle(sx, sy, d0, dw_ds)
+        ex, ey = xs[e], ys[e]
+        d_max = find_delta_angle(ex, ey, d0, dw_ds)
+
+        if d_max < -0.32 or d_min > 0.32:
+            continue
+
+        d_min = max(d_min, dw_ds[0])
+        d_max = min(d_max, dw_ds[-1]+0.001)
+
+        i_min = np.count_nonzero(dw_ds[dw_ds<d_min])
+        i_max = np.count_nonzero(dw_ds[dw_ds<d_max])
+        valid_ds[i_min:i_max] = False
+
     
-    t = min(scan) / speed
-    # t = 0.3
-    for i, du in enumerate(dw_ds):
-        x, y, th = steering_model_clean(d0, du, 0.15)
-        angle = np.arctan(x/y) 
-        scan_idx = np.count_nonzero(angles[angles<angle])
-        t = min(scan[scan_idx] / speed, 0.5) 
+    # t = min(scan) / speed
+    # # t = 0.3
+    # for i, du in enumerate(dw_ds):
+    #     x, y, th = steering_model_clean(d0, du, 0.15)
+    #     angle = np.arctan(x/y) 
+    #     scan_idx = np.count_nonzero(angles[angles<angle])
+    #     t = min(scan[scan_idx] / speed, 0.5) 
         
-        x, y, th = steering_model_clean(d0, du, t)
-        angle = np.arctan(x/y) 
+    #     x, y, th = steering_model_clean(d0, du, t)
+    #     angle = np.arctan(x/y) 
         
-        # if angle > 0:
-        #     angle += 0.15 
-        # else:
-        #     angle -= 0.15 
-        v_idx = np.count_nonzero(v_window[v_window<angle])
-        if not v_valids[v_idx:v_idx+1].all():
-            valid_ds[i] = False
+    #     # if angle > 0:
+    #     #     angle += 0.15 
+    #     # else:
+    #     #     angle -= 0.15 
+    #     v_idx = np.count_nonzero(v_window[v_window<angle])
+    #     if not v_valids[v_idx:v_idx+1].all():
+    #         valid_ds[i] = False
 
     if not valid_ds.any():
         print(f"Problem in check do: no options")
         
     return valid_ds, starts, ends, v_valids
         
+def find_delta_angle(x, y, d0, dw_ds):
+    ts = np.linspace(0, 0.5, 10)
+    min_dis = 1000 
+    du_ret = None
+    for i, du in enumerate(dw_ds):
+        for j, t in enumerate(ts):
+            dx, dy, _ = steering_model_clean(d0, du, t)
+            dis = ((dx-x)**2 + (dy-y)**2)**0.5
+            if dis < min_dis:
+                du_ret = du
+                min_dis = dis
 
+    return du_ret
+
+    
 
 # @njit(cache=True) 
 def check_dw_vo(scan, dw_ds, d0):
