@@ -26,7 +26,13 @@ def steering_model_clean(d0, du, t):
     ld_prime = speed * max(t-t_transient, 0)
     alpha_prime = np.arcsin(np.tan(du)*ld_prime/(2*L))
     # reason for adding them is the old alpha is the base theta for the next step
-    alpha_ss = alpha_trans + alpha_prime 
+    alpha_ss = alpha_trans + alpha_prime
+    #  
+    # theta = speed / 0.33 * np.tan(d_follow) * t_transient
+    # alpha_ss = theta + alpha_prime 
+    # it seems that this is a bad approximation. Chekc the maths.
+
+    #shouldn't be alpha trans, but rather be theta as calculated by the u/l formula.
 
     x = ld_trans * np.sin(alpha_trans) + ld_prime*np.sin(alpha_ss)
     y = ld_trans * np.cos(alpha_trans) + ld_prime*np.cos(alpha_ss)
@@ -79,7 +85,7 @@ def inverse_model(x, x_p):
     """
     if x_p[0] > x[0]:
         # moving tot he right, delta is positive
-        
+        pass
 
 
 
