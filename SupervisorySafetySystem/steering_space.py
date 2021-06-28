@@ -259,10 +259,10 @@ def inverse_model(x, alpha, ld):
     pass
 
 # plot_steering_angles()
-# plot_steering_angles_fine()
+plot_steering_angles_fine()
 # single_model()
     
-sinlge_function()
+# sinlge_function()
 
 
 

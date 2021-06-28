@@ -6,7 +6,10 @@ from SupervisorySafetySystem.Simulator.ForestSim import ForestSim
 # from toy_auto_race.NavAgents.DynamicWindow import SafetyCar
 # from toy_auto_race.NavAgents.TwoDWA import SafetyCar
 # from SupervisorySafetySystem.SafetySys.TwoDWAxy import SafetyCar
-from SupervisorySafetySystem.SafetySys.VelObs import SafetyCar
+# from SupervisorySafetySystem.SafetySys.VelObs import SafetyCar
+from SupervisorySafetySystem.SafetySys.DistanceObs import SafetyCar
+
+
 from SupervisorySafetySystem.NavAgents.RandoCar import RandoCar
 
 from SupervisorySafetySystem.Histories import HistoryManager
