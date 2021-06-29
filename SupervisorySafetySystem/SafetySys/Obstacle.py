@@ -30,24 +30,55 @@ class OrientationObstacle:
             print(f"Definite crash, y is too big")
             return False
 
+        c_x = (t_start[0] + t_end[0]) / 2
+        if new_pt[0] > c_x:
+            # right side 
+            w_right = t_end[0] - new_pt[0]
+            d_required = find_distance_obs(w_right)
+            d_to_obs = t_end[1] - new_pt[1]
+        elif new_pt[0] <= c_x:
+            w_left = new_pt[0] - t_start[0]
+            d_required = find_distance_obs(w_left)
+            d_to_obs = t_start[1] - new_pt[1]
+        else:
+            raise NotImplementedError()
 
+        if d_required < d_to_obs:
+            ret_val = True # it is safe to continue
+        else:
+            ret_val = False
 
+        print(f"Returning: {ret_val}")
+        return ret_val
+        
+        
+            
+    def draw_triange(self, pt, theta):
+        rot_m = np.array([[np.cos(theta), -np.sin(theta)], 
+                [np.sin(theta), np.cos(theta)]])
+        t_start = rot_m @ self.start 
+        t_end = rot_m @ self.end  
+
+        new_pt = rot_m @pt 
 
         print(f"T start: {t_start}")
         print(f"T end: {t_end}")
         print(f"T pt: {new_pt}")
 
-        p = np.polyfit([t_start[0], t_end[0]], [t_start[1], t_end[1]], 1)
-        print(f"P: {p}")
-        grad = -1/p[0]
-        c_l = t_start[0] * (p[0] - grad) + p[1]
-        c_r = t_end[0] * (p[0] - grad) + p[1]
+        c_x = (t_start[0] + t_end[0]) / 2
+        w_right = t_end[0] - c_x
+        d_required_left = find_distance_obs(w_right)
+        w_left = c_x - t_start[0]
+        d_required_right = find_distance_obs(w_left)
+
+        pt_left = [c_x-0.01, t_start[1] - d_required_left]
+        pt_right = [c_x+0.01, t_end[1] - d_required_right]
+
 
         plot_orig(self.start, self.end, pt, theta)
-        plot_obs(t_start, t_end, new_pt, 0, grad, c_l, c_r)
+        plot_obs(t_start, t_end, new_pt, pt_left, pt_right)
+        
         plt.show()
-
-
 
 
 def plot_orig(p1, p2, pt, theta):
@@ -57,22 +88,21 @@ def plot_orig(p1, p2, pt, theta):
     plt.plot(xs, ys)
         
     plt.arrow(pt[0], pt[1], np.sin(theta)*0.1, np.cos(theta)*0.1, width=0.01, head_width=0.03)
+    plt.gca().set_aspect('equal', adjustable='box')
 
     plt.pause(0.0001)
 
-def plot_obs(p1, p2, pt, theta, grad, c_l, c_r):
+def plot_obs(p1, p2, pt, pl, pr):
     plt.figure(2)
     xs = [p1[0], p2[0]]
     ys = [p1[1], p2[1]]
     plt.plot(xs, ys)
         
-    plt.arrow(pt[0], pt[1], np.sin(theta)*0.1, np.cos(theta)*0.1, width=0.01, head_width=0.03)
+    plt.arrow(pt[0], pt[1], 0, 0.1, width=0.01, head_width=0.03)
 
-    size = 0.2
-    xs = np.linspace(p1[0]-size, p1[0]+size)
-    plt.plot(xs, np.polyval([grad, c_l], xs))
-    xs = np.linspace(p2[0]-size, p2[0]+size)
-    plt.plot(xs, np.polyval([grad, c_r], xs))
+    pts = np.vstack((p1, p2, pr, pl, p1))
+    plt.plot(pts[:, 0], pts[:, 1])
+    plt.gca().set_aspect('equal', adjustable='box')
 
     plt.pause(0.0001)
 
@@ -178,7 +208,9 @@ def test_orientation():
 
     # o.check_location_safe([0.1, 0.1], 0)
     o.check_location_safe([0.2, 0.1], -0.4)
+    o.draw_triange([0.2, 0.1], -0.4)
     o.check_location_safe([-0.2, 0.1], 0.6)
+    o.draw_triange([-0.2, 0.1], 0.6)
 
 
 test_orientation()
