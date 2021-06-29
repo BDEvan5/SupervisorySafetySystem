@@ -9,7 +9,8 @@ import SupervisorySafetySystem.LibFunctions as lib
 from toy_auto_race.Utils import pure_pursuit_utils
 
 from SupervisorySafetySystem.test_dyns import control_system, update_kinematic_state
-
+from SupervisorySafetySystem.SafetySys.safety_utils import *
+from SupervisorySafetySystem.SafetySys.LidarProcessing import segment_lidar_scan
 
 
 
@@ -215,6 +216,8 @@ class SafetyCar(SafetyPP):
         scan = obs['full_scan'] 
         state = obs['state']
 
+        np.save("SafeData/lidar_scan", scan)
+
         d = state[4]
         dw_ds = build_dynamic_window(d, self.max_steer, self.max_d_dot, 0.1)
 
@@ -318,32 +321,6 @@ class SafetyCar(SafetyPP):
 
         plt.pause(0.0001)
         # plt.pause(0.1)
-
-# @njit(cache=True)
-def segment_lidar_scan(scan):
-    """ 
-    Takes a lidar scan and reduces it to a set of points that make straight lines 
-    TODO: possibly change implmentation to work completely in r, ths 
-    """
-    xs, ys = convert_scan_xy(scan)
-    diffs = np.sqrt((xs[1:]-xs[:-1])**2 + (ys[1:]-ys[:-1])**2)
-    i_pts = [0]
-    d_thresh = 0.1
-    for i in range(len(diffs)):
-        if diffs[i] > d_thresh:
-            i_pts.append(i)
-            i_pts.append(i+1)
-    i_pts.append(len(scan)-1)
-
-    if len(i_pts) < 3:
-        i_pts.append(np.argmax(scan))
-        
-
-    i_pts = np.array(i_pts)
-    x_pts = xs[i_pts]
-    y_pts = ys[i_pts]
-
-    return x_pts, y_pts
 
 
 
@@ -564,21 +541,6 @@ def find_distance_obs(w, L=0.33, d_max=0.4):
     distance = ((ld)**2 - (w**2))**0.5
     return distance
 
-@njit(cache=True)
-def get_angles(n_beams=1000, fov=np.pi):
-    return np.arange(n_beams) * fov / 999 -  np.ones(n_beams) * fov /2 
-
-@njit(cache=True)
-def get_trigs(n_beams, fov=np.pi):
-    angles = np.arange(n_beams) * fov / 999 -  np.ones(n_beams) * fov /2 
-    return np.sin(angles), np.cos(angles)
-
-@njit(cache=True)
-def convert_scan_xy(scan):
-    sines, cosines = get_trigs(len(scan))
-    xs = scan * sines
-    ys = scan * cosines    
-    return xs, ys
 
 @njit(cache=True)
 def check_action_safe(valid_window, d_idx, window=5):
