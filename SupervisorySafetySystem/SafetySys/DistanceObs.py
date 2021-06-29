@@ -11,6 +11,7 @@ from toy_auto_race.Utils import pure_pursuit_utils
 from SupervisorySafetySystem.test_dyns import control_system, update_kinematic_state
 from SupervisorySafetySystem.SafetySys.safety_utils import *
 from SupervisorySafetySystem.SafetySys.LidarProcessing import segment_lidar_scan
+from SupervisorySafetySystem.SafetySys.Obstacle import Obstacle
 
 
 
@@ -190,46 +191,19 @@ class SafetyCar(SafetyPP):
     def show_lidar(self):
         pass
 
-    def run_safety_check(self, obs, pp_action):
-
-        scan = obs['full_scan']
-        state = obs['state']
-
-        d = state[4]
-        dw_ds = build_dynamic_window(d, self.max_steer, self.max_d_dot, 0.1)
-
-        valid_window, starts, ends, v_valids = check_dw_vo(scan, dw_ds, d)
-
-        # x1, y1 = segment_lidar_scan(scan)
-        x1, y1 = convert_scan_xy(scan)
-
-        if not valid_window.any():
-            print(f"Massive problem: no valid answers")
-            return pp_action
-        
-        valid_dt = edt(valid_window)
-        new_action = modify_action(pp_action, valid_window, dw_ds, valid_dt)
-
-        return new_action
-
     def run_safety_check_plot(self, obs, pp_action):
         scan = obs['full_scan'] 
         state = obs['state']
 
-        # np.save("SafeData/lidar_scan", scan)
-
         d = state[4]
         dw_ds = build_dynamic_window(d, self.max_steer, self.max_d_dot, 0.1)
 
-        valid_window, obses, v_valids, pts = check_dw_distance_obs(scan, dw_ds, state)
-
-        x1, y1 = convert_scan_xy(scan)
+        valid_window, obses, pts = check_dw_distance_obs(scan, dw_ds, state)
 
         if not valid_window.any():
             print(f"Massive problem: no valid answers")
-            # self.plot_lidar_scan_vo(x1, y1, scan, starts, ends)
-            self.plot_vd_window(v_valids, dw_ds, valid_window, pp_action, [0, 0], d)
-            self.plot_flower(scan, obses, d, dw_ds, [0, 0])
+            self.plot_vd_window(dw_ds, valid_window, pp_action, [0, 0], d)
+            self.plot_flower(scan, obses, d, dw_ds, [0, 0], pts)
             plt.show()
             return np.array([0, 0])  
                   
@@ -237,15 +211,17 @@ class SafetyCar(SafetyPP):
         new_action = modify_action(pp_action, valid_window, dw_ds, valid_dt)
 
         self.plot_flower(scan, obses, d, dw_ds, new_action, pts)
-        # self.plot_vd_window(v_valids, dw_ds, valid_window, pp_action, new_action, d)
+        self.plot_vd_window(dw_ds, valid_window, pp_action, new_action, d)
 
-        if pp_action[0] != new_action[0]:
-            plt.show()
-        # plt.show()
+        # if pp_action[0] != new_action[0]:
+        #     plt.show()
+        # # plt.show()
+        # if len(obses) > 0:
+        #     plt.show()
 
         return new_action
 
-    def plot_vd_window(self, v_valids, dw_ds, valid_window, pp_action, new_action, d0):
+    def plot_vd_window(self, dw_ds, valid_window, pp_action, new_action, d0):
         plt.figure(1)
         plt.clf()
         plt.title("Valid windows")
@@ -262,14 +238,14 @@ class SafetyCar(SafetyPP):
         plt.plot(new_action[0], 1.3, '*', color='green', markersize=16)
         plt.plot(d0, 1.7, '*', color='green', markersize=16)
         
-        xs = np.linspace(-np.pi/2, np.pi/2, 50)
-        for j, x in enumerate(xs):
-            x_p = np.sin(x)
-            y_p = np.cos(x)
-            if v_valids[j]:
-                plt.plot(x_p, y_p, 'x', color='green', markersize=14)
-            else:
-                plt.plot(x_p, y_p, 'x', color='red', markersize=14)
+        # xs = np.linspace(-np.pi/2, np.pi/2, 50)
+        # for j, x in enumerate(xs):
+        #     x_p = np.sin(x)
+        #     y_p = np.cos(x)
+        #     if v_valids[j]:
+        #         plt.plot(x_p, y_p, 'x', color='green', markersize=14)
+        #     else:
+        #         plt.plot(x_p, y_p, 'x', color='red', markersize=14)
 
         t = 0.3
         x0, y0, _ = steering_model_clean(d0, pp_action[0], t)
@@ -305,28 +281,24 @@ class SafetyCar(SafetyPP):
         xs, ys = convert_scan_xy(scan)
         plt.plot(xs, ys, '-+')
 
+        x_seg, y_seg = segment_lidar_scan(scan)
+        plt.plot(x_seg, y_seg, 'x', markersize=16)
+        
 
-        # ts = np.linspace(0, 0.1*3, 10)
-        # dus = np.linspace(dw_ds[0], dw_ds[-1], 19)
-        # for du in dus:
-        #     xs, ys = run_model(d0, du, ts)
-        #     plt.plot(xs, ys, '--')   
         for pt in pts:
             x_p = [0, pt[0]]
             y_p = [0, pt[1]]
             plt.plot(x_p, y_p, '--')
 
-        # ts = np.linspace(0, 0.6, 10)
-        # du = new_action[0]
-        # xs, ys = run_model(d0, du, ts)
-        # plt.plot(xs, ys, linewidth=2)         
 
         for obs in obses:
             obs.plot_obs_pts()
 
-        plt.pause(0.0001)
-        # plt.pause(0.1)
+        # if len(obses) > 0:
+        #     plt.pause(0.0001)
+        #     print(f"Obs")
 
+        plt.pause(0.0001)
 
 
 @jit(cache=True)
@@ -340,7 +312,6 @@ def modify_action(pp_action, valid_window, dw_ds, valid_dt):
         new_action = np.array([dw_ds[d_idx], 3])
         new_action = new_action
     return new_action
-
 
 @jit(cache=True)
 def find_new_action(valid_window, d_idx, valid_dt):
@@ -361,8 +332,9 @@ def build_dynamic_window(delta, max_steer, max_d_dot, dt):
     udb = min(max_steer, delta+dt*max_d_dot)
     ldb = max(-max_steer, delta-dt*max_d_dot)
 
-    n_delta_pts = 50 
+    n_delta_pts = 20 
     ds = np.linspace(ldb, udb, n_delta_pts)
+    print(f"Dynamic Window built")
 
     return ds
 
@@ -402,14 +374,12 @@ def steering_model_clean(d0, du, t):
 
     return x, y, th
 
-def run_step(x, a):
-    n_steps = 3
+def run_step(x, a, n_steps = 3):
     for i in range(10*n_steps):
         u = control_system(x, a, 7, 0.4, 8, 3.2)
         x = update_kinematic_state(x, u, 0.01, 0.33, 0.4, 7)
 
     return x 
-
 
 def generate_obses(scan):
     xs, ys = segment_lidar_scan(scan)
@@ -417,31 +387,38 @@ def generate_obses(scan):
     d_cone = 2 # size to consider an obstacle
 
     new_scan = (xs**2+ys**2)**0.5
-    inds = np.arange(len(new_scan))
 
     obses = []
     for i in range(len(new_scan)-1):
         pt1 = scan_pts[i]
         pt2 = scan_pts[i+1]
-        if new_scan[i] > d_cone and new_scan[i+1] > d_cone:
+        if new_scan[i] > d_cone or new_scan[i+1] > d_cone:
             continue
         x_lim = 0.5
         if pt1[0] < -x_lim and pt2[0] < -x_lim:
             continue
         if pt1[0] > x_lim and pt2[0] > x_lim:
             continue
+        y_lim = 3
+        if pt1[1] > y_lim and pt2[1] > y_lim:
+            continue
+        if i == 0 or i == len(new_scan)-1:
+            continue # exclude first and last lines
         
+        if new_scan[i] > d_cone:
+            f_reduction = d_cone /new_scan[i]
+            pt1 = pt1 * f_reduction
+        if new_scan[i+1] > d_cone:
+            f_reduction = d_cone /new_scan[i+1]
+            pt2 = pt2 * f_reduction
 
         obs = Obstacle(pt1, pt2)
         obses.append(obs)
 
     return obses
 
-
-
 def check_dw_distance_obs(scan, dw_ds, state):
     speed = max(state[3], 1)
-
     valid_ds = np.ones_like(dw_ds)
 
     pts = np.zeros((len(dw_ds), 2))
@@ -452,114 +429,17 @@ def check_dw_distance_obs(scan, dw_ds, state):
 
     obses = generate_obses(scan)
 
-    v_window = np.linspace(-np.pi/2, np.pi/2, 50)
-    v_valids = np.ones_like(v_window)
-
     for i, pt in enumerate(pts):
+        safe = True 
         for obs in obses:
-            safe = obs.check_location_safe(pt)
-            valid_ds[i] = safe 
+            if not obs.check_location_safe(pt):
+                safe = False
+            # only set the valid window value once
+        valid_ds[i] = safe 
         
-    return valid_ds, obses, v_valids, pts
-
-class Obstacle:
-    def __init__(self, start, end):
-        buffer = 0.1 
-        self.start_x = start[0] - buffer 
-        self.start_y = start[1]
-        self.end_x = end[0] + buffer
-        self.end_y = end[1]
+    return valid_ds, obses, pts
+  
         
-    def check_location_safe(self, pt):
-        x, y = pt
-        if x < self.start_x or x > self.end_x:
-            # obstacle is not considered 
-            return True 
-        
-        if y > self.start_y and y > self.end_y:
-            # it will definitely crash, in line with obs
-            return False 
-
-        if x > 0:
-            ret_val = self.check_right_side(pt) 
-        elif x < 0:
-            ret_val = self.check_left_side(pt)
-        elif x == 0:
-            ret_val = self.check_both_sides(pt)
-
-        if ret_val is False:
-            print("Unsafe action: pt")
-
-        return ret_val
-        
-         
-
-    def check_right_side(self, pt):
-        # x > 0 and x < self.x_end 
-        w = self.end_x - pt[0]
-        distance_required = find_distance_obs(w)
-        d_to_obs = self.end_y - pt[1] # self.end_y should be bigger
-        if distance_required < d_to_obs:
-            return True # it is safe 
-        else:
-            return False
-            
-            
-    def check_left_side(self, pt):
-        # x < 0 and x > self.start_x 
-        w = pt[0] - self.start_x
-        distance_required = find_distance_obs(w)
-        d_to_obs = self.start_y - pt[1] # self.end_y should be bigger
-        if distance_required < d_to_obs:
-            return True # it is safe 
-        else:
-            return False
-                        
-    def check_both_sides(self, pt):
-        # pt[0] == 0
-        w = - self.start_x
-        distance_left = find_distance_obs(w)
-        d_min_left = self.start_y - pt[1] # self.end_y should be bigger
-        if distance_left < d_min_left:
-            return False 
-
-        w = self.end_x
-        distance_right = find_distance_obs(w)
-        d_min_right = self.end_y - pt[1] # self.end_y should be bigger
-        if distance_right < d_min_right:
-            return False 
-        
-        return True
-        
-
-    def plot_obs_pts(self):
-        if self.start_x > 0.8 or self.end_x < -0.8:
-            return
-
-        pt_left = [self.start_x, self.start_y]
-        pt_right = [self.end_x, self.end_y]
-        c_x = (self.start_x + self.end_x) / 2
-
-        w_left = c_x - self.start_x 
-        d_left = find_distance_obs(w_left)
-        pt_left_center = [c_x-0.01, self.start_y-d_left]
-        
-        w_right = self.end_x - c_x 
-        d_right = find_distance_obs(w_right)
-        pt_right_center = [c_x+0.01,self.end_y-d_right]
-
-        pts = np.vstack((pt_left,pt_right,pt_right_center, pt_left_center, pt_left))
-
-        plt.plot(pts[:, 0], pts[:, 1])
-        
-             
-        
-
-
-def find_distance_obs(w, L=0.33, d_max=0.4):
-    ld = np.sqrt(w*2*L/np.tan(d_max))
-    distance = ((ld)**2 - (w**2))**0.5
-    return distance
 
 
 @njit(cache=True)
