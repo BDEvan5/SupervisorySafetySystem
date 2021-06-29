@@ -11,7 +11,7 @@ class OrientationObstacle:
         self.start[0] -= buffer
         self.end[0] += buffer
 
-    def check_location_safe(self, pt, theta):
+    def check_location_safe(self, pt, theta, d_min, d_max):
         rot_m = np.array([[np.cos(theta), -np.sin(theta)], 
                 [np.sin(theta), np.cos(theta)]])
         t_start = rot_m @ self.start 
@@ -22,23 +22,23 @@ class OrientationObstacle:
         if new_pt[0] < t_start[0] or new_pt[0] > t_end[0]:
             # this obs isn't important then
             # pt is not in line
-            print(f"Definitely safe: x outside range")
+            # print(f"Definitely safe: x outside range")
             return True
         
         if pt[1] > t_start[1] and pt[1] > t_end[1]:
             # definitely going to crash
-            print(f"Definite crash, y is too big")
+            # print(f"Definite crash, y is too big")
             return False
 
         c_x = (t_start[0] + t_end[0]) / 2
         if new_pt[0] > c_x:
             # right side 
             w_right = t_end[0] - new_pt[0]
-            d_required = find_distance_obs(w_right)
+            d_required = find_distance_obs(w_right, d_max)
             d_to_obs = t_end[1] - new_pt[1]
         elif new_pt[0] <= c_x:
             w_left = new_pt[0] - t_start[0]
-            d_required = find_distance_obs(w_left)
+            d_required = find_distance_obs(w_left, d_min)
             d_to_obs = t_start[1] - new_pt[1]
         else:
             raise NotImplementedError()
@@ -79,6 +79,14 @@ class OrientationObstacle:
         plot_obs(t_start, t_end, new_pt, pt_left, pt_right)
         
         plt.show()
+
+    def plot_obs_pts(self):
+        if self.start_x > 0.8 or self.end_x < -0.8:
+            return
+
+        pts = np.vstack((self.start, self.end))
+
+        plt.plot(pts[:, 0], pts[:, 1])
 
 
 def plot_orig(p1, p2, pt, theta):
@@ -195,7 +203,7 @@ class Obstacle:
 def y_interpolation(A, B, x_val):
     return A[1] + (B[1]-A[1]) * (x_val-A[0]) / (B[0]-A[0])
 
-def find_distance_obs(w, L=0.33, d_max=0.4):
+def find_distance_obs(w, d_max=0.4, L=0.33):
     ld = np.sqrt(w*2*L/np.tan(d_max))
     distance = ((ld)**2 - (w**2))**0.5
     return distance
@@ -212,5 +220,6 @@ def test_orientation():
     o.check_location_safe([-0.2, 0.1], 0.6)
     o.draw_triange([-0.2, 0.1], 0.6)
 
+if __name__ == '__main__':
 
-test_orientation()
+    test_orientation()

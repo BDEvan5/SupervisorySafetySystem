@@ -11,7 +11,7 @@ from toy_auto_race.Utils import pure_pursuit_utils
 from SupervisorySafetySystem.test_dyns import control_system, update_kinematic_state
 from SupervisorySafetySystem.SafetySys.safety_utils import *
 from SupervisorySafetySystem.SafetySys.LidarProcessing import segment_lidar_scan
-from SupervisorySafetySystem.SafetySys.Obstacle import Obstacle
+from SupervisorySafetySystem.SafetySys.Obstacle import Obstacle, OrientationObstacle
 
 
 
@@ -216,8 +216,8 @@ class SafetyCar(SafetyPP):
         # if pp_action[0] != new_action[0]:
         #     plt.show()
         # # plt.show()
-        # if len(obses) > 0:
-        #     plt.show()
+        if len(obses) > 0:
+            plt.show()
 
         return new_action
 
@@ -291,8 +291,8 @@ class SafetyCar(SafetyPP):
             plt.plot(x_p, y_p, '--')
 
 
-        for obs in obses:
-            obs.plot_obs_pts()
+        # for obs in obses:
+        #     obs.plot_obs_pts()
 
         # if len(obses) > 0:
         #     plt.pause(0.0001)
@@ -374,7 +374,7 @@ def steering_model_clean(d0, du, t):
 
     return x, y, th
 
-def run_step(x, a, n_steps = 3):
+def run_step(x, a, n_steps = 2):
     for i in range(10*n_steps):
         u = control_system(x, a, 7, 0.4, 8, 3.2)
         x = update_kinematic_state(x, u, 0.01, 0.33, 0.4, 7)
@@ -412,7 +412,7 @@ def generate_obses(scan):
             f_reduction = d_cone /new_scan[i+1]
             pt2 = pt2 * f_reduction
 
-        obs = Obstacle(pt1, pt2)
+        obs = OrientationObstacle(pt1, pt2)
         obses.append(obs)
 
     return obses
@@ -421,18 +421,18 @@ def check_dw_distance_obs(scan, dw_ds, state):
     speed = max(state[3], 1)
     valid_ds = np.ones_like(dw_ds)
 
-    pts = np.zeros((len(dw_ds), 2))
+    pts = np.zeros((len(dw_ds), 3))
     x_state = np.array([0, 0, state[2], state[3], state[4]])
     for i, d in enumerate(dw_ds):
         x_prime = run_step(x_state, np.array([d, speed]))
-        pts[i] = x_prime[0:2] 
+        pts[i] = x_prime[0:3] 
 
     obses = generate_obses(scan)
 
     for i, pt in enumerate(pts):
         safe = True 
         for obs in obses:
-            if not obs.check_location_safe(pt):
+            if not obs.check_location_safe(pt[0:2], pt[2], dw_ds[0], dw_ds[-1]):
                 safe = False
             # only set the valid window value once
         valid_ds[i] = safe 
