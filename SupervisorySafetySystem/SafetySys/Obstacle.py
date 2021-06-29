@@ -2,6 +2,81 @@
 import numpy as np
 from matplotlib import pyplot as plt
 
+class OrientationObstacle:
+    def __init__(self, start, end):
+        buffer = 0.05 
+        self.start = start
+        self.end = end
+
+        self.start[0] -= buffer
+        self.end[0] += buffer
+
+    def check_location_safe(self, pt, theta):
+        rot_m = np.array([[np.cos(theta), -np.sin(theta)], 
+                [np.sin(theta), np.cos(theta)]])
+        t_start = rot_m @ self.start 
+        t_end = rot_m @ self.end  
+
+        new_pt = rot_m @pt 
+
+        if new_pt[0] < t_start[0] or new_pt[0] > t_end[0]:
+            # this obs isn't important then
+            # pt is not in line
+            print(f"Definitely safe: x outside range")
+            return True
+        
+        if pt[1] > t_start[1] and pt[1] > t_end[1]:
+            # definitely going to crash
+            print(f"Definite crash, y is too big")
+            return False
+
+
+
+
+        print(f"T start: {t_start}")
+        print(f"T end: {t_end}")
+        print(f"T pt: {new_pt}")
+
+        p = np.polyfit([t_start[0], t_end[0]], [t_start[1], t_end[1]], 1)
+        print(f"P: {p}")
+        grad = -1/p[0]
+        c_l = t_start[0] * (p[0] - grad) + p[1]
+        c_r = t_end[0] * (p[0] - grad) + p[1]
+
+        plot_orig(self.start, self.end, pt, theta)
+        plot_obs(t_start, t_end, new_pt, 0, grad, c_l, c_r)
+        plt.show()
+
+
+
+
+def plot_orig(p1, p2, pt, theta):
+    plt.figure(1)
+    xs = [p1[0], p2[0]]
+    ys = [p1[1], p2[1]]
+    plt.plot(xs, ys)
+        
+    plt.arrow(pt[0], pt[1], np.sin(theta)*0.1, np.cos(theta)*0.1, width=0.01, head_width=0.03)
+
+    plt.pause(0.0001)
+
+def plot_obs(p1, p2, pt, theta, grad, c_l, c_r):
+    plt.figure(2)
+    xs = [p1[0], p2[0]]
+    ys = [p1[1], p2[1]]
+    plt.plot(xs, ys)
+        
+    plt.arrow(pt[0], pt[1], np.sin(theta)*0.1, np.cos(theta)*0.1, width=0.01, head_width=0.03)
+
+    size = 0.2
+    xs = np.linspace(p1[0]-size, p1[0]+size)
+    plt.plot(xs, np.polyval([grad, c_l], xs))
+    xs = np.linspace(p2[0]-size, p2[0]+size)
+    plt.plot(xs, np.polyval([grad, c_r], xs))
+
+    plt.pause(0.0001)
+
+
 
 class Obstacle:
     def __init__(self, start, end):
@@ -94,3 +169,16 @@ def find_distance_obs(w, L=0.33, d_max=0.4):
     ld = np.sqrt(w*2*L/np.tan(d_max))
     distance = ((ld)**2 - (w**2))**0.5
     return distance
+
+
+def test_orientation():
+    p1 = [-0.2, 0.5]
+    p2 = [0.3, 0.6]
+    o = OrientationObstacle(p1, p2)
+
+    # o.check_location_safe([0.1, 0.1], 0)
+    o.check_location_safe([0.2, 0.1], -0.4)
+    o.check_location_safe([-0.2, 0.1], 0.6)
+
+
+test_orientation()
