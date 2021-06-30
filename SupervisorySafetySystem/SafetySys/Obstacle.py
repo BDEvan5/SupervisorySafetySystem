@@ -52,38 +52,15 @@ class OrientationObstacle:
             return
 
         self.c_x = self.t_start[0] + (self.t_end[0] - self.t_start[0]) / 2
-        # w_right = self.t_end[0] - self.c_x
-        # d_required_left = find_distance_obs(w_right, d_max)
-        # w_left = self.c_x - self.t_start[0]
-        # d_required_right = find_distance_obs(w_left, abs(d_min))
-
-        # self.pt_left = [self.c_x-0.01, self.t_start[1] - d_required_left]
-        # self.pt_right = [self.c_x+0.01, self.t_end[1] - d_required_right]
-
-        # if self.new_pt[0] > self.c_x:
-        #     side = "Right Of Obs"
-        #     width = self.t_end[0] - self.new_pt[0]
-        #     d_required = find_distance_obs(width, d_max)
-        #     d_to_corner = self.t_end[1] - self.new_pt[1]
-        # else:
-        #     side = "Left Of Obs"
-        #     width = self.new_pt[0] - self.t_start[0]
-        #     d_required = find_distance_obs(width, abs(d_min))
-        #     d_to_corner = self.t_start[1] - self.new_pt[1]
-
-        if self.new_pt[0] > self.c_x:
-            d_to_corner = self.t_end[1] - self.new_pt[1]
-        else:
-            d_to_corner = self.t_start[1] - self.new_pt[1]
         
-        d_required = self.find_critical_point(self.new_pt[0])
+        y_required = self.find_critical_point(self.new_pt[0])
 
-        if d_required < d_to_corner:
+        if y_required > self.new_pt[1]:
             self.safe_value = True 
         else:
             self.safe_value = False
 
-        print(f"{self.safe_value} -> d_req:{d_required}, d_to_obs: {d_to_corner} -> ")
+        print(f"{self.safe_value} -> y_req:{y_required:.4f}, NewPt: {self.new_pt} ->start:{self.t_start}, end: {self.t_end}")
             
         plot_orig(self.t_start, self.t_end, self.new_pt, 0)
         xs = np.linspace(self.t_start[0]+0.01, self.t_end[0]-0.01, 15)
@@ -92,7 +69,8 @@ class OrientationObstacle:
             ys[i] = self.find_critical_point(xs[i])
         
         plt.plot(xs, ys, '+-')
-        # plt.pause(0.0001)
+        # print(f"ys: {ys}")
+        plt.pause(0.0001)
 
     def find_critical_point(self, x):
         if x < self.t_start[0] or x > self.t_end[0]:

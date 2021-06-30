@@ -195,16 +195,15 @@ class SafetyCar(SafetyPP):
 
         if not valid_window.any():
             print(f"Massive problem: no valid answers")
-            self.plot_vd_window(dw_ds, valid_window, pp_action, [0, 0], d)
-            self.plot_flower(scan, obses, d, dw_ds, [0, 0], pts)
+            self.plot_flower(scan, valid_window, d, dw_ds, [0, 0], pts, pp_action)
             plt.show()
             return np.array([0, 0])  
                   
         valid_dt = edt(valid_window)
         new_action = modify_action(pp_action, valid_window, dw_ds, valid_dt)
 
-        self.plot_flower(scan, obses, d, dw_ds, new_action, pts)
-        self.plot_vd_window(dw_ds, valid_window, pp_action, new_action, d)
+        self.plot_flower(scan, valid_window, d, dw_ds, new_action, pts, pp_action)
+        # self.plot_vd_window(dw_ds, valid_window, pp_action, new_action, d)
 
         # if pp_action[0] != new_action[0]:
         #     plt.show()
@@ -264,7 +263,7 @@ class SafetyCar(SafetyPP):
         # plt.show()
         plt.pause(0.0001)
 
-    def plot_flower(self, scan, obses, d0, dw_ds, new_action, pts):
+    def plot_flower(self, scan, valid_window, d0, dw_ds, new_action, pts, pp_action):
         plt.figure(2)
         plt.clf()
         plt.title(f'Lidar Scan: {self.step}')
@@ -273,6 +272,17 @@ class SafetyCar(SafetyPP):
         plt.xlim([-1.5, 1.5])
         xs, ys = convert_scan_xy(scan)
         plt.plot(xs, ys, '-+')
+
+        for j, d in enumerate(dw_ds):
+            if valid_window[j]:
+                plt.plot(d, 2.5, 'x', color='green', markersize=14)
+            else:
+                plt.plot(d, 2.5, 'x', color='red', markersize=14)
+
+        plt.plot(pp_action[0], 2.3, '+', color='red', markersize=22)
+        plt.plot(new_action[0], 2.3, '*', color='green', markersize=16)
+        plt.plot(d0, 2.7, '*', color='green', markersize=16)
+        
 
         x_seg, y_seg = segment_lidar_scan(scan)
         plt.plot(x_seg, y_seg, 'x', markersize=16)
@@ -417,6 +427,7 @@ def check_dw_distance_obs(scan, dw_ds, state):
     for i, d in enumerate(dw_ds):
         x_prime = run_step(x_state, np.array([d, speed]), 1)
         pts[i] = x_prime[0:3] 
+        pts[i, 2] += x_prime[4] # add the steering to get actual direction
 
     obses = generate_obses(scan)
 
