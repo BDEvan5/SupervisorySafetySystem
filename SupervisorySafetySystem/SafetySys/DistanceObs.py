@@ -11,7 +11,7 @@ from toy_auto_race.Utils import pure_pursuit_utils
 from SupervisorySafetySystem.test_dyns import control_system, update_kinematic_state
 from SupervisorySafetySystem.SafetySys.safety_utils import *
 from SupervisorySafetySystem.SafetySys.LidarProcessing import segment_lidar_scan
-from SupervisorySafetySystem.SafetySys.Obstacle import Obstacle, OrientationObstacle
+from SupervisorySafetySystem.SafetySys.Obstacle import OrientationObstacle
 
 
 
@@ -425,18 +425,10 @@ def check_dw_distance_obs(scan, dw_ds, state):
     for i, pt in enumerate(pts):
         safe = True 
         for obs in obses:
-            # d_min, d_max = get_d_lims(dw_ds[i])
-            # d_min, d_max = -0.4, 0.4
             d_min, d_max = dw_ds[0], dw_ds[-1]
             obs.run_check(pt[0:2], pt[2], d_min, d_max)
-            obs.draw_obstacle()
             if not obs.is_safe():
                 safe = False
-
-            # obs.draw_situation(pt[0:2], pt[2], d_min, d_max)
-            # if not obs.check_location_safe(pt[0:2], pt[2], d_min, d_max):
-            #     safe = False
-            # only set the valid window value once
         valid_ds[i] = safe 
         
     return valid_ds, obses, pts
