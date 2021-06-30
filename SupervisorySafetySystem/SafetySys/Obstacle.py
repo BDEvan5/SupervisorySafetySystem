@@ -11,6 +11,56 @@ class OrientationObstacle:
         self.start[0] -= buffer
         self.end[0] += buffer
 
+        self.t_start = None 
+        self.t_end = None
+        self.new_pt = None
+        self.c_x = None 
+        self.pt_left = None
+        self.pt_right = None
+        
+    def run_check(self, pt, theta, d_min, d_max):
+        rot_m = np.array([[np.cos(theta), -np.sin(theta)], 
+                [np.sin(theta), np.cos(theta)]])
+        self.t_start = rot_m @ self.start 
+        self.t_end = rot_m @ self.end  
+
+        self.new_pt = rot_m @pt 
+        self.c_x = self.t_start[0] + (self.t_end[0] - self.t_start[0]) / 2
+        w_right = self.t_end[0] - self.c_x
+        d_required_left = find_distance_obs(w_right, d_max)
+        w_left = self.c_x - self.t_start[0]
+        d_required_right = find_distance_obs(w_left, abs(d_min))
+
+        self.pt_left = [self.c_x-0.01, self.t_start[1] - d_required_left]
+        self.pt_right = [self.c_x+0.01, self.t_end[1] - d_required_right]
+
+    def is_safe(self):
+        if self.new_pt[0] < self.t_start[0] or self.new_pt[0] > self.t_end[0]:
+            # print(f"Definitely safe: x outside range")
+            return True
+        
+        if self.new_pt[1] > self.t_start[1] and self.new_pt[1] > self.t_end[1]:
+            # print(f"Definite crash, y is too big")
+            return False
+
+        if self.new_pt[0] > self.c_x:
+            side = "Right Of Obs"
+            y_max= y_interpolation(self.pt_right, self.t_end, self.new_pt[0])
+        elif self.new_pt[0] <= self.c_x:
+            side = "Left of obstacle"
+            y_max = y_interpolation(self.pt_left, self.t_start, self.new_pt[0])
+
+        if self.new_pt[1] < y_max:
+            ret_val = True # it is safe to continue
+        else:
+            ret_val = False
+
+        print(f"{ret_val}: New_pt: {self.new_pt} -> c_x:{self.c_x} -> y_max: {y_max} ->  start:{self.t_start}, end: {self.t_end} -->side: {side}")
+        return ret_val
+
+    def draw_obstacle(self):
+        plot_obs(self.t_start, self.t_end, self.new_pt, self.pt_left, self.pt_right)
+
     def check_location_safe(self, pt, theta, d_min, d_max):
         rot_m = np.array([[np.cos(theta), -np.sin(theta)], 
                 [np.sin(theta), np.cos(theta)]])
@@ -30,28 +80,29 @@ class OrientationObstacle:
             # print(f"Definite crash, y is too big")
             return False
 
-        c_x = (t_start[0] + t_end[0]) / 2
+
+        c_x = t_start[0] + (t_end[0] - t_start[0]) / 2
+
         if new_pt[0] > c_x:
             # right side 
             w_right = t_end[0] - new_pt[0]
+            w = w_right
             d_required = find_distance_obs(w_right, d_max)
             d_to_obs = t_end[1] - new_pt[1]
         elif new_pt[0] <= c_x:
             w_left = new_pt[0] - t_start[0]
-            d_required = find_distance_obs(w_left, d_min)
+            w = w_left 
+            d_required = find_distance_obs(w_left, abs(d_min))
             d_to_obs = t_start[1] - new_pt[1]
-        else:
-            raise NotImplementedError()
 
         if d_required < d_to_obs:
             ret_val = True # it is safe to continue
         else:
             ret_val = False
 
-        print(f"Returning: {ret_val}")
+        # print(f"Returning: {ret_val}")
+        print(f"{ret_val}: New_pt: {new_pt} -> c_x:{c_x} -> w: {w} -> start:{t_start}, end: {t_end}")
         return ret_val
-        
-        
             
     def draw_triange(self, pt, theta):
         rot_m = np.array([[np.cos(theta), -np.sin(theta)], 
@@ -80,6 +131,27 @@ class OrientationObstacle:
         
         plt.show()
 
+
+    def draw_situation(self, pt, theta, d_min, d_max):
+        rot_m = np.array([[np.cos(theta), -np.sin(theta)], 
+                [np.sin(theta), np.cos(theta)]])
+        t_start = rot_m @ self.start 
+        t_end = rot_m @ self.end  
+
+        new_pt = rot_m @pt 
+
+        c_x = t_start[0] + (t_end[0] - t_start[0]) / 2
+        w_right = t_end[0] - c_x
+        d_required_left = find_distance_obs(w_right, d_max)
+        w_left = c_x - t_start[0]
+        d_required_right = find_distance_obs(w_left, abs(d_min))
+
+        pt_left = [c_x-0.01, t_start[1] - d_required_left]
+        pt_right = [c_x+0.01, t_end[1] - d_required_right]
+
+        plot_obs(t_start, t_end, new_pt, pt_left, pt_right)
+        
+
     def plot_obs_pts(self):
         if self.start_x > 0.8 or self.end_x < -0.8:
             return
@@ -101,7 +173,7 @@ def plot_orig(p1, p2, pt, theta):
     plt.pause(0.0001)
 
 def plot_obs(p1, p2, pt, pl, pr):
-    plt.figure(2)
+    plt.figure(3)
     xs = [p1[0], p2[0]]
     ys = [p1[1], p2[1]]
     plt.plot(xs, ys)
@@ -204,6 +276,8 @@ def y_interpolation(A, B, x_val):
     return A[1] + (B[1]-A[1]) * (x_val-A[0]) / (B[0]-A[0])
 
 def find_distance_obs(w, d_max=0.4, L=0.33):
+    if w < 0: 
+        raise Warning(f"w is negative: {w}")
     ld = np.sqrt(w*2*L/np.tan(d_max))
     distance = ((ld)**2 - (w**2))**0.5
     return distance
@@ -215,9 +289,9 @@ def test_orientation():
     o = OrientationObstacle(p1, p2)
 
     # o.check_location_safe([0.1, 0.1], 0)
-    o.check_location_safe([0.2, 0.1], -0.4)
+    o.check_location_safe([0.2, 0.1], -0.4, -0.4, 0.4)
     o.draw_triange([0.2, 0.1], -0.4)
-    o.check_location_safe([-0.2, 0.1], 0.6)
+    o.check_location_safe([-0.2, 0.1], 0.6, -0.4, 0.4)
     o.draw_triange([-0.2, 0.1], 0.6)
 
 if __name__ == '__main__':

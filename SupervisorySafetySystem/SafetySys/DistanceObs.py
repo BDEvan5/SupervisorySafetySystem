@@ -139,12 +139,6 @@ class SafetyCar(SafetyPP):
         self.old_steers = []
         self.new_steers = []
 
-        self.last_scan = None
-        self.new_action = None
-        self.col_vals = None
-        self.o_col_vals = None
-        self.o_action = None
-
         self.fov = np.pi
         self.dth = self.fov / (self.n_beams-1)
         self.center_idx = int(self.n_beams/2)
@@ -174,7 +168,6 @@ class SafetyCar(SafetyPP):
         self.step = 0
 
     def show_history(self, wait=False):
-        # plot_lidar_col_vals(self.last_scan, self.col_vals, self.action[0], False)
 
         plt.figure(5)
         plt.clf()
@@ -284,19 +277,13 @@ class SafetyCar(SafetyPP):
         x_seg, y_seg = segment_lidar_scan(scan)
         plt.plot(x_seg, y_seg, 'x', markersize=16)
         
-
+        length = 0.2
         for pt in pts:
             x_p = [0, pt[0]]
             y_p = [0, pt[1]]
+            th = pt[2]
+            plt.arrow(pt[0], pt[1], np.sin(th)*length, np.cos(th)*length, head_width=0.03) 
             plt.plot(x_p, y_p, '--')
-
-
-        # for obs in obses:
-        #     obs.plot_obs_pts()
-
-        # if len(obses) > 0:
-        #     plt.pause(0.0001)
-        #     print(f"Obs")
 
         plt.pause(0.0001)
 
@@ -316,8 +303,9 @@ def modify_action(pp_action, valid_window, dw_ds, valid_dt):
 @jit(cache=True)
 def find_new_action(valid_window, d_idx, valid_dt):
     d_size = len(valid_window)
-    max_window_size = 5
-    window_sz = int(min(max_window_size, max(valid_dt)-1))
+    # max_window_size = 5
+    # window_sz = int(min(max_window_size, max(valid_dt)-1))
+    window_sz = 1
     for i in range(len(valid_window)): # search d space
         p_d = min(d_size-1, d_idx+i)
         if check_action_safe(valid_window, p_d, window_sz):
@@ -332,7 +320,7 @@ def build_dynamic_window(delta, max_steer, max_d_dot, dt):
     udb = min(max_steer, delta+dt*max_d_dot)
     ldb = max(-max_steer, delta-dt*max_d_dot)
 
-    n_delta_pts = 20 
+    n_delta_pts = 5
     ds = np.linspace(ldb, udb, n_delta_pts)
     print(f"Dynamic Window built")
 
@@ -404,6 +392,9 @@ def generate_obses(scan):
             continue
         if i == 0 or i == len(new_scan)-1:
             continue # exclude first and last lines
+
+        if pt1[0] > pt2[0]:
+            continue # then the start is after the end, the line slants backwards and isn't to be considered
         
         if new_scan[i] > d_cone:
             f_reduction = d_cone /new_scan[i]
@@ -424,23 +415,39 @@ def check_dw_distance_obs(scan, dw_ds, state):
     pts = np.zeros((len(dw_ds), 3))
     x_state = np.array([0, 0, state[2], state[3], state[4]])
     for i, d in enumerate(dw_ds):
-        x_prime = run_step(x_state, np.array([d, speed]))
+        x_prime = run_step(x_state, np.array([d, speed]), 1)
         pts[i] = x_prime[0:3] 
 
     obses = generate_obses(scan)
 
+    plt.figure(3)
+    plt.clf()
     for i, pt in enumerate(pts):
         safe = True 
         for obs in obses:
-            if not obs.check_location_safe(pt[0:2], pt[2], dw_ds[0], dw_ds[-1]):
+            # d_min, d_max = get_d_lims(dw_ds[i])
+            # d_min, d_max = -0.4, 0.4
+            d_min, d_max = dw_ds[0], dw_ds[-1]
+            obs.run_check(pt[0:2], pt[2], d_min, d_max)
+            obs.draw_obstacle()
+            if not obs.is_safe():
                 safe = False
+
+            # obs.draw_situation(pt[0:2], pt[2], d_min, d_max)
+            # if not obs.check_location_safe(pt[0:2], pt[2], d_min, d_max):
+            #     safe = False
             # only set the valid window value once
         valid_ds[i] = safe 
         
     return valid_ds, obses, pts
   
         
-
+def get_d_lims(d, t=0.1):
+    sv = 3.2
+    d_min = max(d-sv*t, -0.4)
+    d_max = min(d+sv*t, 0.4)
+    return d_min, d_max
+    
 
 @njit(cache=True)
 def check_action_safe(valid_window, d_idx, window=5):
