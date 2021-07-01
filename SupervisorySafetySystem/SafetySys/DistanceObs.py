@@ -149,6 +149,7 @@ class SafetyCar(SafetyPP):
 
     def plan_act(self, obs):
         state = obs['state']
+        # print(f"State: {state}")
         pp_action = self.act_pp(state)
         self.step += 1
 
@@ -204,6 +205,9 @@ class SafetyCar(SafetyPP):
                   
         valid_dt = edt(valid_window)
         new_action = modify_action(pp_action, valid_window, dw_ds, valid_dt)
+
+        new_state = run_step(state, new_action, 1)
+        # print(f"Projected Next state: {new_state}")
 
         self.plot_flower(scan, valid_window, d, dw_ds, new_action, next_states[:, 0:3], pp_action)
         # self.plot_vd_window(dw_ds, valid_window, pp_action, new_action, d)
@@ -356,8 +360,7 @@ def classify_next_states(next_states, obstacles):
     for i in range(n):
         safe = True 
         for obs in obstacles:
-            obs.run_check(next_states[i])
-            if not obs.is_safe():
+            if not obs.run_check(next_states[i]):
                 safe = False 
                 break 
         valid_ds[i] = safe 
@@ -404,7 +407,7 @@ def steering_model_clean(d0, du, t):
 def run_step(x, a, n_steps = 2):
     for i in range(10*n_steps):
         u = control_system(x, a, 7, 0.4, 8, 3.2)
-        x = update_kinematic_state(x, u, 0.01, 0.33, 0.4, 7)
+        x = update_kinematic_state(x, u, 0.01, 0.329, 0.4, 7)
 
     return x 
 

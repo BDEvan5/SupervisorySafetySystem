@@ -7,106 +7,6 @@ import LearningLocalPlanning.LibFunctions as lib
 from SupervisorySafetySystem.Simulator.LaserScanner import ScanSimulator
 
 
-class CarModel:
-    """
-    A simple class which holds the state of a car and can update the dynamics based on the bicycle model
-
-    Data Members:
-        x: x location of vehicle on map
-        y: y location of vehicle on map
-        theta: orientation of vehicle
-        velocity: 
-        steering: delta steering angle
-        th_dot: the change in orientation due to steering
-
-    """
-    def __init__(self, sim_conf):
-        """
-        Init function
-
-        Args:
-            sim_conf: a config namespace with relevant car parameters
-        """
-        self.x = 0
-        self.y = 0
-        self.theta = 0
-        self.velocity = 0
-        self.steering = 0
-        self.th_dot = 0
-
-        self.prev_loc = 0
-
-        self.wheelbase = sim_conf.l_f + sim_conf.l_r
-        self.mass = sim_conf.m
-        self.mu = sim_conf.mu
-
-        self.max_d_dot = sim_conf.max_d_dot
-        self.max_steer = sim_conf.max_steer
-        self.max_a = sim_conf.max_a
-        self.max_v = sim_conf.max_v
-        self.max_friction_force = self.mass * self.mu * 9.81
-
-    def update_kinematic_state(self, a, d_dot, dt):
-        """
-        Updates the internal state of the vehicle according to the kinematic equations for a bicycle model
-
-        Args:
-            a: acceleration
-            d_dot: rate of change of steering angle
-            dt: timestep in seconds
-
-        """
-        self.x = self.x + self.velocity * np.sin(self.theta) * dt
-        self.y = self.y + self.velocity * np.cos(self.theta) * dt
-        theta_dot = self.velocity / self.wheelbase * np.tan(self.steering)
-        self.th_dot = theta_dot
-        dth = theta_dot * dt
-        self.theta = lib.add_angles_complex(self.theta, dth)
-
-        a = np.clip(a, -self.max_a, self.max_a)
-        d_dot = np.clip(d_dot, -self.max_d_dot, self.max_d_dot)
-
-        self.steering = self.steering + d_dot * dt
-        self.velocity = self.velocity + a * dt
-
-        self.steering = np.clip(self.steering, -self.max_steer, self.max_steer)
-        self.velocity = np.clip(self.velocity, -self.max_v, self.max_v)
-
-    def get_car_state(self):
-        """
-        Returns the state of the vehicle as an array
-
-        Returns:
-            state: [x, y, theta, velocity, steering]
-
-        """
-        state = []
-        state.append(self.x) #0
-        state.append(self.y)
-        state.append(self.theta) # 2
-        state.append(self.velocity) #3
-        state.append(self.steering)  #4
-
-        state = np.array(state)
-
-        return state
-
-    def reset_state(self, start_pose):
-        """
-        Resets the state of the vehicle
-
-        Args:
-            start_pose: the starting, [x, y, theta] to reset to
-        """
-        self.x = start_pose[0]
-        self.y = start_pose[1]
-        self.theta = start_pose[2]
-        self.velocity = 0
-        self.steering = 0
-        self.prev_loc = [self.x, self.y]
-
-
-
 #TODO: move this to another location
 class SimHistory:
     def __init__(self, sim_conf):
@@ -385,14 +285,10 @@ class BaseSim:
         observation = {}
         observation['state'] = car_obs
         observation['scan'] = scan 
-        pose_steer = pose
-        pose_steer[2] = car_obs[4]
-        # observation['full_scan'] = self.scan_sim.scan(pose_steer, 1000)
         observation['full_scan'] = self.scan_sim.scan(pose, 1000)
         observation['target'] = target
         observation['reward'] = self.reward
 
-        # observation = np.concatenate([car_obs, target, scan, [self.reward]])
         return observation
 
 

@@ -11,98 +11,83 @@ class OrientationObstacle:
         self.start[0] -= buffer
         self.end[0] += buffer
 
-        self.t_start = None 
-        self.t_end = None
-        self.new_pt = None
-        self.c_x = None 
-        self.pt_left = None
-        self.pt_right = None
-        self.d_min = None 
-        self.d_max = None
-
-    def reset_pts(self):
-        self.t_start = [0, 0]
-        self.t_end = [0, 0]
-        self.new_pt = [0, 0]
-        self.c_x = [0, 0] 
-        self.pt_left = [0, 0]
-        self.pt_right = [0, 0]
-        
     def run_check(self, state):
         pt = state[0:2]
-        theta = state[2]
-        d_min, d_max = get_d_lims(state[4])
+        theta = state[2] + state[4]
 
         rot_m = np.array([[np.cos(theta), -np.sin(theta)], 
                 [np.sin(theta), np.cos(theta)]])
-        self.t_start = rot_m @ self.start 
-        self.t_end = rot_m @ self.end  
-        self.new_pt = rot_m @pt 
-
-        self.d_min = d_min
-        self.d_max = d_max
+        t_start = rot_m @ self.start 
+        t_end = rot_m @ self.end  
+        new_pt = rot_m @pt 
         
         # run checks
-        if self.new_pt[0] < self.t_start[0] or self.new_pt[0] > self.t_end[0]:
+        if new_pt[0] < t_start[0] or new_pt[0] > t_end[0]:
             # print(f"Definitely safe: x outside range")
-            self.reset_pts()
-            self.safe_value = True
-            return
-        
-        if self.new_pt[1] > self.t_start[1] and self.new_pt[1] > self.t_end[1]:
-            # print(f"Definite crash, y is too big")
-            self.reset_pts()
-            self.safe_value =  False
-            return
-
-        self.c_x = self.t_start[0] + (self.t_end[0] - self.t_start[0]) / 2
-        
-        y_required = self.find_critical_point(self.new_pt[0])
-
-        if y_required > self.new_pt[1]:
-            self.safe_value = True 
-        else:
-            self.safe_value = False
-
-        print(f"{self.safe_value} -> y_req:{y_required:.4f}, NewPt: {self.new_pt} ->start:{self.t_start}, end: {self.t_end}")
+            safe_value = True
+            return safe_value
             
-        plot_orig(self.t_start, self.t_end, self.new_pt, 0)
-        xs = np.linspace(self.t_start[0]+0.01, self.t_end[0]-0.01, 15)
+        if new_pt[1] > t_start[1] and new_pt[1] > t_end[1]:
+            # print(f"Definite crash, y is too big")
+            safe_value =  False
+            return safe_value
+            
+        d_min, d_max = get_d_lims(state[4])
+        y_required = find_critical_point(new_pt[0], t_start, t_end, state[4])
+
+        if y_required > new_pt[1]:
+            safe_value = True 
+        else:
+            safe_value = False
+
+        print(f"{safe_value} -> y_req:{y_required:.4f}, NewPt: {new_pt} ->start:{t_start}, end: {t_end}")
+            
+        plot_orig(t_start, t_end, new_pt, 0)
+        xs = np.linspace(t_start[0]+0.01, t_end[0]-0.01, 15)
         ys = np.zeros_like(xs)
         for i in range(len(xs)):
-            ys[i] = self.find_critical_point(xs[i])
+            ys[i] = find_critical_point(xs[i], t_start, t_end, state[4])
+
+        c_x = t_start[0] + (t_end[0] - t_start[0]) / 2
+        plt.plot(c_x, np.mean((t_start[1], t_end[1])), 'X', markersize=10)
         
         plt.plot(xs, ys, '+-')
         # print(f"ys: {ys}")
         plt.pause(0.0001)
 
-    def find_critical_point(self, x):
-        if x < self.t_start[0] or x > self.t_end[0]:
-            return 0 #
-
-        if x > self.c_x:
-            width = self.t_end[0] - x
-            d_required = find_distance_obs(width, self.d_max)
-            return self.t_end[1] - d_required
-
-        else:
-            width = x - self.t_start[0]
-            d_required = find_distance_obs(width, abs(self.d_min))
-            return self.t_start[1] - d_required
+        return safe_value
 
 
-    def is_safe(self):
-        return self.safe_value
+def find_critical_point(x, start, end, current_d):
+    if x < start[0] or x > end[0]:
+        print(f"Excluding obstacle")
+        return 0 #
+
+    c_x = start[0] + (end[0] - start[0]) / 2
+
+    sv = 3.2 
+    speed = 3 
+
+    if x > c_x:
+        width = end[0] - x
+        extra_d = (0.4-current_d) / sv * speed
+        d_required = find_distance_obs(width, 0.4) + extra_d
+        critical_y = end[1] - d_required
+
+    else:
+        width = x - start[0]
+        extra_d = current_d + 0.4 / sv * speed
+        d_required = find_distance_obs(width, 0.4) + extra_d
+        critical_y = start[1] - d_required
+
+    return critical_y
 
 
-    def plot_arc(self):
-        xs = np.linspace(self.t_start[0]+0.01, self.t_end[0]-0.01, 30)
-        ys = np.zeros_like(xs)
-        for i in range(len(xs)):
-            ys[i] = self.find_critical_point(xs[i])
-        
-        plt.plot(xs, ys, '+-')
-        plt.pause(0.0001)
+def find_distance_obs(w, d_max=0.4, L=0.33):
+    ld = np.sqrt(w*2*L/np.tan(d_max))
+    distance = (ld**2 - (w**2))**0.5
+    return distance
+
 
 
 def plot_orig(p1, p2, pt, theta):
@@ -143,11 +128,6 @@ def get_d_lims(d, t=0.1):
 
 def y_interpolation(A, B, x_val):
     return A[1] + (B[1]-A[1]) * (x_val-A[0]) / (B[0]-A[0])
-
-def find_distance_obs(w, d_max=0.4, L=0.33):
-    ld = np.sqrt(w*2*L/np.tan(d_max))
-    distance = (ld**2 - (w**2))**0.5
-    return distance
 
 
 def test_orientation():
