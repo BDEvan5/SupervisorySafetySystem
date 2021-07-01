@@ -189,6 +189,9 @@ class SafetyCar(SafetyPP):
         scan = obs['full_scan'] 
         state = obs['state']
 
+        # plt.figure(3)
+        # plt.clf()
+
         d = state[4]
         dw_ds = build_dynamic_window(d, self.max_steer, self.max_d_dot, 0.1)
 
@@ -200,14 +203,12 @@ class SafetyCar(SafetyPP):
         if not valid_window.any():
             print(f"Massive problem: no valid answers")
             self.plot_flower(scan, valid_window, d, dw_ds, [0, 0], next_states[:, 0:3], pp_action)
-            plt.show()
+            # plt.show()
             return np.array([0, 0])  
-                  
+                
+                
         valid_dt = edt(valid_window)
         new_action = modify_action(pp_action, valid_window, dw_ds, valid_dt)
-
-        new_state = run_step(state, new_action, 1)
-        # print(f"Projected Next state: {new_state}")
 
         self.plot_flower(scan, valid_window, d, dw_ds, new_action, next_states[:, 0:3], pp_action)
         # self.plot_vd_window(dw_ds, valid_window, pp_action, new_action, d)
@@ -215,8 +216,8 @@ class SafetyCar(SafetyPP):
         # if pp_action[0] != new_action[0]:
         #     plt.show()
         # # plt.show()
-        if len(obstacles) > 0:
-            plt.show()
+        # if len(obstacles) > 0:
+        #     plt.show()
 
         return new_action
 
@@ -320,9 +321,9 @@ def modify_action(pp_action, valid_window, dw_ds, valid_dt):
 @jit(cache=True)
 def find_new_action(valid_window, d_idx, valid_dt):
     d_size = len(valid_window)
-    # max_window_size = 5
-    # window_sz = int(min(max_window_size, max(valid_dt)-1))
-    window_sz = 1
+    max_window_size = 5
+    window_sz = int(min(max_window_size, max(valid_dt)-1))
+    # window_sz = 1
     for i in range(len(valid_window)): # search d space
         p_d = min(d_size-1, d_idx+i)
         if check_action_safe(valid_window, p_d, window_sz):
@@ -330,16 +331,20 @@ def find_new_action(valid_window, d_idx, valid_dt):
         n_d = max(0, d_idx-i)
         if check_action_safe(valid_window, n_d, window_sz):
             return n_d 
-    print(f"No Action Found: redo Search")
+        
+    # no valid window options, take only option left 
+    return np.count_nonzero(valid_window)
+    
+
 
 @njit(cache=True) 
 def build_dynamic_window(delta, max_steer, max_d_dot, dt):
     udb = min(max_steer, delta+dt*max_d_dot)
     ldb = max(-max_steer, delta-dt*max_d_dot)
 
-    n_delta_pts = 5
+    n_delta_pts = 40
     ds = np.linspace(ldb, udb, n_delta_pts)
-    print(f"Dynamic Window built")
+    # print(f"Dynamic Window built")
 
     return ds
 

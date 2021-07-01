@@ -68,7 +68,7 @@ def test_single_vehicle(env, vehicle, show=False, laps=100, add_obs=True, wait=F
             # vehicle.show_lidar()
             # vehicle.show_history()
             # env.render(wait=True, name=vehicle.name)
-            plt.show()
+            # plt.show()
         elif r == 1:
             completes += 1
             print(f"({i}) Complete -> time: {env.steps}")

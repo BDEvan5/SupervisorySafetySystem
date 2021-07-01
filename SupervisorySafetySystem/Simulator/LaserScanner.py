@@ -18,7 +18,7 @@ class ScanSimulator:
         self.orig_x = 0
         self.orig_y = 0
 
-        self.eps = 0.001
+        self.eps = 0.0001
         self.max_range = 10
 
     def reset_n_beams(self, n_beams):

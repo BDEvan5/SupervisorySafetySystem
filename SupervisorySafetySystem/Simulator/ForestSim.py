@@ -295,6 +295,11 @@ class ForestSim(BaseSim):
             self.done_reason = f"Vehicle turned around"
             self.reward = -1
 
+        elif self.action[1] == 0 and self.state[3] < 1:
+            self.done = True
+            self.reward = -1
+            self.done_reason = "Zero velocity"
+
         return self.done
 
 

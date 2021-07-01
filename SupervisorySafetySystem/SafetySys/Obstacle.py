@@ -4,16 +4,18 @@ from matplotlib import pyplot as plt
 
 class OrientationObstacle:
     def __init__(self, start, end):
-        buffer = 0.05 
+        buffer = 0.1
         self.start = start
         self.end = end
 
         self.start[0] -= buffer
         self.end[0] += buffer
+        self.start[1]-= buffer
+        self.end[1] -= buffer
 
     def run_check(self, state):
         pt = state[0:2]
-        theta = state[2] + state[4]
+        theta = state[2]#+ state[4]
 
         rot_m = np.array([[np.cos(theta), -np.sin(theta)], 
                 [np.sin(theta), np.cos(theta)]])
@@ -32,7 +34,7 @@ class OrientationObstacle:
             safe_value =  False
             return safe_value
             
-        d_min, d_max = get_d_lims(state[4])
+        # d_min, d_max = get_d_lims(state[4])
         y_required = find_critical_point(new_pt[0], t_start, t_end, state[4])
 
         if y_required > new_pt[1]:
@@ -40,20 +42,20 @@ class OrientationObstacle:
         else:
             safe_value = False
 
-        print(f"{safe_value} -> y_req:{y_required:.4f}, NewPt: {new_pt} ->start:{t_start}, end: {t_end}")
+        # print(f"{safe_value} -> y_req:{y_required:.4f}, NewPt: {new_pt} ->start:{t_start}, end: {t_end}")
             
-        plot_orig(t_start, t_end, new_pt, 0)
-        xs = np.linspace(t_start[0]+0.01, t_end[0]-0.01, 15)
-        ys = np.zeros_like(xs)
-        for i in range(len(xs)):
-            ys[i] = find_critical_point(xs[i], t_start, t_end, state[4])
+        # plot_orig(t_start, t_end, new_pt, 0)
+        # xs = np.linspace(t_start[0]+0.01, t_end[0]-0.01, 15)
+        # ys = np.zeros_like(xs)
+        # for i in range(len(xs)):
+        #     ys[i] = find_critical_point(xs[i], t_start, t_end, state[4])
 
-        c_x = t_start[0] + (t_end[0] - t_start[0]) / 2
-        plt.plot(c_x, np.mean((t_start[1], t_end[1])), 'X', markersize=10)
+        # c_x = t_start[0] + (t_end[0] - t_start[0]) / 2
+        # plt.plot(c_x, np.mean((t_start[1], t_end[1])), 'X', markersize=10)
         
-        plt.plot(xs, ys, '+-')
-        # print(f"ys: {ys}")
-        plt.pause(0.0001)
+        # plt.plot(xs, ys, '+-')
+        # # print(f"ys: {ys}")
+        # plt.pause(0.0001)
 
         return safe_value
 
