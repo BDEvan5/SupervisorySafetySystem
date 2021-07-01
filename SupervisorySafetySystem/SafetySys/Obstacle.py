@@ -28,7 +28,11 @@ class OrientationObstacle:
         self.pt_left = [0, 0]
         self.pt_right = [0, 0]
         
-    def run_check(self, pt, theta, d_min, d_max):
+    def run_check(self, state):
+        pt = state[0:2]
+        theta = state[2]
+        d_min, d_max = get_d_lims(state[4])
+
         rot_m = np.array([[np.cos(theta), -np.sin(theta)], 
                 [np.sin(theta), np.cos(theta)]])
         self.t_start = rot_m @ self.start 
@@ -127,6 +131,13 @@ def plot_obs(p1, p2, pt, pl, pr):
 
     plt.pause(0.0001)
 
+        
+def get_d_lims(d, t=0.1):
+    sv = 3.2
+    d_min = max(d-sv*t, -0.4)
+    d_max = min(d+sv*t, 0.4)
+    return d_min, d_max
+    
 
 
 

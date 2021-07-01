@@ -191,24 +191,27 @@ class SafetyCar(SafetyPP):
         d = state[4]
         dw_ds = build_dynamic_window(d, self.max_steer, self.max_d_dot, 0.1)
 
-        valid_window, obses, pts = check_dw_distance_obs(scan, dw_ds, state)
+        next_states = simulate_sampled_actions(dw_ds, state)
+
+        obstacles = generate_obses(scan)
+        valid_window = classify_next_states(next_states, obstacles)
 
         if not valid_window.any():
             print(f"Massive problem: no valid answers")
-            self.plot_flower(scan, valid_window, d, dw_ds, [0, 0], pts, pp_action)
+            self.plot_flower(scan, valid_window, d, dw_ds, [0, 0], next_states[:, 0:3], pp_action)
             plt.show()
             return np.array([0, 0])  
                   
         valid_dt = edt(valid_window)
         new_action = modify_action(pp_action, valid_window, dw_ds, valid_dt)
 
-        self.plot_flower(scan, valid_window, d, dw_ds, new_action, pts, pp_action)
+        self.plot_flower(scan, valid_window, d, dw_ds, new_action, next_states[:, 0:3], pp_action)
         # self.plot_vd_window(dw_ds, valid_window, pp_action, new_action, d)
 
         # if pp_action[0] != new_action[0]:
         #     plt.show()
         # # plt.show()
-        if len(obses) > 0:
+        if len(obstacles) > 0:
             plt.show()
 
         return new_action
@@ -335,6 +338,32 @@ def build_dynamic_window(delta, max_steer, max_d_dot, dt):
     print(f"Dynamic Window built")
 
     return ds
+
+
+def simulate_sampled_actions(dw_ds, state):
+    speed = max(state[3], 1)
+    next_states = np.zeros((len(dw_ds), 5))
+    x_state = np.array([0, 0, state[2], state[3], state[4]])
+    for i, d in enumerate(dw_ds):
+        x_prime = run_step(x_state, np.array([d, speed]), 1)
+        next_states[i] = x_prime
+
+    return next_states
+    
+def classify_next_states(next_states, obstacles):
+    n = len(next_states) 
+    valid_ds = np.ones(n)
+    for i in range(n):
+        safe = True 
+        for obs in obstacles:
+            obs.run_check(next_states[i])
+            if not obs.is_safe():
+                safe = False 
+                break 
+        valid_ds[i] = safe 
+
+    return valid_ds 
+    
 
 def run_model(d0, du, ts):
     xs, ys = np.ones_like(ts), np.ones_like(ts)
