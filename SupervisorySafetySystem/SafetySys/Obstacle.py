@@ -13,6 +13,11 @@ class OrientationObstacle:
         self.start[1]-= buffer
         self.end[1] -= buffer
 
+    def plot_obstacle(self):
+        pts = np.vstack((self.start, self.end))
+        plt.plot(pts[:, 0], pts[:, 1], '-x', markersize=16)
+
+
     def run_check(self, state):
         pt = state[0:2]
         theta = state[2]#+ state[4]
@@ -25,12 +30,12 @@ class OrientationObstacle:
         
         # run checks
         if new_pt[0] < t_start[0] or new_pt[0] > t_end[0]:
-            # print(f"Definitely safe: x outside range")
+            print(f"Definitely safe: x outside range")
             safe_value = True
             return safe_value
             
         if new_pt[1] > t_start[1] and new_pt[1] > t_end[1]:
-            # print(f"Definite crash, y is too big")
+            print(f"Definite crash, y is too big")
             safe_value =  False
             return safe_value
             
@@ -42,7 +47,7 @@ class OrientationObstacle:
         else:
             safe_value = False
 
-        # print(f"{safe_value} -> y_req:{y_required:.4f}, NewPt: {new_pt} ->start:{t_start}, end: {t_end}")
+        print(f"{safe_value} -> y_req:{y_required:.4f}, NewPt: {new_pt} ->start:{t_start}, end: {t_end}")
             
         # plot_orig(t_start, t_end, new_pt, 0)
         # xs = np.linspace(t_start[0]+0.01, t_end[0]-0.01, 15)

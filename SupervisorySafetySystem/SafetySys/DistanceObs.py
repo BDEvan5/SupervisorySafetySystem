@@ -10,7 +10,7 @@ from toy_auto_race.Utils import pure_pursuit_utils
 
 from SupervisorySafetySystem.test_dyns import control_system, update_kinematic_state
 from SupervisorySafetySystem.SafetySys.safety_utils import *
-from SupervisorySafetySystem.SafetySys.LidarProcessing import segment_lidar_scan
+from SupervisorySafetySystem.SafetySys.LidarProcessing import segment_lidar_scan, test_fft
 from SupervisorySafetySystem.SafetySys.Obstacle import OrientationObstacle
 
 
@@ -69,7 +69,7 @@ class SafetyPP:
         steering_angle = np.clip(steering_angle, -self.max_steer, self.max_steer)
 
 
-        speed = 3
+        speed = 1
         # speed = calculate_speed(steering_angle)
 
         return np.array([steering_angle, speed])
@@ -202,15 +202,15 @@ class SafetyCar(SafetyPP):
 
         if not valid_window.any():
             print(f"Massive problem: no valid answers")
-            self.plot_flower(scan, valid_window, d, dw_ds, [0, 0], next_states[:, 0:3], pp_action)
-            # plt.show()
+            self.plot_flower(scan, valid_window, d, dw_ds, [0, 0], next_states[:, 0:3], pp_action, obstacles)
+            plt.show()
             return np.array([0, 0])  
                 
                 
         valid_dt = edt(valid_window)
         new_action = modify_action(pp_action, valid_window, dw_ds, valid_dt)
 
-        self.plot_flower(scan, valid_window, d, dw_ds, new_action, next_states[:, 0:3], pp_action)
+        self.plot_flower(scan, valid_window, d, dw_ds, new_action, next_states[:, 0:3], pp_action, obstacles)
         # self.plot_vd_window(dw_ds, valid_window, pp_action, new_action, d)
 
         # if pp_action[0] != new_action[0]:
@@ -271,7 +271,7 @@ class SafetyCar(SafetyPP):
         # plt.show()
         plt.pause(0.0001)
 
-    def plot_flower(self, scan, valid_window, d0, dw_ds, new_action, pts, pp_action):
+    def plot_flower(self, scan, valid_window, d0, dw_ds, new_action, pts, pp_action, obstacles):
         plt.figure(2)
         plt.clf()
         plt.title(f'Lidar Scan: {self.step}')
@@ -292,8 +292,10 @@ class SafetyCar(SafetyPP):
         plt.plot(d0, 2.7, '*', color='green', markersize=16)
         
 
-        x_seg, y_seg = segment_lidar_scan(scan)
-        plt.plot(x_seg, y_seg, 'x', markersize=16)
+        # x_seg, y_seg = segment_lidar_scan(scan)
+        # plt.plot(x_seg, y_seg, 'x', markersize=16)
+        for obs in obstacles:
+            obs.plot_obstacle()
         
         length = 0.2
         for pt in pts:
@@ -342,7 +344,7 @@ def build_dynamic_window(delta, max_steer, max_d_dot, dt):
     udb = min(max_steer, delta+dt*max_d_dot)
     ldb = max(-max_steer, delta-dt*max_d_dot)
 
-    n_delta_pts = 40
+    n_delta_pts = 10
     ds = np.linspace(ldb, udb, n_delta_pts)
     # print(f"Dynamic Window built")
 
@@ -417,6 +419,7 @@ def run_step(x, a, n_steps = 2):
     return x 
 
 def generate_obses(scan):
+    # test_fft(scan)
     xs, ys = segment_lidar_scan(scan)
     scan_pts = np.concatenate([xs[:, None], ys[:, None]], axis=-1)
     d_cone = 2 # size to consider an obstacle

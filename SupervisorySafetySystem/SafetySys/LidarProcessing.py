@@ -35,6 +35,44 @@ def segment_lidar_scan(scan):
 
     return x_pts, y_pts
 
+
+def get_gradient(x1=[0, 0], x2=[0, 0]):
+    t = (x1[1] - x2[1])
+    b = (x1[0] - x2[0])
+    if b != 0:
+        return t / b
+    return 1000000 # near infinite gradient. 
+
+def test_fft(scan):
+    xs, ys = convert_scan_xy(scan)
+    f = np.vstack((xs, ys)).T
+    n = len(scan)
+    gs = np.ones(n)
+    for i in range(n-1):
+        g = get_gradient(f[i], f[i+1])
+        gs[i] = g   
+
+    idxs = gs > 20 
+
+
+    plt.figure(1)
+    plt.plot(gs)
+
+    plt.ylim([-60, 60])
+
+    plt.figure(2)
+    plt.plot(scan)
+    plt.plot(scan*idxs, 'X', markersize=20)
+    # plt.plot(xs[idxs], ys[idxs], 'x', markersize=20)
+
+    plt.figure(3)
+    plt.plot(xs, ys)
+    plt.plot(xs[idxs], ys[idxs], 'x', markersize=20)
+
+    plt.show()
+        
+
+
 def test_numpy_filters(scan):
     scan = signal.medfilt(scan, 19)
     return convert_scan_xy(scan)
