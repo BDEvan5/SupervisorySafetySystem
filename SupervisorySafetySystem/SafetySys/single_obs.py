@@ -49,7 +49,7 @@ class OrientationObstacle:
         return safe_value
 
 
-def find_critical_point(x, start, end, current_d):
+def find_critical_point(x, start, end, current_d, speed=1):
     if x < start[0] or x > end[0]:
         print(f"Excluding obstacle")
         return 0 #
@@ -57,7 +57,7 @@ def find_critical_point(x, start, end, current_d):
     c_x = start[0] + (end[0] - start[0]) / 2
 
     sv = 3.2 
-    speed = 3 
+    # speed = 3 
 
     if x > c_x:
         width = end[0] - x
@@ -97,9 +97,12 @@ def run_obs_avoid():
     start = [-0.3, 0.8]
     end = [0.3, 0.8]
     obs = OrientationObstacle(start, end)
+
+    state_history = []
     
     for i in range(20):
-        action = run_avoid_system(state, obs)
+        state_history.append(state[0:2])
+        action = run_avoid_system(state, obs, state_history)
         state = run_step(state, action) 
 
         print(f"{i} -> State: {state}")
@@ -112,8 +115,8 @@ def run_step(x, a, n_steps=1):
 
     return x 
 
-def run_avoid_system(state, obs):
-    dw_ds = build_dynamic_window(state[4])
+def run_avoid_system(state, obs, state_history):
+    dw_ds = build_dynamic_window(state[4], n_pts=5)
 
     next_states = simulate_sampled_actions(dw_ds, state)
 
@@ -124,11 +127,11 @@ def run_avoid_system(state, obs):
     valid_dt = edt(valid_window)
     new_action = modify_action(np.array([0, 1], dtype=np.float64), valid_window, dw_ds, valid_dt)
 
-    plot_picture(state, next_states, obstacles, dw_ds, valid_window,new_action)
+    plot_picture(state, next_states, obstacles, dw_ds, valid_window,new_action, np.array(state_history))
 
     return new_action
     
-def plot_picture(state, next_states, obses, dw_ds, valid_window, action):
+def plot_picture(state, next_states, obses, dw_ds, valid_window, action, state_history):
     plt.figure(1)
     plt.clf()
     
@@ -148,6 +151,7 @@ def plot_picture(state, next_states, obses, dw_ds, valid_window, action):
             plt.plot(d, 1.5, 'x', color='red', markersize=14)
 
     plt.plot(state[0], state[1], 'x', markersize=20)
+    plt.plot(state_history[:, 0], state_history[:, 1], '-x')
 
     scale = 0.2
     for x_p in next_states:
@@ -208,31 +212,25 @@ def modify_action(pp_action, valid_window, dw_ds, valid_dt):
 @jit(cache=True)
 def find_new_action(valid_window, d_idx, valid_dt):
     d_size = len(valid_window)
-    # max_window_size = 5
-    # window_sz = int(min(max_window_size, max(valid_dt)-1))
-    window_sz = 1
-    # window_sz = 1
     for i in range(len(valid_window)): # search d space
-        p_d = min(d_size-1, d_idx+i)
-        if check_action_safe(valid_window, p_d, window_sz):
-            return p_d 
         n_d = max(0, d_idx-i)
-        if check_action_safe(valid_window, n_d, window_sz):
+        if check_action_safe(valid_window, n_d):
             return n_d 
-        
+        p_d = min(d_size-1, d_idx+i)
+        if check_action_safe(valid_window, p_d):
+            return p_d 
     # no valid window options, take only option left 
     return np.count_nonzero(valid_window)
     
 
 
 @njit(cache=True)
-def check_action_safe(valid_window, d_idx, window=5):
-    i_min = max(0, d_idx-window)
-    i_max = min(len(valid_window)-1, d_idx+window)
-    valids = valid_window[i_min:i_max]
-    if valids.all():
-        return True 
+def check_action_safe(valid_window, d_idx):
+    if valid_window[d_idx]:
+        return True
     return False
+        
+         
 
 
 
