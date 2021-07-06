@@ -16,3 +16,9 @@ DevelScripts/__pycache__/
 SupervisorySafetySystem/SafetySys/__pycache__/
 
 SafeData/
+
+*.nbc
+
+*.nbi
+
+*.pyc
