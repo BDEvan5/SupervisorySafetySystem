@@ -20,6 +20,15 @@ def load_conf(fname):
 
 
 class BaseSim:
+    """Base class for simulation of safety system
+    Variables to be added:
+        state
+
+    Methods to be defined:
+        reset: reset the state and call base reset
+        check_done: additional done checks like turning around
+        update_state: implement the specific kinematic model
+     """
     def __init__(self):
         self.env_map = ForestMap("forest2")
         sim_conf = load_conf("config/fgm_config")
@@ -27,8 +36,6 @@ class BaseSim:
 
         self.scan_sim = ScanSimulator(self.sim_conf.n_beams)
         self.scan_sim.init_sim_map(self.env_map)
-
-        # to be defined, state
 
         self.wheelbase = sim_conf.l_f + sim_conf.l_r
         self.mass = sim_conf.m
@@ -73,19 +80,15 @@ class BaseSim:
         """
         Combines different parts of the simulator to get a state observation which can be returned.
         """
-        car_obs = self.state
-        pose = car_obs[0:3]
-        scan = self.scan_sim.scan(pose,10)
-
         observation = {}
-        observation['state'] = car_obs
-        observation['scan'] = scan 
-        observation['full_scan'] = self.scan_sim.scan(pose, 1000)
+        observation['state'] = self.state
+        observation['scan'] = self.scan_sim.scan(self.state[0:3],10) 
+        observation['full_scan'] = self.scan_sim.scan(self.state[0:3], 1000)
         observation['reward'] = self.reward
 
         return observation
 
-    def check_done(self):
+    def base_check_done(self):
         """
         Checks if the episode in the forest is complete 
 

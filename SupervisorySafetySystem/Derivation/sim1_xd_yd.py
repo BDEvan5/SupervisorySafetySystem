@@ -19,7 +19,8 @@ class SimOne(BaseSim):
         self.state = self.env_map.start_pose[0:2]
         return self.base_reset()
 
-        
+    def check_done(self):
+        return self.base_check_done()
 
 # @njit(cache=True)
 def update_state(state, action, dt):
@@ -30,6 +31,48 @@ def update_state(state, action, dt):
     return state + dx * dt 
 
 
+class ObstacleOne:
+    def __init__(self, p1, p2, xy_ratio, n):
+        b = 0.05 
+        self.p1 = p1 + [-b, -b]
+        self.p2 = p2 + [b, -b]
+        self.xy_ratio = xy_ratio
+        self.obs_n = n
+
+    def run_check(self, state):
+        pt = state[0:2]
+        
+        if pt[0] < self.p1[0] or pt[0] > self.p2[0]:
+            return True 
+        if pt[1] > self.p1[1] and pt[1] > self.p2[1]:
+            return False
+
+        y_required = self.find_critical_point(pt[0])
+
+        if y_required > pt[1]:
+            safe_value = True 
+        else:
+            safe_value = False
+
+        print(f"{safe_value}: Obs{self.obs_n} -> y_req:{y_required:.4f}, NewPt: {pt} ->start:{self.p1}, end: {self.p2}")
+
+        return safe_value
+
+    def plot_obstacle(self):
+        pts = np.vstack((self.p1, self.p2))
+        plt.plot(pts[:, 0], pts[:, 1], 'x-', markersize=20)
+
+        xs = np.linspace(self.p1[0], self.p2[0], 10)
+        ys = [self.find_critical_point(x) for x in xs]
+        plt.plot(xs, ys)
+
+    def find_critical_point(self, x):
+        y1 = self.p1[1] - (x - self.p1[0]) / self.xy_ratio
+        y2 = self.p2[1] -  (self.p2[0] - x) / self.xy_ratio
+        y_safe = max(y1, y2)
+        return y_safe 
+  
+
 class SafetySystemOne:
     def __init__(self):
         self.xd_lim = 1 
@@ -37,7 +80,6 @@ class SafetySystemOne:
 
     def plan(self, obs):
         scan = obs['full_scan'] 
-        state = obs['state']
 
         pp_action = np.array([0, self.yd])
         dw = np.ones((10, 2))
@@ -46,13 +88,11 @@ class SafetySystemOne:
 
         relative_state = np.array([0, 0])
         next_states = simulate_sampled_actions(dw, relative_state)
-        print(next_states)
         
         xy_ratio = self.xd_lim / self.yd
         obstacles = generate_obses(scan, xy_ratio)
         valids = classify_next_states(next_states, obstacles)
         
-        print(valids)
         if not valids.any():
             print('No Valid options')
             self.plot_flower(scan, next_states, obstacles, valids)
@@ -62,7 +102,6 @@ class SafetySystemOne:
         action = modify_action(pp_action, valids, dw)
 
         self.plot_flower(scan, next_states, obstacles, valids)
-        # plt.show()
 
         return action
 
@@ -96,75 +135,6 @@ def simulate_sampled_actions(dw, state):
         next_states[i] = update_state(state, dw[i], 0.1)
 
     return next_states
-
-class ObstacleOne:
-    def __init__(self, p1, p2, xy_ratio, n):
-        b = 0.05 
-        self.p1 = p1 + [-b, -b]
-        self.p2 = p2 + [b, -b]
-        self.xy_ratio = xy_ratio
-        self.obs_n = n
-
-    def run_check(self, state):
-        pt = state[0:2]
-        
-        if pt[0] < self.p1[0] or pt[0] > self.p2[0]:
-            return True 
-        if pt[1] > self.p1[1] and pt[1] > self.p2[1]:
-            return False
-
-        y_required = find_critical_point(pt[0], self.p1, self.p2, self.xy_ratio)
-
-        if y_required > pt[1]:
-            safe_value = True 
-        else:
-            safe_value = False
-
-        print(f"{safe_value}: O{self.obs_n} -> y_req:{y_required:.4f}, NewPt: {pt} ->start:{self.p1}, end: {self.p2}")
-
-        return safe_value
-
-    def plot_obstacle(self):
-        pts = np.vstack((self.p1, self.p2))
-        plt.plot(pts[:, 0], pts[:, 1], 'x-', markersize=20)
-
-        xs = np.linspace(self.p1[0], self.p2[0], 10)
-        ys = [find_critical_point(x, self.p1, self.p2, self.xy_ratio) for x in xs]
-        plt.plot(xs, ys)
-
-def find_critical_point(x, p1, p2, xy_ratio):
-    y1 = p1[1] - (x - p1[0]) / xy_ratio
-    y2 = p2[1] -  (p2[0] - x) / xy_ratio
-    y_safe = max(y1, y2)
-    return y_safe 
-    
-
-def modify_action(pp_action, valid_window, dw):
-    dw_d = dw[:, 0]
-    d_idx = np.count_nonzero(dw_d[dw_d<pp_action[0]])
-    if valid_window[d_idx]:
-        return pp_action
-    else:
-        d_idx_search = np.argmin(np.abs(dw_d))
-        d_idx = int(find_new_action(valid_window, d_idx_search))
-        return dw[d_idx]
-    
-def find_new_action(valid_window, idx_search):
-    d_size = len(valid_window)
-    for i in range(len(valid_window)):
-        p_d = min(d_size-1, idx_search+i)
-        if valid_window[p_d]:
-            return p_d
-        n_d = max(0, idx_search-i)
-        if valid_window[n_d]:
-            return n_d
-    print("No new action: returning only valid via count_nonzero")
-    return np.count_nonzero(valid_window)
-    
-    
-
-    
-
 
 def generate_obses(scan, xy_ratio):
     xs, ys = segment_lidar_scan(scan)
@@ -204,7 +174,6 @@ def generate_obses(scan, xy_ratio):
         obses.append(obs)
 
     return obses
-
     
 def classify_next_states(next_states, obstacles):
     n = len(next_states) 
@@ -218,6 +187,31 @@ def classify_next_states(next_states, obstacles):
         valid_ds[i] = safe 
 
     return valid_ds 
+
+def modify_action(pp_action, valid_window, dw):
+    dw_d = dw[:, 0]
+    d_idx = np.count_nonzero(dw_d[dw_d<pp_action[0]])
+    if valid_window[d_idx]:
+        return pp_action
+    else:
+        d_idx_search = np.argmin(np.abs(dw_d))
+        d_idx = int(find_new_action(valid_window, d_idx_search))
+        return dw[d_idx]
+    
+def find_new_action(valid_window, idx_search):
+    d_size = len(valid_window)
+    for i in range(len(valid_window)):
+        p_d = min(d_size-1, idx_search+i)
+        if valid_window[p_d]:
+            return p_d
+        n_d = max(0, idx_search-i)
+        if valid_window[n_d]:
+            return n_d
+    print("No new action: returning only valid via count_nonzero")
+    return np.count_nonzero(valid_window)
+    
+
+  
 
 if __name__ == "__main__":
     env = SimOne()  
