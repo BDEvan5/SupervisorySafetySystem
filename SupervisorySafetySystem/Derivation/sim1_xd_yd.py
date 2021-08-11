@@ -41,8 +41,31 @@ class ObstacleOne:
 
     def run_check(self, state):
         pt = state[0:2]
+        o_pt = np.zeros(2)
+
+        # note all gradients are taken from the zero point.
+        m1 = self.p1[1] / self.p1[0] 
+        m2 = self.p2[1] / self.p2[0] 
         
         if pt[0] < self.p1[0] or pt[0] > self.p2[0]:
+            # add code to check if it crosses a line
+
+            # checks if the obs covers the zero mark
+            if self.p1[0] < 0 and self.p2[0] > 0:
+
+                # check if thee is the option
+                if pt[0] < self.p1[0] and self.p1[0] < 0:
+                    # left cross over 
+                    m = pt[1] / pt[0]
+                    if m < m1:
+                        return False
+                
+                if pt[0] < self.p2[0] and self.p2[0] > 0:
+                    # right cross over 
+                    m = pt[1] / pt[0]
+                    if m > m2:
+                        return False     
+
             return True 
         if pt[1] > self.p1[1] and pt[1] > self.p2[1]:
             return False
