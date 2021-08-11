@@ -43,6 +43,7 @@ class ObstacleTwo:
     def run_check(self, state):
         pt = state[0:2]
         
+        # check if the obs is in front of pt.
         if pt[0] < self.p1[0] or pt[0] > self.p2[0]:
             return True 
         if pt[1] > self.p1[1] and pt[1] > self.p2[1]:
@@ -81,16 +82,25 @@ class SafetySystemTwo:
 
     def plan(self, obs):
         scan = obs['full_scan'] 
+        obstacles = generate_obses(scan, self.th_lim)
 
         pp_action = np.array([0, self.v])
+
+        safe, next_state = self.check_init_action(pp_action, obstacles)
+        if safe:
+            self.plot_single_flower(scan, next_state, obstacles)
+            return pp_action
+
+        # sample actions
         dw = np.ones((10, 2))
         dw[:, 0] = np.linspace(-self.th_lim, self.th_lim, 10)
         dw[:, 1] *= self.v
 
+        # simulate samples
         relative_state = np.array([0, 0])
         next_states = simulate_sampled_actions(dw, relative_state)
         
-        obstacles = generate_obses(scan, self.th_lim)
+        # Check next states 
         valids = classify_next_states(next_states, obstacles)
         
         if not valids.any():
@@ -104,6 +114,19 @@ class SafetySystemTwo:
         self.plot_flower(scan, next_states, obstacles, valids)
 
         return action
+
+    # make static
+    def check_init_action(self, u0, obstacles):
+        state = np.array([0, 0])
+        next_state = update_state(state, u0, 0.1)
+        safe = True
+        for obs in obstacles:
+            if not obs.run_check(next_state):
+                safe = False 
+                break 
+        return safe, next_state
+          
+            
 
     def plot_flower(self, scan, next_states, obstacles, valids):
         plt.figure(2)
@@ -126,6 +149,25 @@ class SafetySystemTwo:
             else:
                 plt.plot(x_p, y_p, '--', color='red')
 
+
+        plt.pause(0.0001)
+
+    def plot_single_flower(self, scan, next_state, obstacles):
+        plt.figure(2)
+        plt.clf()
+        plt.title(f'Lidar Scan: ')
+
+        plt.ylim([0, 3])
+        plt.xlim([-1.5, 1.5])
+        xs, ys = convert_scan_xy(scan)
+        plt.plot(xs, ys, '-+')
+
+        for obs in obstacles:
+            obs.plot_obstacle()
+        
+        x_p = [0, next_state[0]]
+        y_p = [0, next_state[1]]
+        plt.plot(x_p, y_p, '--', color='green')
 
         plt.pause(0.0001)
 
@@ -173,6 +215,7 @@ def generate_obses(scan, th_lim):
             f_reduction = d_cone /new_scan[i+1]
             pt2 = pt2 * f_reduction
 
+        # ToChange: th_lim
         obs = ObstacleTwo(pt1, pt2, th_lim, len(obses))
         obses.append(obs)
 

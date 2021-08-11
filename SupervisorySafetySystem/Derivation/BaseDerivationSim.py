@@ -63,6 +63,7 @@ class BaseSim:
         self.pos_history.append(self.state[0:2])
         obs = self.get_observation()
 
+
         return obs, self.reward, self.done, None 
 
     def base_reset(self):
@@ -85,6 +86,9 @@ class BaseSim:
         observation['scan'] = self.scan_sim.scan(self.state[0:3],10) 
         observation['full_scan'] = self.scan_sim.scan(self.state[0:3], 1000)
         observation['reward'] = self.reward
+        obs_pts1, obs_pts2 =  self.env_map.get_relative_obs_pts(self.state[0:2])
+        observation['obs_pts1'] = obs_pts1
+        observation['obs_pts2'] = obs_pts2
 
         return observation
 
@@ -128,7 +132,7 @@ class BaseSim:
 
         return self.done
 
-    def render_ep(self):
+    def render_ep(self, show=False):
         plt.figure(1)
         plt.clf()
 
@@ -139,8 +143,8 @@ class BaseSim:
         plt.plot(xs, ys, 'x-')
 
 
-
-        plt.show()
+        if show:
+            plt.show()
 
 def scale_to_plot(pts):
     resolution = 0.05 

@@ -39,6 +39,8 @@ class ForestMap:
         self.diffs = None
         self.l2s = None
 
+        self.obs_pts = None
+
         self.load_map()
         self.load_center_pts()
 
@@ -88,6 +90,29 @@ class ForestMap:
             x, y = self.xy_to_row_column(location)
             # print(f"Obstacle: ({location}): {x}, {y}")
             self.map_img[x:x+obs_size_px, y:y+obs_size_px] = 1
+
+        # creates a list of obs pts that can be passed to the obs avoidance devel.    
+        obs_pts2 = np.copy(obs_locations) 
+        obs_pts2[:, 0] += np.ones_like(obs_pts2[:, 0]) * self.obs_size
+        self.obs_pts = np.hstack((obs_locations, obs_pts2))
+        
+    def get_relative_obs_pts(self, pose):
+        pts1 = self.obs_pts[:, 0:2] - pose[0:2]
+        pts2 = self.obs_pts[:, 2:4] - pose[0:2]
+        #TODO: add something to take vehicle orientation into account
+
+        r_p1, r_p2 = [], []
+        y_thresh = 3 # distance in front of vehicle to consider obstacle 
+        for p1, p2 in zip(pts1, pts2):
+            if p1[1] > 0 or p2[1] > 0: # bigger than floor 
+                if p1[1] < y_thresh or p2[1] < y_thresh:
+                    r_p1.append(p1)
+                    r_p2.append(p2)
+        r_pts1 = np.array(r_p1)
+        r_pts2 = np.array(r_p2)
+        
+        return r_pts1, r_pts2
+
         
     def set_dt(self):
         img = np.ones_like(self.map_img) - self.map_img
