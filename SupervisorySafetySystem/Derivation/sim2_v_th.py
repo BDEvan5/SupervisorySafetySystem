@@ -37,7 +37,7 @@ class ObstacleTwo:
         b = 0.05 
         self.p1 = p1 + [-b, -b]
         self.p2 = p2 + [b, -b]
-        self.th_max = th_max
+        self.th_max = th_max * 0.9
         self.obs_n = n
 
     def run_check(self, state):
@@ -45,6 +45,14 @@ class ObstacleTwo:
         
         # check if the obs is in front of pt.
         if pt[0] < self.p1[0] or pt[0] > self.p2[0]:
+            if self.p1[0] < 0 and self.p2[0] > 0:
+                if pt[0] < self.p1[0] and self.p1[0] < 0:
+                    if pt[1] / pt[0] < self.p1[1] / self.p1[0] :
+                        return False
+                if pt[0] < self.p2[0] and self.p2[0] > 0:
+                    if pt[1] / pt[0] > self.p2[1] / self.p2[0]:
+                        return False     
+
             return True 
         if pt[1] > self.p1[1] and pt[1] > self.p2[1]:
             return False
@@ -56,7 +64,7 @@ class ObstacleTwo:
         else:
             safe_value = False
 
-        print(f"{safe_value}: Obs{self.obs_n} -> y_req:{y_required:.4f}, NewPt: {pt} ->start:{self.p1}, end: {self.p2}")
+        # print(f"{safe_value}: Obs{self.obs_n} -> y_req:{y_required:.4f}, NewPt: {pt} ->start:{self.p1}, end: {self.p2}")
 
         return safe_value
 
@@ -69,8 +77,8 @@ class ObstacleTwo:
         plt.plot(xs, ys)
 
     def find_critical_point(self, x):
-        y1 = self.p1[1] - (x - self.p1[0]) * np.tan(self.th_max)
-        y2 = self.p2[1] -  (self.p2[0] - x) * np.tan(self.th_max)
+        y1 = self.p1[1] - (x - self.p1[0]) / np.tan(self.th_max)
+        y2 = self.p2[1] -  (self.p2[0] - x) / np.tan(self.th_max)
         y_safe = max(y1, y2)
         return y_safe 
   
@@ -81,61 +89,45 @@ class SafetySystemTwo:
         self.v = 3
 
     def plan(self, obs):
-        scan = obs['full_scan'] 
-        obstacles = generate_obses(scan, self.th_lim)
-
+        obstacles = generate_cheat_obs(obs, self.th_lim)
         pp_action = np.array([0, self.v])
 
-        safe, next_state = self.check_init_action(pp_action, obstacles)
+        safe, next_state = check_init_action(pp_action, obstacles)
         if safe:
-            self.plot_single_flower(scan, next_state, obstacles)
+            # self.plot_single_flower(obs, next_state, obstacles)
             return pp_action
 
         # sample actions
-        dw = np.ones((10, 2))
-        dw[:, 0] = np.linspace(-self.th_lim, self.th_lim, 10)
-        dw[:, 1] *= self.v
-
-        # simulate samples
-        relative_state = np.array([0, 0])
-        next_states = simulate_sampled_actions(dw, relative_state)
-        
-        # Check next states 
+        dw = self.generate_dw()
+        next_states = simulate_sampled_actions(dw)
         valids = classify_next_states(next_states, obstacles)
         
         if not valids.any():
             print('No Valid options')
-            self.plot_flower(scan, next_states, obstacles, valids)
+            self.plot_flower(obs, next_states, obstacles, valids)
             plt.show()
             return pp_action
         
         action = modify_action(pp_action, valids, dw)
 
-        self.plot_flower(scan, next_states, obstacles, valids)
+        self.plot_flower(obs, next_states, obstacles, valids)
 
         return action
 
-    # make static
-    def check_init_action(self, u0, obstacles):
-        state = np.array([0, 0])
-        next_state = update_state(state, u0, 0.1)
-        safe = True
-        for obs in obstacles:
-            if not obs.run_check(next_state):
-                safe = False 
-                break 
-        return safe, next_state
-          
-            
+    def generate_dw(self):
+        dw = np.ones((10, 2))
+        dw[:, 0] = np.linspace(-self.th_lim, self.th_lim, 10)
+        dw[:, 1] *= self.v
+        return dw
 
-    def plot_flower(self, scan, next_states, obstacles, valids):
+    def plot_flower(self, observation, next_states, obstacles, valids):
         plt.figure(2)
         plt.clf()
         plt.title(f'Lidar Scan: ')
 
         plt.ylim([0, 3])
         plt.xlim([-1.5, 1.5])
-        xs, ys = convert_scan_xy(scan)
+        xs, ys = convert_scan_xy(observation['full_scan'])
         plt.plot(xs, ys, '-+')
 
         for obs in obstacles:
@@ -152,14 +144,14 @@ class SafetySystemTwo:
 
         plt.pause(0.0001)
 
-    def plot_single_flower(self, scan, next_state, obstacles):
+    def plot_single_flower(self, observation, next_state, obstacles):
         plt.figure(2)
         plt.clf()
         plt.title(f'Lidar Scan: ')
 
         plt.ylim([0, 3])
         plt.xlim([-1.5, 1.5])
-        xs, ys = convert_scan_xy(scan)
+        xs, ys = convert_scan_xy(observation['full_scan'])
         plt.plot(xs, ys, '-+')
 
         for obs in obstacles:
@@ -171,8 +163,31 @@ class SafetySystemTwo:
 
         plt.pause(0.0001)
 
+
+def generate_cheat_obs(obs, th_max):
+    pts1 = obs['obs_pts1']
+    pts2 = obs['obs_pts2']
+    
+    obses = []
+    for pt1, pt2 in zip(pts1, pts2):
+        obs = ObstacleTwo(pt1, pt2, th_max, len(obses))
+        obses.append(obs)
+    
+    return obses
+    
+def check_init_action(u0, obstacles):
+    state = np.array([0, 0])
+    next_state = update_state(state, u0, 0.1)
+    safe = True
+    for obs in obstacles:
+        if not obs.run_check(next_state):
+            safe = False 
+            break 
+    return safe, next_state
+
 # no changes required 
-def simulate_sampled_actions(dw, state):
+def simulate_sampled_actions(dw):
+    state = np.array([0, 0])
     next_states = np.zeros((len(dw), 2))
     for i in range(len(dw)):
         next_states[i] = update_state(state, dw[i], 0.1)
@@ -265,8 +280,9 @@ def find_new_action(valid_window, idx_search):
 if __name__ == "__main__":
     env = SimTwo()  
     planner = SafetySystemTwo()
-    
-    for i in range(10):
+    success = 0
+
+    for i in range(100):
         done = False
         state = env.reset()
         while not done:
@@ -275,12 +291,16 @@ if __name__ == "__main__":
             state = s_p
 
         if r == -1:
-            print("Crashed")
+            print(f"{i}: Crashed")
         elif r == 1:
-            print("Success")
+            print(f"{i}: Success")
+            success += 1 
 
         env.render_ep()
 
-        
-    
+        if r == -1:
+            plt.show()
+
+    print("Success rate: {}".format(success/100))
+
 
