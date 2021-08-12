@@ -41,29 +41,16 @@ class ObstacleOne:
 
     def run_check(self, state):
         pt = state[0:2]
-        o_pt = np.zeros(2)
-
-        # note all gradients are taken from the zero point.
-        m1 = self.p1[1] / self.p1[0] 
-        m2 = self.p2[1] / self.p2[0] 
         
+        # add code to check if it crosses a line
         if pt[0] < self.p1[0] or pt[0] > self.p2[0]:
-            # add code to check if it crosses a line
-
             # checks if the obs covers the zero mark
             if self.p1[0] < 0 and self.p2[0] > 0:
-
-                # check if thee is the option
                 if pt[0] < self.p1[0] and self.p1[0] < 0:
-                    # left cross over 
-                    m = pt[1] / pt[0]
-                    if m < m1:
+                    if pt[1] / pt[0] < self.p1[1] / self.p1[0] :
                         return False
-                
                 if pt[0] < self.p2[0] and self.p2[0] > 0:
-                    # right cross over 
-                    m = pt[1] / pt[0]
-                    if m > m2:
+                    if pt[1] / pt[0] > self.p2[1] / self.p2[0]:
                         return False     
 
             return True 
@@ -132,10 +119,9 @@ class SafetySystemOne:
         
         action, d_idx = modify_action(pp_action, valids, dw)
 
-        self.plot_flower(obs, next_states, obstacles, valids)
+        # self.plot_flower(obs, next_states, obstacles, valids)
         self.prev_proj_state = next_states[d_idx]
         self.prev_pt = obs['state'][0:2]
-        # print(f"Action: {action}")
 
         return action
 
@@ -300,7 +286,6 @@ def find_new_action(valid_window, idx_search):
     return np.count_nonzero(valid_window)
     
 
-  
 
 if __name__ == "__main__":
     env = SimOne()  
