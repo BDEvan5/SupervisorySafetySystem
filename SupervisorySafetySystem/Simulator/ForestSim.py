@@ -129,7 +129,7 @@ class ForestMap:
     def render_map(self, figure_n=1, wait=False):
         #TODO: draw the track boundaries nicely
         f = plt.figure(figure_n)
-        plt.clf()
+        # plt.clf()
 
         plt.xlim([0, self.map_width])
         plt.ylim([0, self.map_height])

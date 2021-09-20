@@ -146,6 +146,18 @@ class BaseSim:
         if show:
             plt.show()
 
+    def render_pose(self, show=False):
+        plt.figure(1)
+        # plt.clf()
+
+        self.env_map.render_map(1)
+
+        xs, ys = scale_to_plot(np.array([self.state[0:2]]))
+        plt.plot(xs, ys, 'x', markersize=16)
+        plt.arrow(xs[0], ys[0], np.sin(self.state[2])*20, np.cos(self.state[2])*20, head_width=0.05, head_length=0.1, fc='k', ec='k')
+
+        plt.pause(0.0001)
+
 def scale_to_plot(pts):
     resolution = 0.05 
     xs = pts[:, 0] / resolution

@@ -1,3 +1,4 @@
+import warnings
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -15,7 +16,7 @@ class SimThree(BaseSim):
         return update_state(self.state, action, dt)
         
     def reset(self):
-        self.state = self.env_map.start_pose[0:2]
+        self.state = self.env_map.start_pose[0:3]
         return self.base_reset()
 
     def check_done(self):
@@ -26,22 +27,27 @@ def update_state(state, action, dt):
     """
     Updates x, y, th pos accoridng to th_d, v
     """
+    L = 0.33
     dx = np.array([action[1] * np.sin(state[2]),
                 action[1]*np.cos(state[2]),
-                action[0]])
+                action[1] / L * np.tan(action[0])])
     return state + dx * dt 
 
 
-class ObstacleTwo:
-    def __init__(self, p1, p2, thd_max, n):
+class ObstacleThree:
+    def __init__(self, p1, p2, d_max, n):
         b = 0.05 
-        self.p1 = p1 + [-b, -b]
-        self.p2 = p2 + [b, -b]
-        self.thd_max = thd_max * 0.9
+        self.op1 = p1 + [-b, -b]
+        self.op2 = p2 + [b, -b]
+        self.p1 = None
+        self.p2 = None
+        self.d_max = d_max * 0.9
         self.obs_n = n
 
     def run_check(self, state):
-        pt = state[0:2]
+        pt = state[0:2] #TODO: use whole state not jsut point. 
+
+        self.calculate_transforms(state[2]) # calculates transformed pts
         
         # check if the obs is in front of pt.
         if pt[0] < self.p1[0] or pt[0] > self.p2[0]:
@@ -57,7 +63,7 @@ class ObstacleTwo:
         if pt[1] > self.p1[1] and pt[1] > self.p2[1]:
             return False
 
-        y_required = self.find_critical_point(pt[0])
+        y_required = self.find_critical_point(state)
 
         if y_required > pt[1]:
             safe_value = True 
@@ -68,29 +74,59 @@ class ObstacleTwo:
 
         return safe_value
 
-    def plot_obstacle(self):
-        pts = np.vstack((self.p1, self.p2))
+    def calculate_transforms(self, theta):
+        """
+        Calculate transformed points based on theta by constructing rotation matrix.
+        """
+
+        rot_m = np.array([[np.cos(theta), -np.sin(theta)], 
+                [np.sin(theta), np.cos(theta)]])
+        self.p1 = rot_m @ self.op1
+        self.p2 = rot_m @ self.op2
+
+    def plot_obstacle(self, state=[0, 0, 0]):
+        self.calculate_transforms(state[2])
+        pts = np.vstack((self.op1, self.op2))
         plt.plot(pts[:, 0], pts[:, 1], 'x-', markersize=20)
 
-        xs = np.linspace(self.p1[0], self.p2[0], 10)
-        ys = [self.find_critical_point(x) for x in xs]
+        xs = np.linspace(self.op1[0], self.op2[0], 10)
+        states = np.zeros((10, 3))
+        states[:, 0] = np.linspace(self.op1[0], self.op2[0], 10)
+        ys = [self.find_critical_point(state) for state in states]
         plt.plot(xs, ys)
 
-    def find_critical_point(self, x):
-        y1 = self.p1[1] - (x - self.p1[0]) / np.tan(self.thd_max)
-        y2 = self.p2[1] -  (self.p2[0] - x) / np.tan(self.thd_max)
+    def find_critical_point(self, state):
+        #TODO: transform L and w based on the current location. Not just x, but also theta. '
+
+        w1 = state[0] - self.p1[0] # L1 = self.p1[1], inherently the y value. 
+        w2 = self.p2[0] - state[0] # L2 = self.p2[1]
+
+        with warnings.catch_warnings():
+            warnings.filterwarnings('error')
+            try:
+                d1 = np.sqrt(2*self.p1[1] * w1 / np.tan(self.d_max) - w1**2)
+                d2 = np.sqrt(2*self.p2[1] * w2 / np.tan(self.d_max) - w2**2)
+            except RuntimeWarning as e:
+                print(f"Warning caught: p1: {self.p1} -> p2: {self.p2} -> w1,2: {w1},{w2}, state: {state}")
+                print(e)
+                raise
+
+        y1 = self.p1[1] - d1
+        y2 = self.p2[1] - d2
+
         y_safe = max(y1, y2)
         return y_safe 
   
 
-class SafetySystemTwo:
+class SafetySystemThree:
     def __init__(self):
-        self.th_lim = 0.5 # radians  
+        self.d_max = 0.4 # radians  
         self.v = 3
 
     def plan(self, obs):
-        obstacles = generate_cheat_obs(obs, self.th_lim)
-        pp_action = np.array([0, self.v])
+        obstacles = generate_cheat_obs(obs, self.d_max)
+        # pp_action = np.array([0, self.v]) #TODO: put proper pp in here to follow centerline.
+        pp_action = self.run_pure_pursuit(obs['state'])
 
         safe, next_state = check_init_action(pp_action, obstacles)
         if safe:
@@ -114,9 +150,25 @@ class SafetySystemTwo:
 
         return action
 
+    def run_pure_pursuit(self, state):
+        lookahead_distance = 1
+        speed = 3
+        L = 0.33
+        pose_theta = state[2]
+        lookahead = np.array([1, state[1]+lookahead_distance]) #pt 1 m in the future on centerline
+        waypoint_y = np.dot(np.array([np.cos(pose_theta), np.sin(-pose_theta)]), lookahead[0:2]-state[0:2])
+        if np.abs(waypoint_y) < 1e-6:
+            return np.array([0, speed])
+        radius = 1/(2.0*waypoint_y/lookahead_distance**2)
+        steering_angle = np.arctan(L/radius)
+        steering_angle = np.clip(steering_angle, -self.d_max, self.d_max)
+        return np.array([steering_angle, speed])
+
+
+
     def generate_dw(self):
         dw = np.ones((10, 2))
-        dw[:, 0] = np.linspace(-self.th_lim, self.th_lim, 10)
+        dw[:, 0] = np.linspace(-self.d_max, self.d_max, 10)
         dw[:, 1] *= self.v
         return dw
 
@@ -131,7 +183,7 @@ class SafetySystemTwo:
         plt.plot(xs, ys, '-+')
 
         for obs in obstacles:
-            obs.plot_obstacle()
+            obs.plot_obstacle(observation['state'])
         
         for i, state in enumerate(next_states):
             x_p = [0, state[0]]
@@ -164,19 +216,19 @@ class SafetySystemTwo:
         plt.pause(0.0001)
 
 
-def generate_cheat_obs(obs, th_max):
+def generate_cheat_obs(obs, d_max):
     pts1 = obs['obs_pts1']
     pts2 = obs['obs_pts2']
     
     obses = []
     for pt1, pt2 in zip(pts1, pts2):
-        obs = ObstacleTwo(pt1, pt2, th_max, len(obses))
+        obs = ObstacleThree(pt1, pt2, d_max, len(obses))
         obses.append(obs)
     
     return obses
     
 def check_init_action(u0, obstacles):
-    state = np.array([0, 0])
+    state = np.array([0, 0, 0])
     next_state = update_state(state, u0, 0.1)
     safe = True
     for obs in obstacles:
@@ -187,8 +239,8 @@ def check_init_action(u0, obstacles):
 
 # no changes required 
 def simulate_sampled_actions(dw):
-    state = np.array([0, 0])
-    next_states = np.zeros((len(dw), 2))
+    state = np.array([0, 0, 0])
+    next_states = np.zeros((len(dw), 3))
     for i in range(len(dw)):
         next_states[i] = update_state(state, dw[i], 0.1)
 
@@ -278,8 +330,8 @@ def find_new_action(valid_window, idx_search):
   
 
 if __name__ == "__main__":
-    env = SimTwo()  
-    planner = SafetySystemTwo()
+    env = SimThree()  
+    planner = SafetySystemThree()
     success = 0
 
     for i in range(100):
@@ -289,6 +341,7 @@ if __name__ == "__main__":
             a = planner.plan(state)
             s_p, r, done, _ = env.step(a)
             state = s_p
+            # env.render_pose()
 
         if r == -1:
             print(f"{i}: Crashed")
