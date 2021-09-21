@@ -17,6 +17,59 @@ def update_state(state, action, dt):
     return state + dx * dt 
 
 
+class RotationalObstacle:
+    def __init__(self, p1, p2, d_max, n):
+        b = 0.05 
+        self.op1 = p1 + [-b, -b]
+        self.op2 = p2 + [b, -b]
+        self.p1 = None
+        self.p2 = None
+        self.d_max = d_max * 1
+        self.obs_n = n
+        self.m_pt = np.mean([self.op1, self.op2])
+        print(self.m_pt)
+        
+        
+    def transform_obstacle_line(self, theta):
+        """
+        Calculate transformed points based on theta by constructing rotation matrix.
+        """
+        rot_m = np.array([[np.cos(theta), -np.sin(theta)], 
+                [np.sin(theta), np.cos(theta)]])
+        self.p1 = rot_m @ (self.op1 - self.m_pt) + self.m_pt
+        self.p2 = rot_m @ (self.op2 - self.m_pt) + self.m_pt
+
+    def transform_point(self, pt, theta):
+        rot_m = np.array([[np.cos(-theta), -np.sin(-theta)], 
+                [np.sin(-theta), np.cos(-theta)]])
+
+        new_pt = rot_m @ pt
+        return new_pt
+
+    def find_critical_distances(self, state_point_x):
+        """
+        this function takes a point that has been transformed to have theta =0. i.e. the point is facing straight up and the obstacle has been adjusted. 
+        """
+        if state_point_x < self.p1[0] or state_point_x > self.p2[0]:
+            return 1
+
+        L = 0.33
+
+        w1 = state_point_x - self.p1[0] 
+        w2 = self.p2[0] - state_point_x 
+
+        width_thresh = L / np.tan(self.d_max)
+
+        d1 = np.sqrt(2*L* w1 / np.tan(self.d_max) - w1**2) if w1 < width_thresh else width_thresh
+        d2 = np.sqrt(2*L * w2 / np.tan(self.d_max) - w2**2) if w2 < width_thresh else width_thresh
+
+        return d1, d2
+  
+    def transform_distances(self, d1, d2, theta):
+        vector = np.array([])
+
+    
+
 class ObstacleThree:
     def __init__(self, p1, p2, d_max, n):
         b = 0.05 
@@ -97,9 +150,14 @@ class ObstacleThree:
         w1 = state_point_x - self.p1[0] 
         w2 = self.p2[0] - state_point_x 
 
-        width_thresh = 1
-        if w1 > width_thresh or w2 > width_thresh:
-            return 1
+        width_thresh = L / np.tan(self.d_max)
+
+        # if w1 < width_thresh and w2 < width_thresh:
+        #     return 1
+            
+        # if w1 > width_thresh or w2 > width_thresh: #TODO: the or isn't working. If one doesn't work, use the other one. 
+        #     return 1
+
 
         with warnings.catch_warnings():
             warnings.filterwarnings('error')
@@ -202,7 +260,7 @@ def cutting_cucumbers():
     
 def walking_to_love():
     theta = 0.4
-    n_pts = 30
+    n_pts = 35
     d_max = 0.4
     steps = 12 
     xs, ys, o = finding_jellyfish_points(theta, n_pts)
@@ -210,7 +268,8 @@ def walking_to_love():
 
     new_states = np.zeros((n_pts, steps, 3))
     for i, (x, y) in enumerate(zip(xs, ys)):
-        delta = -d_max if x < critical_x else d_max
+        # delta = -d_max if x < critical_x else d_max
+        delta = d_max
         state = [x, y, theta]
         for j in range(steps):
             new_states[i, j] =np.copy(state)
