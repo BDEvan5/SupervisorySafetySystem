@@ -24,7 +24,7 @@ class ObstacleThree:
         self.op2 = p2 + [b, -b]
         self.p1 = None
         self.p2 = None
-        self.d_max = d_max * 0.8
+        self.d_max = d_max * 1
         self.obs_n = n
 
     def run_check(self, state):
@@ -61,29 +61,29 @@ class ObstacleThree:
         Calculate transformed points based on theta by constructing rotation matrix.
         """
         # theta = state[2]
+        m_pt = [0, 1]
         rot_m = np.array([[np.cos(theta), -np.sin(theta)], 
                 [np.sin(theta), np.cos(theta)]])
-        self.p1 = rot_m @ self.op1
-        self.p2 = rot_m @ self.op2
+        self.p1 = rot_m @ (self.op1 - m_pt) + m_pt
+        self.p2 = rot_m @ (self.op2 - m_pt) + m_pt
 
         # new_pt = rot_m @ state[0:2]
 
 
         # return new_pt
 
+    def reverse_rotate(self, pt, theta):
+        rot_m = np.array([[np.cos(-theta), -np.sin(-theta)], 
+                [np.sin(-theta), np.cos(-theta)]])
+
+        new_pt = rot_m @ pt
+        return new_pt
 
     def plot_obstacle(self, state=[0, 0, 0]):
-        # self.calculate_transforms(state[2])
-        self.p1 = np.copy(self.op1)
-        self.p2 = np.copy(self.op2)
+        pts = np.vstack((self.p1, self.p2))
+        plt.plot(pts[:, 0], pts[:, 1], 'x-', markersize=10, color='black')
         pts = np.vstack((self.op1, self.op2))
-        plt.plot(pts[:, 0], pts[:, 1], 'x-', markersize=20)
-
-        xs = np.linspace(self.op1[0], self.op2[0], 10)
-        states = np.zeros((10, 3))
-        states[:, 0] = np.linspace(self.op1[0], self.op2[0], 10)
-        ys = [self.find_critical_point(state) for state in states]
-        plt.plot(xs, ys)
+        plt.plot(pts[:, 0], pts[:, 1], '--', markersize=20, color='black')
 
     def find_critical_point(self, state_point_x):
         """
@@ -144,19 +144,18 @@ def run_relative_relationship():
     ax.set_zlabel('Z axis: angle')
     plt.show()
 
-def finding_jellyfish_points(theta):
+def finding_jellyfish_points(theta, n_xs=20):
     o = ObstacleThree(np.array([-0.5, 1]), np.array([0.5, 1]), 0.4, 1)
-    n_xs = 20
     center = -0
     width = 0.8
-    xs = np.linspace(center-width, center+width, 20)
+    xs = np.linspace(center-width, center+width, n_xs)
     ys = np.zeros((n_xs))
     
     o.calculate_transforms(theta)
     for j, x in enumerate(xs):
         ys[j] = o.find_critical_point(x)
 
-    return xs, ys
+    return xs, ys, o
 
 
 def making_magdaleen():
@@ -201,12 +200,72 @@ def cutting_cucumbers():
     plt.show()
     
     
-    
+def walking_to_love():
+    theta = 0.4
+    n_pts = 30
+    d_max = 0.4
+    steps = 12 
+    xs, ys, o = finding_jellyfish_points(theta, n_pts)
+    critical_x = xs[np.argmin(ys)]
+
+    new_states = np.zeros((n_pts, steps, 3))
+    for i, (x, y) in enumerate(zip(xs, ys)):
+        delta = -d_max if x < critical_x else d_max
+        state = [x, y, theta]
+        for j in range(steps):
+            new_states[i, j] =np.copy(state)
+            state = update_state(state, [delta, 1], 0.1)
+
+    plt.figure()
+    plt.plot(xs, ys, linewidth=2)
+    plt.ylim([-0.2, 1.2])
+
+    for i in range(n_pts):
+        plt.plot(new_states[i, :, 0], new_states[i, :, 1], '+-')
+
+    o.plot_obstacle()
+
+    plt.show()
+
+def a_heart_of_buter():
+    theta = 0.4
+    n_pts = 10
+    d_max = 0.4
+    steps = 12
+
+    xs = np.zeros(n_pts)
+    ys = np.linspace(0.1, 0.6, n_pts)
+    o = ObstacleThree(np.array([-0.5, 1]), np.array([0.5, 1]), 0.4, 1)
+    o.calculate_transforms(theta)
+    Y = o.find_critical_point(0)
+
+    # pt = o.reverse_rotate([0, Y], theta)
+
+    new_states = np.zeros((n_pts, steps, 3))
+    for i, (x, y) in enumerate(zip(xs, ys)):
+        # delta = -d_max if x < critical_x else d_max
+        state = [x, y, theta]
+        for j in range(steps):
+            new_states[i, j] =np.copy(state)
+            state = update_state(state, [d_max, 1], 0.1)
+
+    plt.figure()
+    plt.plot(0, Y, 'x', markersize=20)
+    # plt.plot(pt[0], pt[1], 'x', markersize=20)
+    plt.ylim([-0.2, 1.2])
+
+    for i in range(n_pts):
+        plt.plot(new_states[i, :, 0], new_states[i, :, 1], '+-')
+
+    o.plot_obstacle()
+
+    plt.show()
+
 
 
 if __name__ == '__main__':
     # run_relative_relationship()
     # making_magdaleen()
-    cutting_cucumbers()
-
-
+    # cutting_cucumbers()
+    walking_to_love()
+    # a_heart_of_buter()
