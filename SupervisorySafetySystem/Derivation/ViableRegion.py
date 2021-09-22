@@ -70,9 +70,10 @@ class RotationalObstacle:
         corrosponding_y = np.interp(state[0], [self.p1[0], self.p2[0]], [self.p1[1], self.p2[1]])
 
         # this is an approximation, but it seems to work. The reason is to make sure that the curvature doesn't breach the line below the end point.
-        y1 = np.mean([corrosponding_y, self.p1[1]]) - d1
-        y2 = np.mean([corrosponding_y, self.p2[1]]) - d2
-
+        y1 = corrosponding_y - d1
+        y2 = corrosponding_y - d2
+        # y1 = np.mean([corrosponding_y, self.p1[1]]) - d1
+        # y2 = np.mean([corrosponding_y, self.p2[1]]) - d2
         y_safe, d_star = y1, d1
         if y1 < y2:
             y_safe = y2
@@ -147,8 +148,10 @@ class ObstacleTransform:
         d1, d2 = self.find_critical_distances(x_value)
         corrosponding_y = np.interp(x_value, [self.p1[0], self.p2[0]], [self.p1[1], self.p2[1]])
 
-        y1 = np.mean([corrosponding_y, self.p1[1]]) - d1
-        y2 = np.mean([corrosponding_y, self.p2[1]]) - d2
+        y1 = corrosponding_y - d1
+        y2 = corrosponding_y - d2
+        # y1 = np.mean([corrosponding_y, self.p1[1]]) - d1
+        # y2 = np.mean([corrosponding_y, self.p2[1]]) - d2
 
         y_safe, d_star = y1, d1
         if y1 < y2:
@@ -340,7 +343,7 @@ def goodbye_singleness():
 
 if __name__ == '__main__':
     # adaptable_eyes()
-    goodbye_singleness()
-    # slanted_obstacle()
+    # goodbye_singleness()
+    slanted_obstacle()
 
-    runner_code()
+    # runner_code()
