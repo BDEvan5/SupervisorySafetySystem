@@ -80,8 +80,12 @@ class RotationalObstacle:
         d1, d2 = self.find_critical_distances(state[0])
         # self.find_critical_distances(x)
 
-        y1 = self.p1[1] - d1
-        y2 = self.p2[1] - d2
+        corrosponding_y = np.interp(state[0], [self.p1[0], self.p2[0]], [self.p1[1], self.p2[1]])
+
+        # y1 = min(self.p1[1], self.m_pt[1]) - d1
+        # y2 = min(self.p2[1], self.m_pt[1]) - d2
+        y1 = np.mean([corrosponding_y, self.p1[1]]) - d1
+        y2 = np.mean([corrosponding_y, self.p2[1]]) - d2
 
         y_safe, d_star = y1, d1
         if y1 < y2:
@@ -358,8 +362,8 @@ def a_heart_of_buter():
     plt.show()
 
 def slanted_squid(n_xs=20):
-    # o = RotationalObstacle(np.array([-0.5,0.8]), np.array([0.5, 1.2]), 0.4, 1)
-    o = RotationalObstacle(np.array([-0.5,1]), np.array([0.5, 1]), 0.4, 1)
+    o = RotationalObstacle(np.array([-0.5,0.8]), np.array([0.5, 1.2]), 0.4, 1)
+    # o = RotationalObstacle(np.array([-0.5,1]), np.array([0.5, 1]), 0.4, 1)
     center = -0
     width = 0.5
     xs = np.linspace(center-width, center+width, n_xs)
