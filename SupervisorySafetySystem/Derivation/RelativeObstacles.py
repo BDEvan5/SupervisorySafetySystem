@@ -94,7 +94,12 @@ class RotationalObstacle:
         self.ys.append(y_safe)
         self.y2s.append(y_safe + d_star)
 
-        return y_safe 
+        return y_safe
+
+        # pt = np.array([state[0], y_safe])
+        # new_pt = self.transform_point(pt, -state[2])
+
+        # return new_pt
 
     def plot_purity(self):
         pts = np.vstack((self.p1, self.p2))
@@ -104,14 +109,14 @@ class RotationalObstacle:
 
 
     def plot_obstacle(self, state=[0, 0, 0]):
-        self.plot_purity()
         
 
         for i in range(len(self.xs)):
             x = [self.xs[i], self.xs[i]]
             y = [self.ys[i], self.y2s[i]]
-            plt.plot(x, y, '-o', markersize=10, color='red')
+            plt.plot(x, y, '-o', color='red', markersize=5)
 
+        self.plot_purity()
 
 class ObstacleThree:
     def __init__(self, p1, p2, d_max, n):
@@ -246,6 +251,7 @@ def run_relative_relationship():
     plt.show()
 
 def finding_jellyfish_points(theta, n_xs=20):
+
     o = ObstacleThree(np.array([-0.5, 1]), np.array([0.5, 1]), 0.4, 1)
     center = -0
     width = 0.8
@@ -300,6 +306,81 @@ def cutting_cucumbers():
 
     plt.show()
     
+def adaptable_eyes():
+    theta = 0.4
+    n_pts = 50
+    d_max = 0.4
+    steps = 12 
+
+    # skew obstacle
+    plt.figure(1)
+    plt.title('Straight vehicle, skew obs (transformed state)')
+    o = RotationalObstacle(np.array([-0.5,1]), np.array([0.5, 1]), 0.4, 1)
+    center = -0
+    width = 0.5
+    xs = np.linspace(center-width, center+width, n_pts)
+    ys = np.zeros((n_pts))
+    new_xs = np.zeros(n_pts)
+    
+    o.transform_obstacle_line(theta)
+    for j, x in enumerate(xs):
+        new_xs[j] = x
+        ys[j] = o.calculate_required_y([x, 0, theta])
+
+    critical_idx = np.argmin(ys)
+    # critical_x = xs[np.argmin(ys)]
+
+    plt.plot(xs, ys, linewidth=2)
+    plt.ylim([-0.2, 1.2])
+
+    new_states = np.zeros((n_pts, steps, 3))
+    for i, (x, y) in enumerate(zip(xs, ys)):
+        delta = -d_max if i < critical_idx else d_max
+        # delta = d_max
+        state = [x, y, 0]
+        for j in range(steps):
+            new_states[i, j] =np.copy(state)
+            state = update_state(state, [delta, 1], 0.1)
+
+    
+    for i in range(n_pts):
+        plt.plot(new_states[i, :, 0], new_states[i, :, 1], '+-')
+
+    o.plot_obstacle()
+
+    # reverse transform
+    plt.figure(2)
+    plt.title('Angle vehcile, reverse transformed with orignal obstacle')
+
+    
+    for i in range(n_pts):
+        xs[i], ys[i] = o.transform_point([xs[i], ys[i]], -theta)
+
+    # critical_idx = np.argmin(ys)
+    
+    plt.plot(xs, ys, linewidth=2)
+    plt.ylim([-0.2, 1.2])
+
+    new_states = np.zeros((n_pts, steps, 3))
+    for i, (x, y) in enumerate(zip(xs, ys)):
+        delta = -d_max if i < critical_idx else d_max
+        # delta = d_max
+        state = [x, y, theta]
+        for j in range(steps):
+            new_states[i, j] =np.copy(state)
+            state = update_state(state, [delta, 1], 0.1)
+
+    for i in range(n_pts):
+        plt.plot(new_states[i, :, 0], new_states[i, :, 1], '+-')
+
+    new_pt = o.transform_point([0, 0], theta)
+
+    o.plot_obstacle()
+    plt.arrow(0, 0, 0.2*np.sin(theta), 0.2*np.cos(theta), head_width=0.05)
+    plt.arrow(new_pt[0], new_pt[1], 0.2*np.sin(0), 0.2*np.cos(0), head_width=0.05)
+
+    plt.show()
+
     
 def walking_to_love():
     theta = 0.4
@@ -307,7 +388,7 @@ def walking_to_love():
     d_max = 0.4
     steps = 12 
     # xs, ys, o = finding_jellyfish_points(theta, n_pts)
-    xs, ys, o = slanted_squid(20)
+    xs, ys, o = slanted_squid(theta, 20)
     critical_x = xs[np.argmin(ys)]
 
     new_states = np.zeros((n_pts, steps, 3))
@@ -326,7 +407,11 @@ def walking_to_love():
     for i in range(n_pts):
         plt.plot(new_states[i, :, 0], new_states[i, :, 1], '+-')
 
+    new_pt = o.transform_point([0, 0], theta)
+
     o.plot_obstacle()
+    plt.arrow(0, 0, 0.2*np.sin(theta), 0.2*np.cos(theta), head_width=0.05)
+    plt.arrow(new_pt[0], new_pt[1], 0.2*np.sin(0), 0.2*np.cos(0), head_width=0.05)
 
     plt.show()
 
@@ -371,10 +456,12 @@ def slanted_squid(theta, n_xs=20):
     width = 0.5
     xs = np.linspace(center-width, center+width, n_xs)
     ys = np.zeros((n_xs))
+    new_xs = np.zeros(n_xs)
     
     o.transform_obstacle_line(theta)
     for j, x in enumerate(xs):
-        ys[j] = o.calculate_required_y([x])
+        new_xs[j] = x
+        ys[j] = o.calculate_required_y([x, 0, theta])
 
 
     # plt.figure()
@@ -397,7 +484,7 @@ def talking_in_circles():
     plt.figure()
     o.plot_purity()
     plt.arrow(0, 0, 0.2*np.sin(theta), 0.2*np.cos(theta), head_width=0.05)
-    plt.arrow(0, 0, 0.2*np.sin(0), 0.2*np.cos(0), head_width=0.05)
+    # plt.arrow(0, 0, 0.2*np.sin(0), 0.2*np.cos(0), head_width=0.05)
     plt.arrow(new_pt[0], new_pt[1], 0.2*np.sin(0), 0.2*np.cos(0), head_width=0.05)
     plt.show()
 
@@ -410,5 +497,7 @@ if __name__ == '__main__':
     # a_heart_of_buter()
     # slanted_squid()
 
-    talking_in_circles()
+    # talking_in_circles()
+
+    adaptable_eyes()
 
