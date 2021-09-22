@@ -26,9 +26,12 @@ class RotationalObstacle:
         self.p2 = None
         self.d_max = d_max * 1
         self.obs_n = n
-        self.m_pt = np.mean([self.op1, self.op2])
+        self.m_pt = np.mean([self.op1, self.op2], axis=0)
         print(self.m_pt)
-        
+
+        self.ys = []
+        self.xs = []
+        self.y2s = []
         
     def transform_obstacle_line(self, theta):
         """
@@ -43,15 +46,18 @@ class RotationalObstacle:
         rot_m = np.array([[np.cos(-theta), -np.sin(-theta)], 
                 [np.sin(-theta), np.cos(-theta)]])
 
-        new_pt = rot_m @ pt
+        # make sure that you are rotating around the correct point
+        relative_pt = pt - self.m_pt
+        new_pt = rot_m @ relative_pt
+        new_pt += self.m_pt
         return new_pt
 
     def find_critical_distances(self, state_point_x):
         """
-        this function takes a point that has been transformed to have theta =0. i.e. the point is facing straight up and the obstacle has been adjusted. 
+        this function takes a point that has been transformed to have theta = 0. i.e. the point is facing straight up and the obstacle has been adjusted. 
         """
         if state_point_x < self.p1[0] or state_point_x > self.p2[0]:
-            return 1
+            return 1, 1
 
         L = 0.33
 
@@ -65,10 +71,40 @@ class RotationalObstacle:
 
         return d1, d2
   
-    def transform_distances(self, d1, d2, theta):
-        vector = np.array([])
+    # def transform_distances(self, d1, d2, theta):
+    #     vector = np.array([])
+        # plt.plot(pts[:, 0], pts[:, 1], '--', markersize=20, color='black')
 
-    
+    def calculate_required_y(self, state):
+        # run transform first
+        d1, d2 = self.find_critical_distances(state[0])
+        # self.find_critical_distances(x)
+
+        y1 = self.p1[1] - d1
+        y2 = self.p2[1] - d2
+
+        y_safe, d_star = y1, d1
+        if y1 < y2:
+            y_safe = y2
+            d_star = d2
+
+        self.xs.append(state[0])
+        self.ys.append(y_safe)
+        self.y2s.append(y_safe + d_star)
+
+        return y_safe 
+
+    def plot_obstacle(self, state=[0, 0, 0]):
+        pts = np.vstack((self.p1, self.p2))
+        plt.plot(pts[:, 0], pts[:, 1], 'x-', markersize=10, color='black')
+        # pts = np.vstack((self.op1, self.op2))
+        # plt.plot(pts[:, 0], pts[:, 1], '--', markersize=20, color='black')
+
+        for i in range(len(self.xs)):
+            x = [self.xs[i], self.xs[i]]
+            y = [self.ys[i], self.y2s[i]]
+            plt.plot(x, y, '-o', markersize=10, color='red')
+
 
 class ObstacleThree:
     def __init__(self, p1, p2, d_max, n):
@@ -259,17 +295,18 @@ def cutting_cucumbers():
     
     
 def walking_to_love():
-    theta = 0.4
+    theta = 0
     n_pts = 35
     d_max = 0.4
     steps = 12 
-    xs, ys, o = finding_jellyfish_points(theta, n_pts)
+    # xs, ys, o = finding_jellyfish_points(theta, n_pts)
+    xs, ys, o = slanted_squid(20)
     critical_x = xs[np.argmin(ys)]
 
     new_states = np.zeros((n_pts, steps, 3))
     for i, (x, y) in enumerate(zip(xs, ys)):
-        # delta = -d_max if x < critical_x else d_max
-        delta = d_max
+        delta = -d_max if x < critical_x else d_max
+        # delta = d_max
         state = [x, y, theta]
         for j in range(steps):
             new_states[i, j] =np.copy(state)
@@ -320,6 +357,27 @@ def a_heart_of_buter():
 
     plt.show()
 
+def slanted_squid(n_xs=20):
+    # o = RotationalObstacle(np.array([-0.5,0.8]), np.array([0.5, 1.2]), 0.4, 1)
+    o = RotationalObstacle(np.array([-0.5,1]), np.array([0.5, 1]), 0.4, 1)
+    center = -0
+    width = 0.5
+    xs = np.linspace(center-width, center+width, n_xs)
+    ys = np.zeros((n_xs))
+    
+    o.transform_obstacle_line(0)
+    for j, x in enumerate(xs):
+        ys[j] = o.calculate_required_y([x])
+
+
+    # plt.figure()
+    # plt.plot(xs, ys)
+    # o.plot_obstacle()
+    # plt.ylim([-0.2, 1.2])
+    # plt.show()
+
+    return xs, ys, o
+
 
 
 if __name__ == '__main__':
@@ -328,3 +386,6 @@ if __name__ == '__main__':
     # cutting_cucumbers()
     walking_to_love()
     # a_heart_of_buter()
+    # slanted_squid()
+
+
