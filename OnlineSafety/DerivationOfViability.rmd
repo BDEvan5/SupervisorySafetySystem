@@ -1,0 +1,375 @@
+---
+title: "Derivation of Viable States"
+author: "Benjamin Evans"
+date: "22/09/2021"
+output: 
+  pdf_document: 
+    fig_height: 3
+    fig_caption: yes
+    fig_width: 5
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+```{python setup_py, echo=F}
+import numpy as np 
+import matplotlib.pyplot as plt
+
+def update_state(state, action, dt):
+    """
+    Updates x, y, th pos accoridng to th_d, v
+    """
+    L = 0.33
+    theta_update = state[2] + ((action[1] / L) * np.tan(action[0]) * dt) 
+    dx = np.array([action[1] * np.sin(theta_update),
+                action[1]*np.cos(theta_update),
+                action[1] / L * np.tan(action[0])])
+
+    return state + dx * dt 
+
+
+def plot_simulated_states(xs, ys, steps=12, theta=0, critical_idx=None):
+    if critical_idx is None:
+        critical_idx = np.argmin(ys)
+    d_max=0.4
+    new_states = np.zeros((len(xs), steps, 3))
+    for i, (x, y) in enumerate(zip(xs, ys)):
+        delta = -d_max if i < critical_idx else d_max
+        state = [x, y, theta]
+        for j in range(steps):
+            new_states[i, j] =np.copy(state)
+            state = update_state(state, [delta, 1], 0.1)
+
+        plt.plot(new_states[i, :, 0], new_states[i, :, 1], '+-')
+    
+
+```
+
+
+# Introduction
+
+## Problem Statement
+
+In the development of the supervisory safety system for use in the online training of learning agents, a method for determining is a state is safe must be derived.
+A state is considered safe if there exists and action that will allow the system to evolve according to the dynamics equations such that the resulting state is also safe.
+A non-holonomic vehicle with bicycle dynamics is considered where the variable of interest is the steering angle that can be decided.
+
+# Derivation
+
+The derivation is presented as a series of steps that build up to the full and final expression of safety.
+The following steps are followed:
+
+1. Derive an algorithm for avoiding straight obstacles while facing straight ahead.
+2. Modify algorithm to take slanted obstacles into account.
+3. Generate process to transform vehicle angles into slanted obstacles so that original algorithm can be used.
+
+## Avoiding Direct Obstacles
+
+```{python, fig.height=2}
+
+class StraightObstacle:
+    def __init__(self, p1, p2, d_max, n):
+        b = 0.05 
+        self.p1 = p1 + [-b, -b]
+        self.p2 = p2 + [b, -b]
+        self.d_max = d_max * 1
+        self.obs_n = n
+
+        self.ys = []
+        self.xs = []
+        self.y2s = []
+
+    def find_critical_distances(self, state_point_x):
+        """
+        this function takes a point that has been transformed to have theta = 0. i.e. the point is facing straight up and the obstacle has been adjusted. 
+        """
+        if state_point_x < self.p1[0] or state_point_x > self.p2[0]:
+            return 1, 1
+
+        L = 0.33
+
+        w1 = state_point_x - self.p1[0] 
+        w2 = self.p2[0] - state_point_x 
+
+        width_thresh = L / np.tan(self.d_max)
+
+        d1 = np.sqrt(2*L* w1 / np.tan(self.d_max) - w1**2) if w1 < width_thresh else width_thresh
+        d2 = np.sqrt(2*L * w2 / np.tan(self.d_max) - w2**2) if w2 < width_thresh else width_thresh
+
+        return d1, d2
+  
+    def calculate_required_y(self, state):
+        d1, d2 = self.find_critical_distances(state[0])
+
+        corrosponding_y = np.interp(state[0], [self.p1[0], self.p2[0]], [self.p1[1], self.p2[1]])
+
+        y1 = np.mean([corrosponding_y, self.p1[1]]) - d1
+        y2 = np.mean([corrosponding_y, self.p2[1]]) - d2
+
+        y_safe, d_star = y1, d1
+        if y1 < y2:
+            y_safe = y2
+            d_star = d2
+
+        self.xs.append(state[0])
+        self.ys.append(y_safe)
+        self.y2s.append(y_safe + d_star)
+
+        return y_safe
+
+    def plot_purity(self):
+        pts = np.vstack((self.p1, self.p2))
+        plt.plot(pts[:, 0], pts[:, 1], 'x-', markersize=20, color='black')
+
+    def plot_obstacle(self, state=[0, 0, 0]):
+        for i in range(len(self.xs)):
+            x = [self.xs[i], self.xs[i]]
+            y = [self.ys[i], self.y2s[i]]
+            plt.plot(x, y, '-o', color='red', markersize=5)
+
+        self.plot_purity()
+
+
+def straight_to_marriage():
+    n_pts = 20 
+    o = StraightObstacle(np.array([-0.5, 1]), np.array([0.5, 1]), 0.4, 1)
+    center = -0
+    width = 0.5
+    xs = np.linspace(center-width, center+width, n_pts)
+    ys = np.zeros((n_pts))
+    for j, x in enumerate(xs):
+        ys[j] = o.calculate_required_y([x, 0, 0])
+
+    plt.plot(xs, ys, linewidth=2)
+    plt.ylim([-0.2, 1.2])
+
+    plot_simulated_states(xs, ys, theta=0)
+    o.plot_obstacle()
+
+    plt.show()
+    
+straight_to_marriage()
+```
+
+
+In the image below, we see that the safe region is calculated for a vehicle facing due North.
+The trajectories of starting at different locations on the edge of the safe region are indicated.
+The distance, shown as the red lines, is calculated using,
+$$  d^* = \sqrt{\frac{2 L w}{\tan(\delta_\text{max})} - w^2},  $$
+where $L$ is the vehicles wheelbase, $w$, is the width of the obstacle and $\delta$ is the vehicles maximum steering angle.
+
+
+
+## Slanted obstacles
+
+The problem is now made more difficult by amending the program to situations where the obstacle is not perpendicular to the vehicle, but offset by an angle.
+
+```{python rotation_obs}
+
+class RotationalObstacle:
+    def __init__(self, p1, p2, d_max, n):
+        b = 0.05 
+        self.op1 = p1 + [-b, -b]
+        self.op2 = p2 + [b, -b]
+        self.p1 = None
+        self.p2 = None
+        self.d_max = d_max * 1
+        self.obs_n = n
+        self.m_pt = np.mean([self.op1, self.op2], axis=0)
+
+        self.ys = []
+        self.xs = []
+        self.y2s = []
+        
+    def transform_obstacle(self, theta):
+        """
+        Calculate transformed points based on theta by constructing rotation matrix.
+        """
+        rot_m = np.array([[np.cos(theta), -np.sin(theta)], 
+                [np.sin(theta), np.cos(theta)]])
+        self.p1 = rot_m @ (self.op1 - self.m_pt) + self.m_pt
+        self.p2 = rot_m @ (self.op2 - self.m_pt) + self.m_pt
+
+    def transform_point(self, pt, theta):
+        rot_m = np.array([[np.cos(theta), -np.sin(theta)], 
+                [np.sin(theta), np.cos(theta)]])
+
+        relative_pt = pt - self.m_pt
+        new_pt = rot_m @ relative_pt
+        new_pt += self.m_pt
+        return new_pt
+
+    def find_critical_distances(self, state_point_x):
+        if state_point_x < self.p1[0] or state_point_x > self.p2[0]:
+            return 1, 1
+
+        L = 0.33
+
+        w1 = state_point_x - self.p1[0] 
+        w2 = self.p2[0] - state_point_x 
+
+        width_thresh = L / np.tan(self.d_max)
+
+        d1 = np.sqrt(2*L* w1 / np.tan(self.d_max) - w1**2) if w1 < width_thresh else width_thresh
+        d2 = np.sqrt(2*L * w2 / np.tan(self.d_max) - w2**2) if w2 < width_thresh else width_thresh
+
+        return d1, d2
+  
+    def calculate_required_y(self, state):
+        d1, d2 = self.find_critical_distances(state[0])
+
+        corrosponding_y = np.interp(state[0], [self.p1[0], self.p2[0]], [self.p1[1], self.p2[1]])
+
+        # this is an approximation, but it seems to work. The reason is to make sure that the curvature doesn't breach the line below the end point.
+        y1 = np.mean([corrosponding_y, self.p1[1]]) - d1
+        y2 = np.mean([corrosponding_y, self.p2[1]]) - d2
+
+        y_safe, d_star = y1, d1
+        if y1 < y2:
+            y_safe = y2
+            d_star = d2
+
+        self.xs.append(state[0])
+        self.ys.append(y_safe)
+        self.y2s.append(y_safe + d_star)
+
+        return y_safe
+
+    def plot_purity(self):
+        pts = np.vstack((self.p1, self.p2))
+        plt.plot(pts[:, 0], pts[:, 1], 'x-', markersize=10, color='black')
+        pts = np.vstack((self.op1, self.op2))
+        plt.plot(pts[:, 0], pts[:, 1], '--', markersize=20, color='black')
+
+    def plot_obstacle(self, state=[0, 0, 0]):
+        for i in range(len(self.xs)):
+            x = [self.xs[i], self.xs[i]]
+            y = [self.ys[i], self.y2s[i]]
+            plt.plot(x, y, '-o', color='red', markersize=5)
+
+        # self.plot_purity()
+
+```
+
+```{python slanted_obs}
+def slanted_obstacle():
+    theta = 0.4
+    n_pts = 20
+
+    o = RotationalObstacle(np.array([-0.5,1]), np.array([0.5, 1]), 0.4, 1)
+    center = -0
+    width = 0.5
+    xs = np.linspace(center-width, center+width, n_pts)
+    ys = np.zeros((n_pts))
+    new_xs = np.zeros(n_pts)
+
+    # skew obstacle
+    plt.figure(1)
+    plt.title('Straight vehicle with slanted obstacles')
+    
+    o.transform_obstacle(theta)
+    for j, x in enumerate(xs):
+        new_xs[j] = x
+        ys[j] = o.calculate_required_y([x, 0, theta])
+
+    plt.plot(xs, ys, linewidth=2)
+    plt.ylim([-0.2, 1.2])
+
+    plot_simulated_states(xs, ys, theta=0)
+
+    pts = np.vstack((o.p1, o.p2))
+    plt.plot(pts[:, 0], pts[:, 1], 'x-', markersize=10, color='black')
+    plt.arrow(0, 0, 0, 0.2, head_width=0.05)
+    o.plot_obstacle()
+
+    plt.show()
+    
+slanted_obstacle()
+```
+
+The image above shows how safe region changes when the obstacle to be avoided is offset at an angle.
+
+Of specific interest is the top line of red dots.
+The algorithm works by taking the mean of the middle of the obstacle and an interpolation of the obstacle line as the top point from which the critical distance is measured.
+This is done to take into account the curvature of the arc that the non-holonomic vehicle takes which avoiding the obstacle.
+The critical distance is calculated using the points p1 and p2 and thus additional provision must be made for the line segment connecting the points.
+
+## Transforming Vehicle Orientation
+
+The next phase of the derivation is to expand the safe region to take into account the vehicles orientation.
+For a vehicle, a state vector consists of, $[x, y, \theta]$, where $\theta$ is the vehicles orientation.
+At this point, it is assumed that the vehicle orientation is a first order system where the rate of change of orientation is a constant.
+Therefore the system has control inputs, $[\delta, V]$, for steering angle and velocity.
+The steering angle is used to calculate the rate of change of $\theta$ as,
+$$\dot \theta = \frac{V}{L} \tan(\delta)$$
+There are two ways of approaching the problem of taking orientation into account:
+
+1. Ammend the equation that was presented for critical distance
+2. Transform the geometry to normalise the effect of orientation so that the original formula may be used.
+
+We start by using the second method, and ammending the formula is left for future work.
+We note that ammending the formula is less intutitve, but may provide greater compuational efficiency.
+
+The process of handling the vehicles orientation is as follows:
+
+1. Transform the obstacle points by rotating them around the center of the obstacle line.
+2. Calculate the critical distance envelope for the obstacle.
+3. Transform each point back to the original reference frame.
+
+All rotations are performed around the center point on the obstacle line.
+This was chosen to provide the user with the ability to intutively see what the rotation is doing by pure rotation without the need for transformation of the obstacle.
+Note that all the other points are first transformed relative to the center of the obstacle line (m_point) before being multipled by the rotation vector.
+
+```{python}
+
+def vehicle_oreintation():
+    theta = 0.4
+    n_pts = 20
+
+    o = RotationalObstacle(np.array([-0.5,1]), np.array([0.5, 1]), 0.4, 1)
+    center = -0
+    width = 0.5
+    xs = np.linspace(center-width, center+width, n_pts)
+    ys = np.zeros((n_pts))
+    
+    o.transform_obstacle(theta)
+    for j, x in enumerate(xs):
+        ys[j] = o.calculate_required_y([x, 0, theta])
+
+    critical_idx = np.argmin(ys)
+    
+    plt.figure(2)
+    plt.title('Envelope transformed into original reference frame')
+
+    for i in range(n_pts):
+        xs[i], ys[i] = o.transform_point([xs[i], ys[i]], -theta)
+
+    plt.plot(xs, ys, linewidth=2)
+    plt.ylim([-0.2, 1.2])
+
+    plot_simulated_states(xs, ys, theta=0.4, critical_idx=critical_idx)
+    
+
+    o.plot_obstacle()
+    o.plot_purity()
+    plt.arrow(0, 0, 0.2*np.sin(theta), 0.2*np.cos(theta), head_width=0.05)
+
+    plt.show()
+
+
+vehicle_oreintation()
+```
+
+In the figure above, the red lines indicate the distances that were calculated for the slanted obstacle (shown in black).
+The blue continuous line shows the transformed envelope obtained by rotating the points around the center of rotation.
+The image clearly indicates that all of the trajectories are collision free.
+
+# Conclusion
+
+In this study we derived the viable region for a vehicle that must avoid an obstacle while taking into account the vehicles orientation.
+We proved that the trajectories taken from any border point of the region are on the limit of safety and do not pass through the obstacle line.
+
+Future work should investivate how to take the effect of the vehicle physical limit on the rate of change of the steering angle into account.
+Additional investigation into the computational efficiency will also be useful.

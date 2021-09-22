@@ -22,3 +22,10 @@ SafeData/
 *.nbi
 
 *.pyc
+.Rproj.user
+
+OnlineSafety/.Rhistory
+
+OnlineSafety/OnlineSafety.Rproj
+
+OnlineSafety/DerivationOfViability.html
