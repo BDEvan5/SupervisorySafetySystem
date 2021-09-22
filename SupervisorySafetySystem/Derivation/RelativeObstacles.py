@@ -27,7 +27,6 @@ class RotationalObstacle:
         self.d_max = d_max * 1
         self.obs_n = n
         self.m_pt = np.mean([self.op1, self.op2], axis=0)
-        print(self.m_pt)
 
         self.ys = []
         self.xs = []
@@ -111,6 +110,70 @@ class RotationalObstacle:
     def plot_obstacle(self, state=[0, 0, 0]):
         
 
+        for i in range(len(self.xs)):
+            x = [self.xs[i], self.xs[i]]
+            y = [self.ys[i], self.y2s[i]]
+            plt.plot(x, y, '-o', color='red', markersize=5)
+
+        self.plot_purity()
+
+class StraightObstacle:
+    def __init__(self, p1, p2, d_max, n):
+        b = 0.05 
+        self.p1 = p1 + [-b, -b]
+        self.p2 = p2 + [b, -b]
+        self.d_max = d_max * 1
+        self.obs_n = n
+
+        self.ys = []
+        self.xs = []
+        self.y2s = []
+
+    def find_critical_distances(self, state_point_x):
+        """
+        this function takes a point that has been transformed to have theta = 0. i.e. the point is facing straight up and the obstacle has been adjusted. 
+        """
+        if state_point_x < self.p1[0] or state_point_x > self.p2[0]:
+            return 1, 1
+
+        L = 0.33
+
+        w1 = state_point_x - self.p1[0] 
+        w2 = self.p2[0] - state_point_x 
+
+        width_thresh = L / np.tan(self.d_max)
+
+        d1 = np.sqrt(2*L* w1 / np.tan(self.d_max) - w1**2) if w1 < width_thresh else width_thresh
+        d2 = np.sqrt(2*L * w2 / np.tan(self.d_max) - w2**2) if w2 < width_thresh else width_thresh
+
+        return d1, d2
+  
+    def calculate_required_y(self, state):
+        d1, d2 = self.find_critical_distances(state[0])
+
+        corrosponding_y = np.interp(state[0], [self.p1[0], self.p2[0]], [self.p1[1], self.p2[1]])
+
+        y1 = np.mean([corrosponding_y, self.p1[1]]) - d1
+        y2 = np.mean([corrosponding_y, self.p2[1]]) - d2
+
+        y_safe, d_star = y1, d1
+        if y1 < y2:
+            y_safe = y2
+            d_star = d2
+
+        self.xs.append(state[0])
+        self.ys.append(y_safe)
+        self.y2s.append(y_safe + d_star)
+
+        return y_safe
+
+    def plot_purity(self):
+        pts = np.vstack((self.p1, self.p2))
+        plt.plot(pts[:, 0], pts[:, 1], 'x-', markersize=20, color='black')
+
+
+
+    def plot_obstacle(self, state=[0, 0, 0]):
         for i in range(len(self.xs)):
             x = [self.xs[i], self.xs[i]]
             y = [self.ys[i], self.y2s[i]]
@@ -381,7 +444,6 @@ def adaptable_eyes():
 
     plt.show()
 
-    
 def walking_to_love():
     theta = 0.4
     n_pts = 35
@@ -472,6 +534,42 @@ def slanted_squid(theta, n_xs=20):
 
     return xs, ys, o
 
+def plot_simulated_states(xs, ys, steps=12, theta=0, critical_idx=None):
+    if critical_idx is None:
+        critical_idx = np.argmin(ys)
+    d_max=0.4
+    new_states = np.zeros((len(xs), steps, 3))
+    for i, (x, y) in enumerate(zip(xs, ys)):
+        delta = -d_max if i < critical_idx else d_max
+        state = [x, y, theta]
+        for j in range(steps):
+            new_states[i, j] =np.copy(state)
+            state = update_state(state, [delta, 1], 0.1)
+
+        plt.plot(new_states[i, :, 0], new_states[i, :, 1], '+-')
+    
+
+def straight_to_marriage():
+    n_pts = 20 
+    o = StraightObstacle(np.array([-0.5, 1]), np.array([0.5, 1]), 0.4, 1)
+    center = -0
+    width = 0.5
+    xs = np.linspace(center-width, center+width, n_pts)
+    ys = np.zeros((n_pts))
+    for j, x in enumerate(xs):
+        ys[j] = o.calculate_required_y([x, 0, 0])
+
+    critical_idx = np.argmin(ys)
+
+    plt.plot(xs, ys, linewidth=2)
+    plt.ylim([-0.2, 1.2])
+
+    plot_simulated_states(xs, ys, theta=0)
+    o.plot_obstacle()
+
+    plt.show()
+    
+
 def talking_in_circles():
     theta = np.pi/8
 
@@ -499,5 +597,7 @@ if __name__ == '__main__':
 
     # talking_in_circles()
 
-    adaptable_eyes()
+    # adaptable_eyes()
 
+
+    straight_to_marriage()
