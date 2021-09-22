@@ -150,17 +150,14 @@ def slanted_obstacle():
 
 
 def adaptable_eyes():
-    theta = 0.4
+    theta = -0.4
     n_pts = 50
-    d_max = 0.4
-    steps = 12 
 
     o = RotationalObstacle(np.array([-0.5,1]), np.array([0.5, 1]), 0.4, 1)
     center = -0
     width = 0.5
     xs = np.linspace(center-width, center+width, n_pts)
     ys = np.zeros((n_pts))
-    new_xs = np.zeros(n_pts)
 
     # skew obstacle
     plt.figure(1)
@@ -168,7 +165,6 @@ def adaptable_eyes():
     
     o.transform_obstacle(theta)
     for j, x in enumerate(xs):
-        new_xs[j] = x
         ys[j] = o.calculate_required_y([x, 0, theta])
 
     critical_idx = np.argmin(ys)
@@ -192,9 +188,41 @@ def adaptable_eyes():
     plt.plot(xs, ys, linewidth=2)
     plt.ylim([-0.2, 1.2])
 
-    plot_simulated_states(xs, ys, theta=0.4, critical_idx=critical_idx)
+    plot_simulated_states(xs, ys, theta=theta, critical_idx=critical_idx)
     
+    o.plot_obstacle()
+    plt.arrow(0, 0, 0.2*np.sin(theta), 0.2*np.cos(theta), head_width=0.05)
 
+    plt.show()
+
+
+def goodbye_singleness():
+    theta = -0.4
+    n_pts = 30
+
+    o = RotationalObstacle(np.array([-0.5,1]), np.array([0.5, 1]), 0.4, 1)
+    center = -0
+    width = 0.5
+    xs = np.linspace(center-width, center+width, n_pts)
+    ys = np.zeros((n_pts))
+
+    o.transform_obstacle(theta)
+    o_ys = np.zeros(n_pts)
+    for j, x in enumerate(xs):
+        o_ys[j] = o.calculate_required_y([x, 0, theta])
+        xs[j], ys[j] = o.transform_point([xs[j], o_ys[j]], -theta)
+
+    critical_idx = np.argmin(o_ys)
+
+    # reverse transform
+    plt.figure(2)
+    plt.title('Angle vehcile, reverse transformed with orignal obstacle')
+
+    plt.plot(xs, ys, linewidth=2)
+    plt.ylim([-0.2, 1.2])
+
+    plot_simulated_states(xs, ys, theta=theta, critical_idx=critical_idx)
+    
     o.plot_obstacle()
     plt.arrow(0, 0, 0.2*np.sin(theta), 0.2*np.cos(theta), head_width=0.05)
 
@@ -203,4 +231,5 @@ def adaptable_eyes():
 
 if __name__ == '__main__':
     # adaptable_eyes()
-    slanted_obstacle()
+    goodbye_singleness()
+    # slanted_obstacle()
