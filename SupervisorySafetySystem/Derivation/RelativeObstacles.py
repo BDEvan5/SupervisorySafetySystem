@@ -171,8 +171,6 @@ class StraightObstacle:
         pts = np.vstack((self.p1, self.p2))
         plt.plot(pts[:, 0], pts[:, 1], 'x-', markersize=20, color='black')
 
-
-
     def plot_obstacle(self, state=[0, 0, 0]):
         for i in range(len(self.xs)):
             x = [self.xs[i], self.xs[i]]
@@ -558,8 +556,6 @@ def straight_to_marriage():
     ys = np.zeros((n_pts))
     for j, x in enumerate(xs):
         ys[j] = o.calculate_required_y([x, 0, 0])
-
-    critical_idx = np.argmin(ys)
 
     plt.plot(xs, ys, linewidth=2)
     plt.ylim([-0.2, 1.2])

@@ -1,8 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-import warnings
-
 
 def update_state(state, action, dt):
     """
@@ -100,6 +98,116 @@ class RotationalObstacle:
 
         self.plot_purity()
 
+class ObstacleTransform:
+    L = 0.33
+
+    def __init__(self, p1, p2, d_max=0.4, n=0):
+        b = 0.05 
+        self.op1 = p1 + [-b, -b]
+        self.op2 = p2 + [b, -b]
+        self.p1 = None
+        self.p2 = None
+        self.d_max = d_max * 1
+        self.obs_n = n
+        self.m_pt = np.mean([self.op1, self.op2], axis=0)
+        
+    def transform_obstacle(self, theta):
+        """
+        Calculate transformed points based on theta by constructing rotation matrix.
+        """
+        rot_m = np.array([[np.cos(theta), -np.sin(theta)], 
+                [np.sin(theta), np.cos(theta)]])
+        self.p1 = rot_m @ (self.op1 - self.m_pt) + self.m_pt
+        self.p2 = rot_m @ (self.op2 - self.m_pt) + self.m_pt
+
+    def transform_point(self, pt, theta):
+        rot_m = np.array([[np.cos(theta), -np.sin(theta)], 
+                [np.sin(theta), np.cos(theta)]])
+
+        relative_pt = pt - self.m_pt
+        new_pt = rot_m @ relative_pt
+        new_pt += self.m_pt
+        return new_pt
+
+    def find_critical_distances(self, state_point_x):
+        if state_point_x < self.p1[0] or state_point_x > self.p2[0]:
+            return 1, 1 #TODO: think about what values to put here
+
+        w1 = state_point_x - self.p1[0] 
+        w2 = self.p2[0] - state_point_x 
+
+        width_thresh = self.L / np.tan(self.d_max)
+
+        d1 = np.sqrt(2*self.L* w1 / np.tan(self.d_max) - w1**2) if w1 < width_thresh else width_thresh
+        d2 = np.sqrt(2*self.L * w2 / np.tan(self.d_max) - w2**2) if w2 < width_thresh else width_thresh
+
+        return d1, d2
+  
+    def calculate_required_y(self, x_value):
+        d1, d2 = self.find_critical_distances(x_value)
+        corrosponding_y = np.interp(x_value, [self.p1[0], self.p2[0]], [self.p1[1], self.p2[1]])
+
+        y1 = np.mean([corrosponding_y, self.p1[1]]) - d1
+        y2 = np.mean([corrosponding_y, self.p2[1]]) - d2
+
+        y_safe, d_star = y1, d1
+        if y1 < y2:
+            y_safe, d_star = y2, d2
+
+        return y_safe
+
+    def plot_obstacle(self):
+        pts = np.vstack((self.p1, self.p2))
+        plt.plot(pts[:, 0], pts[:, 1], 'x-', markersize=10, color='black')
+        pts = np.vstack((self.op1, self.op2))
+        plt.plot(pts[:, 0], pts[:, 1], '--', markersize=20, color='black')
+
+    def calculate_safety(self, state=[0, 0, 0]):
+        theta = state[2]
+        self.transform_obstacle(theta)
+
+        x_search = np.copy(state[0])
+        y_safe = self.calculate_required_y(x_search)
+        x, y = self.transform_point([x_search, y_safe], -theta)
+
+        print(f"OrigX: {state[0]} -> SearchX: {x_search} -> newX: {x} -> y safe: {y} -> remaining diff: {state[0] - x}")
+
+        while abs(state[0] - x) > 0.01:
+            if x_search == self.p1[0] or x_search == self.p2[0]-0.05:
+                print(f"Breakin since x_search: {x_search} ->")
+                break
+            
+            x_search = x_search + (state[0]-x)
+            x_search = np.clip(x_search, self.p1[0], self.p2[0]-0.05) #TODO check this end condition
+            y_safe = self.calculate_required_y(x_search)
+            x, y = self.transform_point([x_search, y_safe], -theta)
+
+            print(f"OrigX: {state[0]} -> SearchX: {x_search} -> newX: {x} -> y safe: {y} -> remaining diff: {state[0] - x}")
+
+        return x, y 
+
+    def test_safety(self, state):
+        x, y = self.calculate_safety(state)
+        if y > state[1]:
+            return False
+        return True
+        
+def runner_code():
+    obs = ObstacleTransform(np.array([-0.5,1]), np.array([0.5, 1]), 0.4, 1)
+
+    # state = [0.5, 0.5, 0]
+    # state = [0.0, 0.5, 0]
+    # state = [-0.3, 0.3, 0.4]
+    state = [-0.49, 0.3, 0.4]
+    x, y = obs.calculate_safety(state)
+
+    print(f"X: {x} -> Y: {y}")
+
+    plt.figure(2)
+    obs.plot_obstacle()
+    plt.plot(state[0], state[1], 'X', markersize=15, color='black')
+    plt.plot(x, y, 'o', markersize=10, color='black')
+    plt.show()
 
 def plot_simulated_states(xs, ys, steps=12, theta=0, critical_idx=None):
     if critical_idx is None:
@@ -197,7 +305,7 @@ def adaptable_eyes():
 
 
 def goodbye_singleness():
-    theta = -0.4
+    theta = 0.4
     n_pts = 30
 
     o = RotationalObstacle(np.array([-0.5,1]), np.array([0.5, 1]), 0.4, 1)
@@ -226,10 +334,13 @@ def goodbye_singleness():
     o.plot_obstacle()
     plt.arrow(0, 0, 0.2*np.sin(theta), 0.2*np.cos(theta), head_width=0.05)
 
-    plt.show()
+    # plt.show()
+    plt.pause(0.0001)
 
 
 if __name__ == '__main__':
     # adaptable_eyes()
     goodbye_singleness()
     # slanted_obstacle()
+
+    runner_code()
