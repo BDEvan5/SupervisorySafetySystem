@@ -43,8 +43,8 @@ class RotationalObstacle:
         self.p2 = rot_m @ (self.op2 - self.m_pt) + self.m_pt
 
     def transform_point(self, pt, theta):
-        rot_m = np.array([[np.cos(-theta), -np.sin(-theta)], 
-                [np.sin(-theta), np.cos(-theta)]])
+        rot_m = np.array([[np.cos(theta), -np.sin(theta)], 
+                [np.sin(theta), np.cos(theta)]])
 
         # make sure that you are rotating around the correct point
         relative_pt = pt - self.m_pt
@@ -78,12 +78,10 @@ class RotationalObstacle:
     def calculate_required_y(self, state):
         # run transform first
         d1, d2 = self.find_critical_distances(state[0])
-        # self.find_critical_distances(x)
 
         corrosponding_y = np.interp(state[0], [self.p1[0], self.p2[0]], [self.p1[1], self.p2[1]])
 
-        # y1 = min(self.p1[1], self.m_pt[1]) - d1
-        # y2 = min(self.p2[1], self.m_pt[1]) - d2
+        # this is an approximation, but it seems to work. The reason is to make sure that the curvature doesn't breach the line below the end point.
         y1 = np.mean([corrosponding_y, self.p1[1]]) - d1
         y2 = np.mean([corrosponding_y, self.p2[1]]) - d2
 
@@ -98,11 +96,16 @@ class RotationalObstacle:
 
         return y_safe 
 
-    def plot_obstacle(self, state=[0, 0, 0]):
+    def plot_purity(self):
         pts = np.vstack((self.p1, self.p2))
         plt.plot(pts[:, 0], pts[:, 1], 'x-', markersize=10, color='black')
-        # pts = np.vstack((self.op1, self.op2))
-        # plt.plot(pts[:, 0], pts[:, 1], '--', markersize=20, color='black')
+        pts = np.vstack((self.op1, self.op2))
+        plt.plot(pts[:, 0], pts[:, 1], '--', markersize=20, color='black')
+
+
+    def plot_obstacle(self, state=[0, 0, 0]):
+        self.plot_purity()
+        
 
         for i in range(len(self.xs)):
             x = [self.xs[i], self.xs[i]]
@@ -299,7 +302,7 @@ def cutting_cucumbers():
     
     
 def walking_to_love():
-    theta = 0
+    theta = 0.4
     n_pts = 35
     d_max = 0.4
     steps = 12 
@@ -361,15 +364,15 @@ def a_heart_of_buter():
 
     plt.show()
 
-def slanted_squid(n_xs=20):
-    o = RotationalObstacle(np.array([-0.5,0.8]), np.array([0.5, 1.2]), 0.4, 1)
-    # o = RotationalObstacle(np.array([-0.5,1]), np.array([0.5, 1]), 0.4, 1)
+def slanted_squid(theta, n_xs=20):
+    # o = RotationalObstacle(np.array([-0.5,0.8]), np.array([0.5, 1.2]), 0.4, 1)
+    o = RotationalObstacle(np.array([-0.5,1]), np.array([0.5, 1]), 0.4, 1)
     center = -0
     width = 0.5
     xs = np.linspace(center-width, center+width, n_xs)
     ys = np.zeros((n_xs))
     
-    o.transform_obstacle_line(0)
+    o.transform_obstacle_line(theta)
     for j, x in enumerate(xs):
         ys[j] = o.calculate_required_y([x])
 
@@ -382,14 +385,30 @@ def slanted_squid(n_xs=20):
 
     return xs, ys, o
 
+def talking_in_circles():
+    theta = np.pi/8
+
+    o = RotationalObstacle(np.array([-0.5, 1]), np.array([0.5, 1]), 0.4, 1)
+    o.transform_obstacle_line(theta)
+
+    l = 0.2
+    new_pt = o.transform_point([0, 0], theta)
+
+    plt.figure()
+    o.plot_purity()
+    plt.arrow(0, 0, 0.2*np.sin(theta), 0.2*np.cos(theta), head_width=0.05)
+    plt.arrow(0, 0, 0.2*np.sin(0), 0.2*np.cos(0), head_width=0.05)
+    plt.arrow(new_pt[0], new_pt[1], 0.2*np.sin(0), 0.2*np.cos(0), head_width=0.05)
+    plt.show()
 
 
 if __name__ == '__main__':
     # run_relative_relationship()
     # making_magdaleen()
     # cutting_cucumbers()
-    walking_to_love()
+    # walking_to_love()
     # a_heart_of_buter()
     # slanted_squid()
 
+    talking_in_circles()
 
