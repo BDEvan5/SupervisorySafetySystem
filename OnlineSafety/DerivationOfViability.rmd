@@ -3,7 +3,7 @@ title: "Derivation of Viable States"
 author: "Benjamin Evans"
 date: "22/09/2021"
 output: 
-  pdf_document: 
+  html_document: 
     fig_height: 3
     fig_caption: yes
     fig_width: 5
@@ -366,10 +366,12 @@ In the figure above, the red lines indicate the distances that were calculated f
 The blue continuous line shows the transformed envelope obtained by rotating the points around the center of rotation.
 The image clearly indicates that all of the trajectories are collision free.
 
+
+
 # Conclusion
 
 In this study we derived the viable region for a vehicle that must avoid an obstacle while taking into account the vehicles orientation.
 We proved that the trajectories taken from any border point of the region are on the limit of safety and do not pass through the obstacle line.
 
-Future work should investivate how to take the effect of the vehicle physical limit on the rate of change of the steering angle into account.
+Future work should investigate how to take the effect of the vehicle physical limit on the rate of change of the steering angle into account.
 Additional investigation into the computational efficiency will also be useful.
