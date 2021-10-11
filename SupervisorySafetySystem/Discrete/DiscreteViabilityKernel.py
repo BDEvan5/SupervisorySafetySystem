@@ -18,6 +18,7 @@ class ViabilityKernel:
         self.n_phi = 50
         self.phis = np.linspace(-np.pi, np.pi, self.n_phi)
 
+        self.velocity = 2
         self.qs = None
         self.n_modes = None
         self.build_qs()
@@ -29,48 +30,23 @@ class ViabilityKernel:
         self.set_track_constraints()
 
     def build_qs(self):
-        v_max = 5  
-        d_max = 0.4  
         L = 0.33
-        n_vs = 5
-        v_pts = np.linspace(1, v_max, n_vs)
-        d_resolution = 0.1
-        n_ds = [9, 9, 7, 5, 3] # number of steering points in triangle
-        #TODO: automate this so that it can auto adjust
-        n_modes = int(np.sum(n_ds))
-        self.n_modes = n_modes
-        temp_qs = np.zeros((n_modes, 2))
-        idx = 0
-        for i in range(len(v_pts)): #step through vs
-            for j in range(n_ds[i]): # step through ds 
-                temp_qs[idx, 0] = (j - (n_ds[i] -1)/2)  * d_resolution
-                temp_qs[idx, 1] = v_pts[i]
-                idx += 1
-
-        self.qs = np.zeros((n_modes, 2))
-        for idx in range(n_modes):
-            self.qs[idx, 1] = temp_qs[idx, 1]
-            self.qs[idx, 0] = temp_qs[idx, 1] / L * np.tan(temp_qs[idx,0]) 
-
-        # plt.figure()
-        # for pt in self.qs:
-        # # for pt in temp_qs:
-        #     plt.plot(pt[0], pt[1], 'ro')
-        # plt.show()
-
-        return np.copy(self.qs)
+        
+        ds = np.linspace(-0.4, 0.4, 9)
+        self.qs = self.velocity / L * np.tan(ds)
+        self.n_modes = 9
 
     def set_track_constraints(self):
         # left and right wall
         self.kernel[0, :, :, :] = 1
         self.kernel[-1, :, :, :] = 1
-        self.kernel[:, 32:35, :, :] = 1
+        self.kernel[1:3, 32:35, :, :] = 1
 
 
-    def safe_update(self, x, y, phi, q_input, t_step=1):
-        new_x = x + np.sin(phi) * self.qs[q_input, 1] * t_step
-        new_y = y + np.cos(phi) * self.qs[q_input, 1] * t_step
-        new_phi = phi + self.qs[q_input, 0] * t_step
+    def safe_update(self, x, y, phi, q_input, t_step=0.1):
+        new_x = x + np.sin(phi) * self.velocity * t_step
+        new_y = y + np.cos(phi) * self.velocity * t_step
+        new_phi = phi + self.qs[q_input] * t_step
 
         return new_x, new_y, new_phi
 
@@ -112,23 +88,41 @@ class ViabilityKernel:
 
     def view_kernel(self, phi, mode):
         phi_ind = np.argmin(np.abs(self.phis - phi))
-        plt.figure()
+        plt.figure(1)
+        plt.title(f"Kernel phi: {phi} -> mode: {mode} omega: {self.qs[mode]}")
         plt.imshow(self.kernel[:, :, phi_ind, mode].T, origin='lower')
+
+        # self.plot_next_state(phi)
+
         plt.show()
 
+    def plot_next_state(self, o_phi):
+        plt.figure(2)
+        plt.title(f"Next state phi: {o_phi} ")
+        arrow_len = 0.15
+        plt.arrow(0, 0, np.sin(o_phi)*arrow_len, np.cos(o_phi)*arrow_len, color='r', width=0.001)
+        for i in range(self.n_modes):
+            x, y = 0, 0 
+            new_x, new_y, new_phi = self.safe_update(x, y, o_phi, i)
+
+            plt.arrow(new_x, new_y, np.sin(new_phi)*arrow_len, np.cos(new_phi)*arrow_len, color='b', width=0.001)
+
+        plt.show()
 
 if __name__ == "__main__":
     viab = ViabilityKernel()
-    # viab.load_kernel()
-    # viab.view_kernel(0, 32)
-    viab.calculate_kernel(1)
-    # viab.view_kernel(0, 32)
+    viab.load_kernel()
+    # viab.view_kernel(0, 8)
+    # viab.calculate_kernel(1)
+    viab.view_kernel(0, 4)
     # viab.calculate_kernel(1)
     # viab.view_kernel(0, 32)
     # viab.calculate_kernel(1)
     # viab.view_kernel(0, 32)
 
-    viab.view_kernel(0, 0)
-    viab.view_kernel(0, 10)
-    viab.view_kernel(0, 20)
-    viab.view_kernel(0, 32)
+    viab.view_kernel(-np.pi/4, 4)
+    viab.view_kernel(0, 2)
+    viab.view_kernel(0, 4)
+    viab.view_kernel(0, 6)
+
+    # viab.plot_next_state(np.pi/6)
