@@ -15,8 +15,9 @@ class ViabilityKernel:
         self.xs = np.linspace(0, self.width, self.resolution*self.width)
         self.ys = np.linspace(0, self.length, self.resolution*self.length)
         
-        self.n_phi = 50
-        self.phis = np.linspace(-np.pi, np.pi, self.n_phi)
+        self.n_phi = 20
+        self.phi_range = np.pi
+        self.phis = np.linspace(-self.phi_range/2, self.phi_range/2, self.n_phi)
 
         self.velocity = 2
         self.qs = None
@@ -26,7 +27,8 @@ class ViabilityKernel:
         #TODO: add modes as states later. For the moment, assume no dynamic window. All velocities are instantly reachable.
         # note: todo that I will have to have two dimensions for n_modes. One for the state and one for each possible option.
 
-        self.kernel = np.zeros((self.n_x, self.n_y, self.n_phi, self.n_modes))
+        self.kernel = np.zeros((self.n_x, self.n_y, self.n_phi))
+        self.constraints = np.zeros((self.n_x, self.n_y, self.n_phi))
         self.set_track_constraints()
 
     def build_qs(self):
@@ -38,10 +40,11 @@ class ViabilityKernel:
 
     def set_track_constraints(self):
         # left and right wall
-        self.kernel[0, :, :, :] = 1
-        self.kernel[-1, :, :, :] = 1
-        self.kernel[1:3, 32:35, :, :] = 1
+        self.constraints[0, :, :] = 1
+        self.constraints[-1, :, :] = 1
+        self.constraints[1:3, 32:35, :] = 1
 
+        self.kernel = np.copy(self.constraints)
 
     def safe_update(self, x, y, phi, q_input, t_step=0.1):
         new_x = x + np.sin(phi) * self.velocity * t_step
@@ -58,41 +61,60 @@ class ViabilityKernel:
                 for j in range(self.n_y):
                     # print(f"Running YYYs: {j}")
                     for k in range(self.n_phi):
+                        if self.kernel[i, j, k] == 1:
+                            continue 
+                        self.kernel[i, j, k] = 1 # set it to unviable.
                         for l in range(self.n_modes):
-                            self.kernel[i, j, k, l] += self.check_state(i, j, k, l)
+                            if not self.check_state(i, j, k, l):
+                                self.kernel[i, j, k] = 0
+                                break # can stop checking now.
+
 
         np.save("SupervisorySafetySystem/Discrete/ViabilityKernal.npy", self.kernel)
+        print(f"Saved kernel to file")
 
     def check_state(self, i, j, k, l):
         x = self.xs[i]
         y = self.ys[j]
         phi = self.phis[k]
-        # q_input = self.qs[l]
         new_x, new_y, new_phi = self.safe_update(x, y, phi, l)
 
+        if self.check_limits(new_x, new_y, new_phi):
+            return True 
+
         kernal_inds = self.convert_state_to_kernel(new_x, new_y, new_phi)
-        kernel = self.kernel[kernal_inds[0], kernal_inds[1], kernal_inds[2], l]
+        kernel = self.kernel[kernal_inds[0], kernal_inds[1], kernal_inds[2]]
 
         return kernel
 
+    def check_limits(self, x, y, phi):
+        if x < 0 or x > self.width:
+            return True
+        if y < 0 or y > self.length:
+            return True
+        if phi < -self.phi_range/2 or phi > self.phi_range/2:
+            return True
+        return False
+
     def convert_state_to_kernel(self, x, y, phi):
-        #TODO: very inefficient, replace with count_nonzero
-        x_ind = np.argmin(np.abs(self.xs - x))
-        y_ind = np.argmin(np.abs(self.ys - y))
-        phi_ind = np.argmin(np.abs(self.phis - phi))
+        x_ind = int(x*(self.resolution-1))
+        y_ind = int(y*(self.resolution-1))
+        phi_ind = int((phi + self.phi_range/2) / self.phi_range * (self.n_phi-1))
 
         return (x_ind, y_ind, phi_ind)
 
     def load_kernel(self):
         self.kernel = np.load("SupervisorySafetySystem/Discrete/ViabilityKernal.npy")
 
-    def view_kernel(self, phi, mode):
+    def view_kernel(self, phi):
         phi_ind = np.argmin(np.abs(self.phis - phi))
         plt.figure(1)
-        plt.title(f"Kernel phi: {phi} -> mode: {mode} omega: {self.qs[mode]}")
-        plt.imshow(self.kernel[:, :, phi_ind, mode].T, origin='lower')
+        plt.title(f"Kernel phi: {phi} (ind: {phi_ind})")
+        plt.imshow(self.kernel[:, :, phi_ind].T, origin='lower', extent=[0, 10, 0, self.length*self.resolution])
 
-        # self.plot_next_state(phi)
+        # plt.imshow(self.constraints[:, :, 0].T, origin='lower', extent=[-20, -10, 0, self.length*self.resolution])
+
+        self.plot_next_state(phi)
 
         plt.show()
 
@@ -111,18 +133,18 @@ class ViabilityKernel:
 
 if __name__ == "__main__":
     viab = ViabilityKernel()
-    viab.load_kernel()
+    # viab.load_kernel()
     # viab.view_kernel(0, 8)
-    # viab.calculate_kernel(1)
-    viab.view_kernel(0, 4)
+    viab.calculate_kernel(1)
+    viab.view_kernel(0)
     # viab.calculate_kernel(1)
     # viab.view_kernel(0, 32)
     # viab.calculate_kernel(1)
     # viab.view_kernel(0, 32)
 
-    viab.view_kernel(-np.pi/4, 4)
-    viab.view_kernel(0, 2)
-    viab.view_kernel(0, 4)
-    viab.view_kernel(0, 6)
+    viab.view_kernel(-np.pi/4)
+    # viab.view_kernel(0)
+    # viab.view_kernel(0, 4)
+    # viab.view_kernel(0, 6)
 
     # viab.plot_next_state(np.pi/6)
