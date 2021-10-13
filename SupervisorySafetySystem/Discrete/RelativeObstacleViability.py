@@ -10,7 +10,7 @@ from numpy.core.defchararray import mod
 class ViabilityKernel:
     def __init__(self, width=1, length=2):
         self.resolution = 20
-        self.t_step = 0.08
+        self.t_step = 0.05
         self.velocity = 2
         self.n_phi = 21
         self.phi_range = np.pi
@@ -36,7 +36,7 @@ class ViabilityKernel:
         # self.build_dynamics_table()
         self.set_track_constraints()
 
-# config functions
+    # config functions
     def build_qs(self):
         ds = np.linspace(-0.4, 0.4, self.n_modes)
         self.qs = self.velocity / 0.33 * np.tan(ds)
