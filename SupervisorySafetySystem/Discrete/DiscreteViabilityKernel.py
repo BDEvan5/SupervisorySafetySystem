@@ -8,6 +8,8 @@ from matplotlib import pyplot as plt
 class ViabilityKernel:
     def __init__(self, width=1, length=5):
         self.resolution = 20 # pts per meter
+        self.t_step = 0.08
+
         self.width = width
         self.length = length
         self.n_x = self.resolution * self.width
@@ -23,13 +25,14 @@ class ViabilityKernel:
         self.qs = None
         self.n_modes = None
         self.build_qs()
+        self.set_mode_window_size()
 
         #TODO: add modes as states later. For the moment, assume no dynamic window. All velocities are instantly reachable.
         # note: todo that I will have to have two dimensions for n_modes. One for the state and one for each possible option.
 
-        self.kernel = np.zeros((self.n_x, self.n_y, self.n_phi))
-        self.constraints = np.zeros((self.n_x, self.n_y, self.n_phi))
-        self.previous_kernel = np.zeros((self.n_x, self.n_y, self.n_phi))
+        self.kernel = np.zeros((self.n_x, self.n_y, self.n_phi, self.n_modes))
+        self.constraints = np.zeros((self.n_x, self.n_y, self.n_phi, self.n_modes))
+        self.previous_kernel = np.zeros((self.n_x, self.n_y, self.n_phi, self.n_modes))
         self.set_track_constraints()
 
     def build_qs(self):
@@ -47,18 +50,23 @@ class ViabilityKernel:
 
         # self.constraints[n:-n, 3*self.resolution:self.resolution*3+2*n, :] = 1
 
-        self.constraints[0:n, 2*self.resolution:2*self.resolution+2*n, :] = 1
-        self.constraints[-n::, 4*self.resolution:self.resolution*4+2*n, :] = 1
-
+        self.constraints[0:n, 2*self.resolution:2*self.resolution+2*n, :, :] = 1
+        self.constraints[-n::, 4*self.resolution:self.resolution*4+2*n, :, :] = 1
 
         self.kernel = np.copy(self.constraints)
 
-    def safe_update(self, x, y, phi, q_input, t_step=0.08):
-        new_phi = phi + self.qs[q_input] * t_step
-        new_x = x + np.sin(new_phi) * self.velocity * t_step
-        new_y = y + np.cos(new_phi) * self.velocity * t_step
+    def safe_update(self, x, y, phi, q_input):
+        new_phi = phi + self.qs[q_input] * self.t_step
+        new_x = x + np.sin(new_phi) * self.velocity * self.t_step
+        new_y = y + np.cos(new_phi) * self.velocity * self.t_step
 
         return new_x, new_y, new_phi
+
+    def set_mode_window_size(self):
+        sv = 3.2 # rad/s 
+        d_delta = sv * self.t_step
+        self.mode_window_size = int((d_delta / (0.8 / (self.n_modes-1))))
+        print(f"Mode Window size: {self.mode_window_size}")
 
     def calculate_kernel(self, n_loops=1):
         for z in range(n_loops):
@@ -70,16 +78,19 @@ class ViabilityKernel:
             for i in range(self.n_x):
                 for j in range(self.n_y):
                     for k in range(self.n_phi):
-                        if self.kernel[i, j, k] == 1:
-                            continue 
-                        self.kernel[i, j, k] = self.update_state(i, j, k)
+                        for m in range(self.n_modes):
+                            if self.kernel[i, j, k, m] == 1:
+                                continue 
+                            self.kernel[i, j, k, m] = self.update_state(i, j, k, m)
 
         np.save("SupervisorySafetySystem/Discrete/ViabilityKernal.npy", self.kernel)
         print(f"Saved kernel to file")
 
-    def update_state(self, i, j, k):
+    def update_state(self, i, j, k, m):
         # TODO: add in checking only certain modes here
-        for l in range(self.n_modes):
+        min_m = max(0, m-self.mode_window_size)
+        max_m = min(self.n_modes, m+self.mode_window_size)
+        for l in range(min_m, max_m):
             if not self.check_state(i, j, k, l):
                 return 0
         return 1
@@ -94,7 +105,7 @@ class ViabilityKernel:
             return True 
 
         kernal_inds = self.convert_state_to_kernel(new_x, new_y, new_phi)
-        kernel = self.kernel[kernal_inds[0], kernal_inds[1], kernal_inds[2]]
+        kernel = self.kernel[kernal_inds[0], kernal_inds[1], kernal_inds[2], l]
 
         return kernel
 
@@ -122,7 +133,7 @@ class ViabilityKernel:
         phi_ind = np.argmin(np.abs(self.phis - phi))
         plt.figure(1)
         plt.title(f"Kernel phi: {phi} (ind: {phi_ind})")
-        plt.imshow(self.kernel[:, :, phi_ind].T, origin='lower')
+        plt.imshow(self.kernel[:, :, phi_ind, int((self.n_modes-1)/2)].T, origin='lower')
 
         # plt.imshow(self.constraints[:, :, 0].T, origin='lower', extent=[-20, -10, 0, self.length*self.resolution])
 
@@ -147,7 +158,6 @@ class ViabilityKernel:
 if __name__ == "__main__":
     viab = ViabilityKernel()
     # viab.load_kernel()
-    # viab.view_kernel(0, 8)
     viab.calculate_kernel(20)
     viab.view_kernel(-0.2)
     viab.view_kernel(0)
