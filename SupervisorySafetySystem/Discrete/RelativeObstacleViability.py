@@ -66,52 +66,6 @@ class ViabilityKernel:
         np.save("SupervisorySafetySystem/Discrete/RelativeObsKernal.npy", self.kernel)
         print(f"Saved kernel to file")
 
-    def update_state(self, i, j, k, m):
-        # TODO: add in checking only certain modes here
-        min_m = max(0, m-self.mode_window_size)
-        max_m = min(self.n_modes, m+self.mode_window_size+1)
-        for l in range(min_m, max_m):
-            if not self.check_state(i, j, k, l):
-                return 0
-        return 1
-
-    def check_state(self, i, j, k, l):
-        # x = np.copy(self.xs[i])
-        # y = np.copy(self.ys[j])
-        # phi = np.copy(self.phis[k])
-        # new_x, new_y, new_phi = self.safe_update(x, y, phi, l)
-        dx, dy, new_phi = self.dynamics[k, l, :]
-        new_x, new_y = self.xs[i] + dx, self.ys[j] + dy
-
-        if self.check_limits(new_x, new_y, new_phi):
-            return True 
-
-        kernal_inds = self.convert_state_to_kernel(new_x, new_y, new_phi)
-        kernel = self.previous_kernel[kernal_inds[0], kernal_inds[1], kernal_inds[2], l]
-
-        return kernel
-
-    def check_limits(self, x, y, phi):
-        # if x < self.xs[0] or x > self.xs[-1]:
-        #     return True
-        # if y < self.y_offset:
-        #     return True
-        if phi <= -self.phi_range/2 or phi >= self.phi_range/2:
-            return True
-        return False
-
-    def convert_state_to_kernel(self, x, y, phi):
-        # x_ind = int(round((x+self.half_block-self.x_offset)*self.resolution))
-        x_ind = int(round((x-self.x_offset)*self.resolution))
-        x_ind = max(0, min(x_ind, len(self.xs)-1))
-        y_ind = int((y+self.half_block-self.y_offset)*self.resolution)
-        y_ind = max(0, min(y_ind, len(self.ys)-1))
-        # phi_ind = int((phi + self.phi_range/2) / self.phi_range * self.n_phi)
-        phi_ind = np.argmin(np.abs(self.phis - phi))
-        phi_ind = max(0, min(phi_ind, len(self.phis)-1))
-
-        return (x_ind, y_ind, phi_ind)
-
     def load_kernel(self):
         self.kernel = np.load("SupervisorySafetySystem/Discrete/RelativeObsKernal.npy")
 
