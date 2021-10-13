@@ -55,7 +55,7 @@ class BaseSim:
 
     def step(self, action):
         for _ in range(10):
-            self.state = self.update_state(action, 0.01)
+            self.state = self.update_state(action, 0.008)
 
             if self.check_done():
                 break

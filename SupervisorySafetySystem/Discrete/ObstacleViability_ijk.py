@@ -28,12 +28,10 @@ class ViabilityKernel:
         
         self.qs = None
 
-        self.kernel = np.zeros((self.n_x, self.n_y, self.n_phi, self.n_modes))
-        self.previous_kernel = np.zeros((self.n_x, self.n_y, self.n_phi, self.n_modes))
+        self.kernel = np.zeros((self.n_x, self.n_y, self.n_phi))
+        self.previous_kernel = np.zeros((self.n_x, self.n_y, self.n_phi))
         self.build_qs()
         self.dynamics = build_dynamics_table(self.phis, self.qs, self.velocity, self.t_step, self.resolution)
-        self.set_mode_window_size()
-        # self.build_dynamics_table()
         self.set_track_constraints()
 
     # config functions
@@ -46,13 +44,7 @@ class ViabilityKernel:
         obs_offset = int(obs_size*self.resolution)
         x_start = int(-self.x_offset*self.resolution)
         y_start = int(-self.y_offset*self.resolution)
-        self.kernel[x_start:x_start+obs_offset, y_start:y_start + obs_offset, :, :] = 1
-
-    def set_mode_window_size(self):
-        sv = 3.2 # rad/s 
-        d_delta = sv * self.t_step
-        self.mode_window_size = int((d_delta / (0.8 / (self.n_modes-1))))
-        print(f"Mode Window size: {self.mode_window_size}")
+        self.kernel[x_start:x_start+obs_offset, y_start:y_start + obs_offset, :] = 1
 
     def calculate_kernel(self, n_loops=1):
         for z in range(n_loops):
@@ -61,13 +53,13 @@ class ViabilityKernel:
                 print("Kernel has not changed: convergence has been reached")
                 break
             self.previous_kernel = np.copy(self.kernel)
-            self.kernel = kernel_loop(self.kernel, self.xs, self.ys, self.phis, self.qs, self.mode_window_size, self.n_modes, self.dynamics)
+            self.kernel = kernel_loop(self.kernel, self.xs, self.ys, self.phis, self.n_modes, self.dynamics)
 
-        np.save("SupervisorySafetySystem/Discrete/RelativeObsKernal.npy", self.kernel)
+        np.save("SupervisorySafetySystem/Discrete/ObsKernal_ijk.npy", self.kernel)
         print(f"Saved kernel to file")
 
     def load_kernel(self):
-        self.kernel = np.load("SupervisorySafetySystem/Discrete/RelativeObsKernal.npy")
+        self.kernel = np.load("SupervisorySafetySystem/Discrete/ObsKernal_ijk.npy")
 
     def view_kernel(self, phi):
         phi_ind = np.argmin(np.abs(self.phis - phi))
@@ -75,34 +67,12 @@ class ViabilityKernel:
         plt.title(f"Kernel phi: {phi} (ind: {phi_ind})")
         # mode = int((self.n_modes-1)/2)
         mode = 4
-        img = self.kernel[:, :, phi_ind, mode].T + self.constraints[:, :, phi_ind, mode].T * 2
+        img = self.kernel[:, :, phi_ind].T 
         plt.imshow(img, origin='lower')
 
-        self.plot_next_state(phi)
 
         plt.show()
 
-    def view_all_modes(self, phi):
-        phi_ind = np.argmin(np.abs(self.phis - phi))
-        for m in range(self.n_modes):
-            plt.figure()
-            plt.title(f"Kernel phi: {phi} Mode: {m}")
-            img = self.kernel[:, :, phi_ind, m].T 
-            plt.imshow(img, origin='lower')
-        plt.show()
-
-    def plot_next_state(self, o_phi):
-        plt.figure(2)
-        plt.title(f"Next state phi: {o_phi} ")
-        arrow_len = 0.15
-        plt.arrow(0, 0, np.sin(o_phi)*arrow_len, np.cos(o_phi)*arrow_len, color='r', width=0.001)
-        for i in range(self.n_modes):
-            x, y = 0, 0 
-            new_x, new_y, new_phi = self.safe_update(x, y, o_phi, i)
-
-            plt.arrow(new_x, new_y, np.sin(new_phi)*arrow_len, np.cos(new_phi)*arrow_len, color='b', width=0.001)
-
-        plt.show()
 
 # @njit(cache=True)
 def build_dynamics_table(phis, qs, velocity, t_step, resolution):
@@ -121,28 +91,25 @@ def build_dynamics_table(phis, qs, velocity, t_step, resolution):
     return dynamics
 
 # @jit(cache=True)
-def kernel_loop(kernel, xs, ys, phis, qs, mode_window, n_modes, dynamics):
+def kernel_loop(kernel, xs, ys, phis, n_modes, dynamics):
     previous_kernel = np.copy(kernel)
     for i in range(len(xs)):
         for j in range(len(ys)):
             for k in range(len(phis)):
-                for m in range(len(qs)):
-                    if kernel[i, j, k, m] == 1:
+                    if kernel[i, j, k] == 1:
                         continue 
-                    kernel[i, j, k, m] = check_kernel_state(i, j, k, m, mode_window, n_modes, dynamics, previous_kernel, xs, ys)
+                    kernel[i, j, k] = check_kernel_state(i, j, k, n_modes, dynamics, previous_kernel, xs, ys)
 
     return kernel
 
 @njit(cache=True)
-def check_kernel_state(i, j, k, m, mode_window, n_modes, dynamics, previous_kernel, xs, ys):
-    min_m = max(0, m-mode_window)
-    max_m = min(n_modes, m+mode_window+1)
-    for l in range(min_m, max_m):
+def check_kernel_state(i, j, k, n_modes, dynamics, previous_kernel, xs, ys):
+    for l in range(n_modes):
         di, dj, new_k = dynamics[k, l, :]
         new_i = min(max(0, i + di), len(xs)-1)  
         new_j = min(max(0, j + dj), len(ys)-1)
 
-        if not previous_kernel[new_i, new_j, new_k, l]:
+        if not previous_kernel[new_i, new_j, new_k]:
             return False
 
     return True
@@ -154,9 +121,9 @@ def run_original():
     # viab.view_kernel(0)
     viab.calculate_kernel(20)
     # viab.view_kernel(-0.2)
-    # viab.view_kernel(0)
+    viab.view_kernel(0)
     # viab.view_kernel(0.2)
-    viab.view_all_modes(0)
+    # viab.view_all_modes(0)
 
 
 
