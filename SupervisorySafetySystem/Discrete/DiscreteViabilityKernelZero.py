@@ -5,7 +5,7 @@ from matplotlib import pyplot as plt
 
 class ViabilityKernelZero:
     def __init__(self, phi, width=1, length=5):
-        self.resolution = 50 # pts per meter
+        self.resolution = 40 # pts per meter
         self.width = width
         self.length = length
         self.n_x = self.resolution * self.width
@@ -29,7 +29,7 @@ class ViabilityKernelZero:
     def build_qs(self):
         L = 0.33
         
-        self.n_modes = 31
+        self.n_modes = 5
         ds = np.linspace(-0.4, 0.4, self.n_modes)
         self.qs = self.velocity / L * np.tan(ds)
 
@@ -38,13 +38,14 @@ class ViabilityKernelZero:
         self.constraints[0, :] = 1
         self.constraints[-1, :] = 1
         n = int(self.resolution / 3)
-        self.constraints[0:n, 2*self.resolution:2*self.resolution+2*n] = 1
-        # self.constraints[::n, self.resolution:self.resolution+2*n] = 1
-        self.constraints[-n::, 4*self.resolution:self.resolution*4+2*n] = 1
+        # self.constraints[0:n, 2*self.resolution:2*self.resolution+2*n] = 1
+        # self.constraints[-n::, 4*self.resolution:self.resolution*4+2*n] = 1
+
+        self.constraints[n:-n, 3*self.resolution:self.resolution*3+2*n] = 1
 
         self.kernel = np.copy(self.constraints)
 
-    def safe_update(self, x, y, phi, q_input, t_step=0.1):
+    def safe_update(self, x, y, phi, q_input, t_step=0.05):
         new_phi = phi + self.qs[q_input] * t_step
         new_x = x + np.sin(new_phi) * self.velocity * t_step
         new_y = y + np.cos(new_phi) * self.velocity * t_step
@@ -62,17 +63,20 @@ class ViabilityKernelZero:
                 for j in range(self.n_y):
                     if self.kernel[i, j] == 1:
                         continue 
-                    temp_val = 1
-                    for l in range(self.n_modes):
-                        if not self.check_state(i, j, l):
-                            temp_val = 0
-                            break # can stop checking now.
-                    self.kernel[i, j] = temp_val
+                    self.kernel[i, j] = self.update_state(i, j)
 
         np.save("SupervisorySafetySystem/Discrete/ViabilityKernal.npy", self.kernel)
         print(f"Saved kernel to file")
 
+    def update_state(self, i, j):
+        # TODO: add in checking only certain modes here
+        for l in range(self.n_modes):
+            if not self.check_state(i, j, l):
+                return 0
+        return 1
+
     def check_state(self, i, j, l):
+        #TODO: possible combine functions?
         x = self.xs[i]
         y = self.ys[j]
         new_x, new_y, new_phi = self.safe_update(x, y, self.phi, l)
@@ -132,8 +136,8 @@ class ViabilityKernelZero:
 if __name__ == "__main__":
 
 
-    viab_zero = ViabilityKernelZero(-00)
-    viab_zero.calculate_kernel(20)
+    viab_zero = ViabilityKernelZero(-0.00)
+    viab_zero.calculate_kernel(50)
     viab_zero.view_kernel()
 
 
