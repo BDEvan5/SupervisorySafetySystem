@@ -1,7 +1,9 @@
 import numpy as np
-from numba import njit
-from matplotlib import pyplot as plt
+from numba import njit, jit
+from matplotlib import pyplot as plt, rc_context
+import timeit
 
+from numpy.core.defchararray import mod
 
 
 
@@ -24,39 +26,27 @@ class ViabilityKernel:
         self.ys = np.linspace(self.y_offset, self.y_offset + length, self.n_y)
         self.phis = np.linspace(-self.phi_range/2, self.phi_range/2, self.n_phi)
         
-
         self.qs = None
-        self.build_qs()
-        self.set_mode_window_size()
-        self.dynamics = None
-        self.build_dynamics_table()
 
         self.kernel = np.zeros((self.n_x, self.n_y, self.n_phi, self.n_modes))
-        self.constraints = np.zeros((self.n_x, self.n_y, self.n_phi, self.n_modes))
         self.previous_kernel = np.zeros((self.n_x, self.n_y, self.n_phi, self.n_modes))
+        self.build_qs()
+        self.dynamics = build_dynamics_table(self.phis, self.qs, self.velocity, self.t_step)
+        self.set_mode_window_size()
+        # self.build_dynamics_table()
         self.set_track_constraints()
 
+# config functions
     def build_qs(self):
-        L = 0.33
-        
         ds = np.linspace(-0.4, 0.4, self.n_modes)
-        self.qs = self.velocity / L * np.tan(ds)
+        self.qs = self.velocity / 0.33 * np.tan(ds)
 
     def set_track_constraints(self):
         obs_size = 0.5 
         obs_offset = int(obs_size*self.resolution)
         x_start = int(-self.x_offset*self.resolution)
         y_start = int(-self.y_offset*self.resolution)
-        self.constraints[x_start:x_start+obs_offset, y_start:y_start + obs_offset, :, :] = 1
-
-        self.kernel = np.copy(self.constraints)
-
-    def safe_update(self, x, y, phi, q_input):
-        new_phi = phi + self.qs[q_input] * self.t_step
-        new_x = x + np.sin(new_phi) * self.velocity * self.t_step
-        new_y = y + np.cos(new_phi) * self.velocity * self.t_step
-
-        return new_x, new_y, new_phi
+        self.kernel[x_start:x_start+obs_offset, y_start:y_start + obs_offset, :, :] = 1
 
     def set_mode_window_size(self):
         sv = 3.2 # rad/s 
@@ -71,13 +61,7 @@ class ViabilityKernel:
                 print("Kernel has not changed: convergence has been reached")
                 break
             self.previous_kernel = np.copy(self.kernel)
-            for i in range(self.n_x):
-                for j in range(self.n_y):
-                    for k in range(self.n_phi):
-                        for m in range(self.n_modes):
-                            if self.kernel[i, j, k, m] == 1:
-                                continue 
-                            self.kernel[i, j, k, m] = self.update_state(i, j, k, m)
+            self.kernel = kernel_loop(self.kernel, self.xs, self.ys, self.phis, self.qs, self.mode_window_size, self.n_modes, self.dynamics, self.x_offset, self.y_offset, self.phi_range, self.resolution, self.half_block)
 
         np.save("SupervisorySafetySystem/Discrete/RelativeObsKernal.npy", self.kernel)
         print(f"Saved kernel to file")
@@ -124,9 +108,6 @@ class ViabilityKernel:
         y_ind = max(0, min(y_ind, len(self.ys)-1))
         # phi_ind = int((phi + self.phi_range/2) / self.phi_range * self.n_phi)
         phi_ind = np.argmin(np.abs(self.phis - phi))
-        # if phi_ind != phi_ind1:
-        #     print(f"Problem with phi ind calc: 0 {phi_ind} -> {phi_ind1}")
-        # phi_ind = int((phi + self.half_phi + self.phi_range/2) / self.phi_range * self.n_phi)
         phi_ind = max(0, min(phi_ind, len(self.phis)-1))
 
         return (x_ind, y_ind, phi_ind)
@@ -169,27 +150,60 @@ class ViabilityKernel:
 
         plt.show()
 
-    def build_dynamics_table(self):
-        self.dynamics = np.zeros((self.n_phi, self.n_modes, 3))
+# @njit(cache=True)
+def build_dynamics_table(phis, qs, velocity, t_step):
+    dynamics = np.zeros((len(phis), len(qs), 3))
 
-        for i in range(self.n_phi):
-            for m in range(self.n_modes):
-                dx, dy, phi = self.safe_update(0, 0, self.phis[i], m)
-                self.dynamics[i, m, 0] = dx
-                self.dynamics[i, m, 1] = dy
-                self.dynamics[i, m, 2] = phi
+    for i, p in enumerate(phis):
+        for j, m in enumerate(qs):
+            dynamics[i, j, 2] = p + m * t_step
+            dynamics[i, j, 0] = np.sin(dynamics[i, j, 2]) * velocity * t_step
+            dynamics[i, j, 1] = np.cos(dynamics[i, j, 2]) * velocity * t_step
 
-        # print(self.dynamics)
-        # plt.figure(1)
-        # plt.title("Dynamics")
-        # xs = self.dynamics[10, :, 0]
-        # ys = self.dynamics[10, :, 1]
-        # plt.plot(xs, ys, 'x', markersize=12)
-        # plt.show()
+    return dynamics
+
+# @jit(cache=True)
+def kernel_loop(kernel, xs, ys, phis, qs, mode_window, n_modes, dynamics, x_offset, y_offset, phi_range, resolution, half_block):
+    previous_kernel = np.copy(kernel)
+    for i in range(len(xs)):
+        for j in range(len(ys)):
+            for k in range(len(phis)):
+                for m in range(len(qs)):
+                    if kernel[i, j, k, m] == 1:
+                        continue 
+                    kernel[i, j, k, m] = check_kernel_state(xs[i], ys[j], k, m, mode_window, n_modes, dynamics, previous_kernel, xs, ys, phis, x_offset, y_offset, phi_range, resolution, half_block)
+
+    return kernel
+
+# @njit(cache=True)
+def check_kernel_state(x, y, k, m, mode_window, n_modes, dynamics, previous_kernel, xs, ys, phis, x_offset, y_offset, phi_range, resolution, half_block):
+    min_m = max(0, m-mode_window)
+    max_m = min(n_modes, m+mode_window+1)
+    for l in range(min_m, max_m):
+        dx, dy, new_phi = dynamics[k, m, :]
+        new_x, new_y = x + dx, y + dy
+        if new_phi <= -np.pi/2 or new_phi >= np.pi/2:
+            continue
+
+        kernal_inds = convert_state_to_kernel(new_x, new_y, new_phi, xs, ys, phis, x_offset, y_offset, phi_range, resolution, half_block)
+        if not previous_kernel[kernal_inds[0], kernal_inds[1], kernal_inds[2], l] == 1:
+            return False 
+    return True
+
+#TODO: remove this with better dynamics table usage.
+def convert_state_to_kernel(x, y, phi, xs, ys, phis, x_offset, y_offset, phi_range, resolution, half_block):
+    # x_ind = int(round((x+self.half_block-self.x_offset)*self.resolution))
+    x_ind = int(round((x-x_offset)*resolution))
+    x_ind = max(0, min(x_ind, len(xs)-1))
+    y_ind = int((y+half_block-y_offset)*resolution)
+    y_ind = max(0, min(y_ind, len(ys)-1))
+    phi_ind = int(round((phi + phi_range/2) / phi_range * (len(phis)-1)))
+
+    return (x_ind, y_ind, phi_ind)
+ 
 
 
-
-if __name__ == "__main__":
+def run_original():
     viab = ViabilityKernel()
     # viab.load_kernel()
     # viab.view_kernel(0)
@@ -197,6 +211,12 @@ if __name__ == "__main__":
     # viab.view_kernel(-0.2)
     # viab.view_kernel(0)
     # viab.view_kernel(0.2)
-    viab.view_all_modes(0)
+    # viab.view_all_modes(0)
+
+
+
+if __name__ == "__main__":
+    t = timeit.timeit(run_original, number=1)
+    print(f"Time taken: {t}")
 
 
