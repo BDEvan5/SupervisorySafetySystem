@@ -9,8 +9,9 @@ from numpy.core.defchararray import mod
 
 class ViabilityKernel:
     def __init__(self, width=1, length=2):
-        self.resolution = 20
-        self.t_step = 0.05
+        self.resolution = 200
+        self.t_step = 0.1
+        # self.n_steps = 10
         self.velocity = 2
         self.n_phi = 21
         self.phi_range = np.pi
@@ -55,13 +56,15 @@ class ViabilityKernel:
             self.previous_kernel = np.copy(self.kernel)
             self.kernel = kernel_loop(self.kernel, self.xs, self.ys, self.phis, self.n_modes, self.dynamics)
 
+            self.view_kernel(0, False)
+
         np.save("SupervisorySafetySystem/Discrete/ObsKernal_ijk.npy", self.kernel)
         print(f"Saved kernel to file")
 
     def load_kernel(self):
         self.kernel = np.load("SupervisorySafetySystem/Discrete/ObsKernal_ijk.npy")
 
-    def view_kernel(self, phi):
+    def view_kernel(self, phi, show=True):
         phi_ind = np.argmin(np.abs(self.phis - phi))
         plt.figure(1)
         plt.title(f"Kernel phi: {phi} (ind: {phi_ind})")
@@ -70,17 +73,29 @@ class ViabilityKernel:
         img = self.kernel[:, :, phi_ind].T 
         plt.imshow(img, origin='lower')
 
+        arrow_len = 0.15
+        plt.arrow(0, 0, np.sin(phi)*arrow_len, np.cos(phi)*arrow_len, color='r', width=0.001)
+        for m in range(self.n_modes):
+            i, j = int(self.n_x/2), 0 
+            di, dj, new_k = self.dynamics[phi_ind, m]
 
-        plt.show()
+
+            plt.arrow(i, j, di, dj, color='b', width=0.001)
+
+        plt.pause(0.0001)
+        if show:
+            plt.show()
 
 
 # @njit(cache=True)
 def build_dynamics_table(phis, qs, velocity, t_step, resolution):
+    # add 5 sample points
     dynamics = np.zeros((len(phis), len(qs), 3), dtype=np.int)
     phi_range = np.pi
+    n_steps = 1
     for i, p in enumerate(phis):
         for j, m in enumerate(qs):
-            phi = p + m * t_step
+            phi = p + m * t_step * n_steps # phi must be at end
             new_k = int(round((phi + phi_range/2) / phi_range * (len(phis)-1)))
             dynamics[i, j, 2] = min(max(0, new_k), len(phis)-1)
             dx = np.sin(phi) * velocity * t_step

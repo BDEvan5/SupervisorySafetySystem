@@ -193,7 +193,7 @@ class Kernel:
     def view_kernel(self, theta):
         phi_range = np.pi
         theta_ind = int(round((theta + phi_range/2) / phi_range * (self.kernel.shape[2]-1)))
-        plt.figure(1)
+        plt.figure(5)
         plt.title(f"Kernel phi: {theta} (ind: {theta_ind})")
         img = self.kernel[:, :, theta_ind].T 
         plt.imshow(img, origin='lower')
@@ -208,18 +208,29 @@ class Kernel:
     def check_state(self, state=[0, 0, 0]):
         for o1, o2 in zip(self.obs_pts1, self.obs_pts2):
             location = state[0:2] - o1 
+            if location[1] < self.y_offset:
+                continue
             i, j, k = self.get_indices(location, state[2])
 
-            print(f"Location: {location} -> Inds: {i}, {j}, {k}")
-
+            print(f"Location: {location} -> Inds: {i}, {j}, {k} -> Value: {self.kernel[i, j, k]}")
+            self.plot_kernel_point(i, j, k)
             if self.kernel[i, j, k] == 1:
                 return False # unsfae state
         return True # safe state
 
+    def plot_kernel_point(self, i, j, k):
+        plt.figure(5)
+        plt.clf()
+        plt.title(f"Kernel inds: {i}, {j}, {k}")
+        img = self.kernel[:, :, k].T 
+        plt.imshow(img, origin='lower')
+        plt.plot(i, j, 'x', markersize=20, color='red')
+        # plt.show()
+        plt.pause(0.0001)
+
     def get_indices(self, location, theta):
         phi_range = np.pi
         x_ind = min(max(0, int(round((location[0]-self.x_offset)*self.resolution))), self.kernel.shape[0]-1)
-        # y_ind = (location[1]-self.y_offset)*self.resolution
         y_ind = min(max(0, int(round((location[1]-self.y_offset)*self.resolution))), self.kernel.shape[1]-1)
         theta_ind = int(round((theta + phi_range/2) / phi_range * (self.kernel.shape[2]-1)))
 
@@ -249,23 +260,23 @@ class SafetySystemThree:
         dw = self.generate_dw()
         next_states = simulate_sampled_actions(dw)
         valids = classify_next_states(next_states, self.kernel)
-        print(valids)
         if not valids.any():
             print('No Valid options')
             if self.history.obstacles is not None:
                 print(f"Previous action: {self.history.action[0]}")
-                self.plot_local_linky(self.history.obstacles, self.history.observation, self.history.valids, self.history.next_states, 2)
-            self.plot_local_linky(obstacles, obs, valids, next_states, 3)
+                # self.plot_local_linky(self.history.obstacles, self.history.observation, self.history.valids, self.history.next_states, 4)
+            # self.plot_local_linky(obstacles, obs, valids, next_states, 3)
             # self.plot_flower(obs, next_states, obstacles, valids)
             plt.show()
             return pp_action
         
         action = modify_action(pp_action, valids, dw)
+        print(f"Valids: {valids} -> new action: {action}")
 
         # self.plot_flower(obs, next_states, obstacles, valids)
         # print(f"Action mod>> o:{pp_action[0]} --> n:{action[0]}")
 
-        self.plot_local_linky(obstacles, obs, valids, next_states, 3)
+        # self.plot_local_linky(obstacles, obs, valids, next_states, 3)
         self.history.add_data(obstacles, obs, valids, next_states, action)
         # plt.show()
 
@@ -384,7 +395,7 @@ def simulate_sampled_actions(dw):
     state = np.array([0, 0, 0])
     next_states = np.zeros((len(dw), 3))
     for i in range(len(dw)):
-        next_states[i] = update_state(state, dw[i], 0.1)
+        next_states[i] = update_state(state, dw[i], 0.08)
 
     return next_states
 
