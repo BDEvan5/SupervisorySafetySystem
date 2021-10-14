@@ -186,7 +186,20 @@ class Kernel:
         self.resolution = 20
         self.x_offset = -0.25
         self.y_offset = -1.5
+        self.offset = np.array([self.x_offset, self.y_offset])
 
+        self.view_kernel(0)
+
+    def view_kernel(self, theta):
+        phi_range = np.pi
+        theta_ind = int(round((theta + phi_range/2) / phi_range * (self.kernel.shape[2]-1)))
+        plt.figure(1)
+        plt.title(f"Kernel phi: {theta} (ind: {theta_ind})")
+        img = self.kernel[:, :, theta_ind].T 
+        plt.imshow(img, origin='lower')
+
+        # plt.show()
+        plt.pause(0.0001)
 
     def add_obstacles(self, obs):
         self.obs_pts1 = np.array(obs['obs_pts1'])
@@ -194,8 +207,10 @@ class Kernel:
 
     def check_state(self, state=[0, 0, 0]):
         for o1, o2 in zip(self.obs_pts1, self.obs_pts2):
-            location = state[0:2] - o1
+            location = state[0:2] - o1 
             i, j, k = self.get_indices(location, state[2])
+
+            print(f"Location: {location} -> Inds: {i}, {j}, {k}")
 
             if self.kernel[i, j, k] == 1:
                 return False # unsfae state
@@ -205,7 +220,7 @@ class Kernel:
         phi_range = np.pi
         x_ind = min(max(0, int(round((location[0]-self.x_offset)*self.resolution))), self.kernel.shape[0]-1)
         # y_ind = (location[1]-self.y_offset)*self.resolution
-        y_ind = min(max(0, int(round((location[1]+self.y_offset)*self.resolution))), self.kernel.shape[1]-1)
+        y_ind = min(max(0, int(round((location[1]-self.y_offset)*self.resolution))), self.kernel.shape[1]-1)
         theta_ind = int(round((theta + phi_range/2) / phi_range * (self.kernel.shape[2]-1)))
 
         return x_ind, y_ind, theta_ind
