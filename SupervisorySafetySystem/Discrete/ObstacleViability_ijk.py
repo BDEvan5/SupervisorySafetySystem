@@ -92,6 +92,74 @@ class ViabilityKernel:
         if show:
             plt.show()
 
+    def linear_interp(self):
+        pts = []
+        prev_j = 1000
+        prev_i = 0
+        center = False
+        half_point = int(self.n_x/2)
+        for i in range(half_point):
+            if not np.any(self.kernel[i, :, 10]):
+                continue
+            for j in range(self.n_y):
+                if self.kernel[i, j, 10]:
+                    if abs(j - prev_j) < 2:
+                        break
+                    if not center:
+                        pts.append((i, j))
+                        prev_j = j
+                        break
+
+        prev_i
+        for i in range(half_point, self.n_x):
+            if not np.any(self.kernel[i, :, 10]):
+                continue
+            for j in range(self.n_y):
+                if self.kernel[i, j, 10] or j == self.n_y - 1:
+                    print(f"{i}, {j}")
+                    prev_i = i
+                    if abs(j - prev_j) > 2:
+                        pts.append((i-1, prev_j))
+                        prev_j = j
+                        break
+                    break
+        pts.append((prev_i, prev_j))
+
+        pts = np.array(pts)
+        print(pts)
+        new_kernel = np.zeros((200, 400))
+        for i in range(len(pts)-1):
+            dy = pts[i+1, 1] - pts[i, 1]
+            if dy == 0:
+                continue
+            dx = pts[i+1, 0] - pts[i, 0]
+            m = int(dy/dx)
+            o_x, o_y = pts[i]
+            for x in range(dx):
+                if m < 0:
+                    x1 = x+1
+                    for y in range(-m*x1):
+                        # self.kernel[o_x + x, o_y+y, 10] = 1
+                        new_kernel[o_x + x1, o_y-y-1] = 1
+                elif m > 0:
+                    y_val = m*(dx-x)
+                    for y in range(y_val):
+                        # self.kernel[o_x + x, o_y+y, 10] = 1
+                        i_x = o_x + x 
+                        i_y = o_y - y +2+ dx*m # add intercept
+                        new_kernel[i_x, i_y] = 1
+
+        self.view_kernel(0, False)
+        plt.figure(1)
+        plt.plot(pts[:, 0], pts[:, 1], 'x', markersize=20)
+        plt.pause(0.0001)
+
+        plt.figure(3)
+        plt.imshow(new_kernel[:, :].T, origin='lower')
+        plt.plot(pts[:, 0], pts[:, 1], 'x', markersize=20)
+        plt.show()
+            
+
 
 # @njit(cache=True)
 def build_dynamics_table(phis, qs, velocity, time, resolution):
@@ -147,11 +215,12 @@ def check_kernel_state(i, j, k, n_modes, dynamics, previous_kernel, xs, ys):
 
 def run_original():
     viab = ViabilityKernel()
-    # viab.load_kernel()
+    viab.load_kernel()
+    viab.view_kernel(0, False)
+    viab.linear_interp()
     # viab.view_kernel(0)
-    viab.calculate_kernel(20)
+    # viab.calculate_kernel(20)
     # viab.view_kernel(-0.2)
-    viab.view_kernel(0)
     # viab.view_kernel(0.2)
     # viab.view_all_modes(0)
 
