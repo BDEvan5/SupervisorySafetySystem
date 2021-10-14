@@ -55,10 +55,11 @@ class BaseSim:
 
     def step(self, action):
         for _ in range(10):
-            self.state = self.update_state(action, 0.008)
+            self.state = self.update_state(action, 0.015)
 
-            if self.check_done():
-                break
+            # if self.check_done():
+            #     break
+        self.check_done()
 
         self.pos_history.append(self.state[0:2])
         obs = self.get_observation()

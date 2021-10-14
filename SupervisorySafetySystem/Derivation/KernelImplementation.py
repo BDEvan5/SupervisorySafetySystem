@@ -183,7 +183,7 @@ class Kernel:
         self.obs_pts1 = None 
         self.obs_pts2 = None
 
-        self.resolution = 20
+        self.resolution = 200
         self.x_offset = -0.25
         self.y_offset = -1.5
         self.offset = np.array([self.x_offset, self.y_offset])
@@ -395,7 +395,7 @@ def simulate_sampled_actions(dw):
     state = np.array([0, 0, 0])
     next_states = np.zeros((len(dw), 3))
     for i in range(len(dw)):
-        next_states[i] = update_state(state, dw[i], 0.08)
+        next_states[i] = update_state(state, dw[i], 0.2)
 
     return next_states
 
