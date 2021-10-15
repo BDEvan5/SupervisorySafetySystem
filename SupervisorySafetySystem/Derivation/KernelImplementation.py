@@ -267,7 +267,7 @@ class SafetySystemThree:
                 # self.plot_local_linky(self.history.obstacles, self.history.observation, self.history.valids, self.history.next_states, 4)
             # self.plot_local_linky(obstacles, obs, valids, next_states, 3)
             # self.plot_flower(obs, next_states, obstacles, valids)
-            plt.show()
+            # plt.show()
             return pp_action
         
         action = modify_action(pp_action, valids, dw)
