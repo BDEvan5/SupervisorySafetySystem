@@ -7,11 +7,10 @@ from numpy.core.defchararray import mod
 
 
 
-class ViabilityKernel:
+class DiscriminatingKernel:
     def __init__(self, width=1, length=2):
         self.resolution = 200
         self.t_step = 0.2
-        # self.n_steps = 10
         self.velocity = 2
         self.n_phi = 21
         self.phi_range = np.pi
@@ -89,7 +88,7 @@ class ViabilityKernel:
         plt.arrow(0, 0, np.sin(phi)*arrow_len, np.cos(phi)*arrow_len, color='r', width=0.001)
         for m in range(self.n_modes):
             i, j = int(self.n_x/2), 0 
-            di, dj, new_k = self.dynamics[phi_ind, m, -1]
+            di, dj, new_k = self.dynamics[phi_ind, m, 0,-1]
 
 
             plt.arrow(i, j, di, dj, color='b', width=0.001)
@@ -169,8 +168,10 @@ class ViabilityKernel:
 # @njit(cache=True)
 def build_dynamics_table(phis, qs, velocity, time, resolution):
     # add 5 sample points
+    block_size = 1 / (resolution)
+    h = 1.5 * block_size
     n_pts = 5
-    dynamics = np.zeros((len(phis), len(qs), n_pts, 3), dtype=np.int)
+    dynamics = np.zeros((len(phis), len(qs), n_pts, 4, 3), dtype=np.int)
     phi_range = np.pi
     n_steps = 1
     for i, p in enumerate(phis):
@@ -179,11 +180,20 @@ def build_dynamics_table(phis, qs, velocity, time, resolution):
                 t_step = time * (t+1)  / n_pts
                 phi = p + m * t_step * n_steps # phi must be at end
                 new_k = int(round((phi + phi_range/2) / phi_range * (len(phis)-1)))
-                dynamics[i, j, t, 2] = min(max(0, new_k), len(phis)-1)
+                dynamics[i, j, t, :, 2] = min(max(0, new_k), len(phis)-1)
                 dx = np.sin(phi) * velocity * t_step
-                dynamics[i, j, t, 0] = int(round(dx * resolution))
                 dy = np.cos(phi) * velocity * t_step
-                dynamics[i, j, t, 1] = int(round(dy * resolution))
+
+                dynamics[i, j, t, 0, 0] = int(round((dx -h) * resolution))
+                dynamics[i, j, t, 0, 1] = int(round((dy -h) * resolution))
+                dynamics[i, j, t, 1, 0] = int(round((dx -h) * resolution))
+                dynamics[i, j, t, 1, 1] = int(round((dy +h) * resolution))
+                dynamics[i, j, t, 2, 0] = int(round((dx +h) * resolution))
+                dynamics[i, j, t, 2, 1] = int(round((dy +h )* resolution))
+                dynamics[i, j, t, 3, 0] = int(round((dx +h) * resolution))
+                dynamics[i, j, t, 3, 1] = int(round((dy -h) * resolution))
+
+                pass
 
     return dynamics
 
@@ -203,23 +213,29 @@ def kernel_loop(kernel, xs, ys, phis, n_modes, dynamics):
 def check_kernel_state(i, j, k, n_modes, dynamics, previous_kernel, xs, ys):
     n_pts = 5
     for l in range(n_modes):
+        safe = True
+        # check all concatanation points and offsets and if none are occupied, then it is safe.
         for t in range(n_pts):
-            di, dj, new_k = dynamics[k, l, t, :]
-            new_i = min(max(0, i + di), len(xs)-1)  
-            new_j = min(max(0, j + dj), len(ys)-1)
+            for n in range(4):
+                di, dj, new_k = dynamics[k, l, t, n, :]
+                new_i = min(max(0, i + di), len(xs)-1)  
+                new_j = min(max(0, j + dj), len(ys)-1)
 
-            if previous_kernel[new_i, new_j, new_k]:
-                # if you hit a constraint, break
-                break
+                if previous_kernel[new_i, new_j, new_k]:
+                    # if you hit a constraint, break
+                    safe = False # breached a limit.
+                    break
 
-            if not previous_kernel[new_i, new_j, new_k] and t == n_pts - 1:
-                return False
+            # if not previous_kernel[new_i, new_j, new_k] and t == n_pts - 1:
+            #     return False
+        if safe:
+            return False
 
     return True
 
 
 def run_original():
-    viab = ViabilityKernel()
+    viab = DiscriminatingKernel()
     # viab.load_kernel()
     # viab.view_kernel(0, True)
     # viab.linear_interp()

@@ -262,6 +262,8 @@ class SafetySystemThree:
         valids = classify_next_states(next_states, self.kernel)
         if not valids.any():
             print('No Valid options')
+            print(f"State: {obs['state']}")
+            print(f"Next_states: {next_states}")
             if self.history.obstacles is not None:
                 print(f"Previous action: {self.history.action[0]}")
                 # self.plot_local_linky(self.history.obstacles, self.history.observation, self.history.valids, self.history.next_states, 4)
