@@ -146,11 +146,10 @@ class Kernel:
 
         return x_ind, y_ind, theta_ind
 
-
     def check_state(self, state=[0, 0, 0]):
         i, j, k = self.get_indices(state)
 
-        print(f"Location: {state} -> Inds: {i}, {j}, {k} -> Value: {self.kernel[i, j, k]}")
+        # print(f"Expected Location: {state} -> Inds: {i}, {j}, {k} -> Value: {self.kernel[i, j, k]}")
         self.plot_kernel_point(i, j, k)
         if self.kernel[i, j, k] == 1:
             return False # unsfae state
@@ -176,8 +175,6 @@ class RandoPlanner:
         self.kernel = Kernel()
 
     def plan(self, obs):
-        # obstacles = generate_cheat_obs(obs, self.d_max)  # purely for plotting
-        # self.kernel.add_obstacles(obs)
         # pp_action = self.run_pure_pursuit(obs['state'])
         pp_action = self.take_random_action()
         state = obs['state']
@@ -189,8 +186,9 @@ class RandoPlanner:
 
         # sample actions
         dw = self.generate_dw()
-        next_states = simulate_sampled_actions(state, dw)
-        valids = classify_next_states(next_states, self.kernel)
+        # next_states = simulate_sampled_actions(state, dw)
+        # valids = classify_next_states(next_states, self.kernel)
+        valids = simulate_and_classify(state, dw, self.kernel)
         if not valids.any():
             print('No Valid options')
             print(f"State: {obs['state']}")
@@ -206,16 +204,11 @@ class RandoPlanner:
         action = modify_action(pp_action, valids, dw)
         print(f"Valids: {valids} -> new action: {action}")
 
-        # self.plot_flower(obs, next_states, obstacles, valids)
-        # print(f"Action mod>> o:{pp_action[0]} --> n:{action[0]}")
-
-        # self.plot_local_linky(obstacles, obs, valids, next_states, 3)
-        # self.history.add_data(obstacles, obs, valids, next_states, action)
-        # plt.show()
 
         return action
 
     def take_random_action(self):
+        np.random.seed()
         steering = np.random.normal(0, 0.1)
         steering = np.clip(steering, -self.d_max, self.d_max)
         return np.array([steering, self.v])
@@ -312,25 +305,27 @@ class RandoPlanner:
         # print(valids)
         plt.pause(0.0001)
 
-
-# def generate_cheat_obs(obs, d_max):
-#     pts1 = obs['obs_pts1']
-#     pts2 = obs['obs_pts2']
-    
-#     obses = []
-#     for pt1, pt2 in zip(pts1, pts2):
-#         obs = ObstacleThree(pt1, pt2, d_max, len(obses))
-#         obses.append(obs)
-    
-#     return obses
     
 
 def check_init_action(state, u0, kernel):
     # state = np.array([0, 0, 0])
-    next_state = update_state(state, u0, 0.1)
+    next_state = update_state(state, u0, 0.2)
     safe = kernel.check_state(next_state)
     
     return safe, next_state
+
+def simulate_and_classify(state, dw, kernel):
+    valid_ds = np.ones(len(dw))
+    for i in range(len(dw)):
+        next_state = update_state(state, dw[i], 0.2)
+        safe = kernel.check_state(next_state)
+        valid_ds[i] = safe 
+
+        print(f"State: {state} + Action: {dw[i]} --> Expected: {next_state}  :: Safe: {safe}")
+
+    return valid_ds 
+
+
 
 # no changes required 
 def simulate_sampled_actions(state, dw):
@@ -353,14 +348,17 @@ def classify_next_states(next_states, kernel):
 
 # no change required
 def modify_action(pp_action, valid_window, dw):
+    """ 
+    By the time that I get here, I have already established that pp action is not ok so I cannot select it, I must modify the action. 
+    """
     dw_d = dw[:, 0]
-    d_idx = np.count_nonzero(dw_d[dw_d<pp_action[0]])
-    if valid_window[d_idx]:
-        return pp_action
-    else:
-        d_idx_search = np.argmin(np.abs(dw_d))
-        d_idx = int(find_new_action(valid_window, d_idx_search))
-        return dw[d_idx]
+    # d_idx = np.count_nonzero(dw_d[dw_d<pp_action[0]])
+    # if valid_window[d_idx]:
+    #     return pp_action
+    # else:
+    d_idx_search = np.argmin(np.abs(dw_d))
+    d_idx = int(find_new_action(valid_window, d_idx_search))
+    return dw[d_idx]
     
 # no change required
 def find_new_action(valid_window, idx_search):
@@ -480,25 +478,26 @@ if __name__ == "__main__":
     planner = RandoPlanner()
     success = 0
 
-    for i in range(1):
+    for i in range(10):
         done = False
         state = env.reset()
         while not done:
             a = planner.plan(state)
+            print(f"State: {state['state']} --> Action: {a}")
             s_p, r, done, _ = env.step(a)
             state = s_p
             # env.render_pose()
 
         if r == -1:
-            print(f"{i}: Crashed")
+            print(f"{i}: Crashed -> {s_p['state']}")
         elif r == 1:
             print(f"{i}: Success")
             success += 1 
 
         env.render_ep()
 
-        # if r == -1:
-        plt.show()
+        if r == -1:
+            plt.show()
 
     print("Success rate: {}".format(success/100))
 
