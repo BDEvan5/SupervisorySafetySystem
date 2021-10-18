@@ -12,7 +12,7 @@ class DiscriminatingKernel:
         self.resolution = 200
         self.t_step = 0.2
         self.velocity = 2
-        self.n_phi = 21
+        self.n_phi = 61
         self.phi_range = np.pi
         self.half_block = 1 / (2*self.resolution)
         self.half_phi = self.phi_range / (2*self.n_phi)
@@ -61,7 +61,8 @@ class DiscriminatingKernel:
 
             plt.figure(2)
             plt.title(f"Kernel after loop: {z}")
-            img = self.kernel[:, :, 10].T - self.previous_kernel[:, :, 10].T
+            phi_n = 30
+            img = self.kernel[:, :, phi_n].T - self.previous_kernel[:, :, phi_n].T
             plt.imshow(img, origin='lower')
             plt.pause(0.0001)
 
@@ -163,15 +164,76 @@ class DiscriminatingKernel:
         # plt.plot(pts[:, 0], pts[:, 1], 'x', markersize=20)
         # plt.show()
             
+    def run_random_test(self, n):
+        np.random.seed(0)
+
+        rands = np.random.random((n, 3))
+        states = np.zeros_like(rands)
+        states[:, 0] = rands[:, 0] * 1
+        states[:, 1] = rands[:, 1] * 2
+        states[:, 2] = (rands[:, 2] * np.pi) - np.pi/2
+
+        action_set = np.linspace(-0.4, 0.4, 6)
+
+        for test_n in range(n):
+            oi, oj, ok = self.get_indices(states[test_n])
+            if self.kernel[oi, oj, ok] == 1:
+                continue # if I am already in the kernel then don't do anything  
+            
+            option = False
+            for action in action_set:
+                new_state = self.get_new_state(states[test_n], action)
+                i, j, k = self.get_indices(new_state)
+                if self.kernel[i, j, k] != 1:
+                    option = True 
+                
+            if not option:
+                print(f"State: {states[i]} --> {oi}, {oj}, {ok}")
+                self.view_kernel(states[test_n, 2], False)
+                plt.plot(oi, oj, 'x', markersize=30)
+                # plt.plot(i, j, 'x', markersize=20)
+                plt.show()
+
+        print(f"Tests complete")
+
+    
+    def get_indices(self, state):
+        phi_range = np.pi
+        x_ind = min(max(0, int(round((state[0])*self.resolution))), self.kernel.shape[0]-1)
+        y_ind = min(max(0, int(round((state[1])*self.resolution))), self.kernel.shape[1]-1)
+        theta_ind = int(round((state[2] + phi_range/2) / phi_range * (self.kernel.shape[2]-1)))
+        theta_ind = min(max(0, theta_ind), self.kernel.shape[2]-1)
+
+        return x_ind, y_ind, theta_ind
+
+    def get_new_state(self, state, action):
+        """
+        Updates the state based on the action
+
+        Args:
+            state: (x, y, theta)
+            action (float): steering angle
+            dt: time step
+        """
+        L = 0.33
+        velocity = 2
+        theta_update = state[2] +  ((velocity / L) * np.tan(action) * self.t_step)
+        dx = np.array([velocity * np.sin(theta_update),
+                    velocity*np.cos(theta_update),
+                    velocity / L * np.tan(action)])
+
+        return state + dx * self.t_step
 
 
 # @njit(cache=True)
 def build_dynamics_table(phis, qs, velocity, time, resolution):
     # add 5 sample points
     block_size = 1 / (resolution)
-    h = 1.5 * block_size
+    h = 1 * block_size
+    phi_size = np.pi / (len(phis) -1)
+    ph = 0.1 * phi_size
     n_pts = 5
-    dynamics = np.zeros((len(phis), len(qs), n_pts, 4, 3), dtype=np.int)
+    dynamics = np.zeros((len(phis), len(qs), n_pts, 8, 3), dtype=np.int)
     phi_range = np.pi
     n_steps = 1
     for i, p in enumerate(phis):
@@ -179,10 +241,13 @@ def build_dynamics_table(phis, qs, velocity, time, resolution):
             for t in range(n_pts):
                 t_step = time * (t+1)  / n_pts
                 phi = p + m * t_step * n_steps # phi must be at end
-                new_k = int(round((phi + phi_range/2) / phi_range * (len(phis)-1)))
-                dynamics[i, j, t, :, 2] = min(max(0, new_k), len(phis)-1)
                 dx = np.sin(phi) * velocity * t_step
                 dy = np.cos(phi) * velocity * t_step
+                
+                new_k_min = int(round((phi - ph + phi_range/2) / phi_range * (len(phis)-1)))
+                new_k_max = int(round((phi + ph + phi_range/2) / phi_range * (len(phis)-1)))
+                dynamics[i, j, t, 0:4, 2] = min(max(0, new_k_min), len(phis)-1)
+                dynamics[i, j, t, 4:8, 2] = min(max(0, new_k_max), len(phis)-1)
 
                 dynamics[i, j, t, 0, 0] = int(round((dx -h) * resolution))
                 dynamics[i, j, t, 0, 1] = int(round((dy -h) * resolution))
@@ -192,6 +257,15 @@ def build_dynamics_table(phis, qs, velocity, time, resolution):
                 dynamics[i, j, t, 2, 1] = int(round((dy +h )* resolution))
                 dynamics[i, j, t, 3, 0] = int(round((dx +h) * resolution))
                 dynamics[i, j, t, 3, 1] = int(round((dy -h) * resolution))
+
+                dynamics[i, j, t, 4, 0] = int(round((dx -h) * resolution))
+                dynamics[i, j, t, 4, 1] = int(round((dy -h) * resolution))
+                dynamics[i, j, t, 5, 0] = int(round((dx -h) * resolution))
+                dynamics[i, j, t, 5, 1] = int(round((dy +h) * resolution))
+                dynamics[i, j, t, 6, 0] = int(round((dx +h) * resolution))
+                dynamics[i, j, t, 6, 1] = int(round((dy +h )* resolution))
+                dynamics[i, j, t, 7, 0] = int(round((dx +h) * resolution))
+                dynamics[i, j, t, 7, 1] = int(round((dy -h) * resolution))
 
                 pass
 
@@ -216,7 +290,7 @@ def check_kernel_state(i, j, k, n_modes, dynamics, previous_kernel, xs, ys):
         safe = True
         # check all concatanation points and offsets and if none are occupied, then it is safe.
         for t in range(n_pts):
-            for n in range(4):
+            for n in range(dynamics.shape[3]):
                 di, dj, new_k = dynamics[k, l, t, n, :]
                 new_i = min(max(0, i + di), len(xs)-1)  
                 new_j = min(max(0, j + dj), len(ys)-1)
@@ -234,6 +308,9 @@ def check_kernel_state(i, j, k, n_modes, dynamics, previous_kernel, xs, ys):
     return True
 
 
+    
+
+
 def run_original():
     viab = DiscriminatingKernel()
     # viab.load_kernel()
@@ -247,11 +324,18 @@ def run_original():
     # viab.view_kernel(0.2)
     # viab.view_all_modes(0)
 
+def test_kernel():
+    kern = DiscriminatingKernel()
+    # kern.load_kernel()
+    kern.calculate_kernel(20)
+
+    kern.run_random_test(100000)
 
 
 if __name__ == "__main__":
     # t = timeit.timeit(run_original, number=1)
     # print(f"Time taken: {t}")
-    run_original()
+    # run_original()
+    test_kernel()
 
 

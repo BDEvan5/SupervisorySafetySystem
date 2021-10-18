@@ -52,10 +52,12 @@ class BaseSim:
 
         self.pos_history = []
 
-
     def step(self, action):
-        for _ in range(10):
-            self.state = self.update_state(action, 0.02)
+        # n_splits = 5
+        # t = 0.2/ n_splits
+        # for _ in range(n_splits):
+        #     self.state = self.update_state(action, t)
+        self.state = self.update_state(action, 0.2)
 
             # if self.check_done():
             #     break
@@ -160,7 +162,7 @@ class BaseSim:
         plt.pause(0.0001)
 
 def scale_to_plot(pts):
-    resolution = 0.05 
+    resolution = 0.01
     xs = pts[:, 0] / resolution
     ys = pts[:, 1] / resolution
     return xs, ys 
