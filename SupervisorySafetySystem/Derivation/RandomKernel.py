@@ -150,7 +150,7 @@ class Kernel:
         i, j, k = self.get_indices(state)
 
         # print(f"Expected Location: {state} -> Inds: {i}, {j}, {k} -> Value: {self.kernel[i, j, k]}")
-        self.plot_kernel_point(i, j, k)
+        # self.plot_kernel_point(i, j, k)
         if self.kernel[i, j, k] == 1:
             return False # unsfae state
         return True # safe state
@@ -181,7 +181,7 @@ class RandoPlanner:
 
         safe, next_state = check_init_action(state, pp_action, self.kernel)
         if safe:
-            self.plot_single_flower(obs, next_state)
+            # self.plot_single_flower(obs, next_state)
             return pp_action
 
         # sample actions
@@ -478,7 +478,7 @@ if __name__ == "__main__":
     planner = RandoPlanner()
     success = 0
 
-    for i in range(10):
+    for i in range(100):
         done = False
         state = env.reset()
         while not done:
