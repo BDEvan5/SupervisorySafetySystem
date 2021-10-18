@@ -160,7 +160,7 @@ class BaseSim:
         plt.pause(0.0001)
 
 def scale_to_plot(pts):
-    resolution = 0.05 
+    resolution = 0.01
     xs = pts[:, 0] / resolution
     ys = pts[:, 1] / resolution
     return xs, ys 

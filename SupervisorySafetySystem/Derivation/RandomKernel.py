@@ -39,7 +39,7 @@ def update_state(state, action, dt):
 class DiscriminatingImgKernel:
     def __init__(self, track_img):
         self.track_img = track_img
-        self.resolution = 20
+        self.resolution = 100
         self.t_step = 0.2
         self.velocity = 2
         self.n_phi = 61
@@ -62,6 +62,8 @@ class DiscriminatingImgKernel:
         self.dynamics = build_dynamics_table(self.phis, self.qs, self.velocity, self.t_step, self.resolution)
 
         self.kernel[:, :, :] = track_img[:, :, None] * np.ones((self.n_x, self.n_y, self.n_phi))
+        self.kernel[0, :, :] = 1
+        self.kernel[-1, :, :] = 1
         # self.previous_kernel = np.copy(self.kernel)
 
     # config functions
@@ -121,7 +123,7 @@ class DiscriminatingImgKernel:
 class Kernel:
     def __init__(self):
         self.kernel = np.load("SupervisorySafetySystem/Discrete/SetObsKern.npy")
-        self.resolution = 20
+        self.resolution = 100
 
         self.view_kernel(0)
 
@@ -176,7 +178,8 @@ class RandoPlanner:
     def plan(self, obs):
         # obstacles = generate_cheat_obs(obs, self.d_max)  # purely for plotting
         # self.kernel.add_obstacles(obs)
-        pp_action = self.run_pure_pursuit(obs['state'])
+        # pp_action = self.run_pure_pursuit(obs['state'])
+        pp_action = self.take_random_action()
         state = obs['state']
 
         safe, next_state = check_init_action(state, pp_action, self.kernel)
@@ -211,6 +214,12 @@ class RandoPlanner:
         # plt.show()
 
         return action
+
+    def take_random_action(self):
+        steering = np.random.normal(0, 0.1)
+        steering = np.clip(steering, -self.d_max, self.d_max)
+        return np.array([steering, self.v])
+
 
     def run_pure_pursuit(self, state):
         lookahead_distance = 1
