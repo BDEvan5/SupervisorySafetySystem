@@ -12,7 +12,7 @@ class DiscriminatingKernel:
         self.resolution = 200
         self.t_step = 0.2
         self.velocity = 2
-        self.n_phi = 21
+        self.n_phi = 61
         self.phi_range = np.pi
         self.half_block = 1 / (2*self.resolution)
         self.half_phi = self.phi_range / (2*self.n_phi)
@@ -61,7 +61,7 @@ class DiscriminatingKernel:
 
             plt.figure(2)
             plt.title(f"Kernel after loop: {z}")
-            img = self.kernel[:, :, 10].T - self.previous_kernel[:, :, 10].T
+            img = self.kernel[:, :, 30].T - self.previous_kernel[:, :, 10].T
             plt.imshow(img, origin='lower')
             plt.pause(0.0001)
 
@@ -169,9 +169,11 @@ class DiscriminatingKernel:
 def build_dynamics_table(phis, qs, velocity, time, resolution):
     # add 5 sample points
     block_size = 1 / (resolution)
-    h = 1.5 * block_size
+    h = 1 * block_size
+    phi_size = np.pi / (len(phis) -1)
+    ph = 0.1 * phi_size
     n_pts = 5
-    dynamics = np.zeros((len(phis), len(qs), n_pts, 4, 3), dtype=np.int)
+    dynamics = np.zeros((len(phis), len(qs), n_pts, 8, 3), dtype=np.int)
     phi_range = np.pi
     n_steps = 1
     for i, p in enumerate(phis):
@@ -179,10 +181,13 @@ def build_dynamics_table(phis, qs, velocity, time, resolution):
             for t in range(n_pts):
                 t_step = time * (t+1)  / n_pts
                 phi = p + m * t_step * n_steps # phi must be at end
-                new_k = int(round((phi + phi_range/2) / phi_range * (len(phis)-1)))
-                dynamics[i, j, t, :, 2] = min(max(0, new_k), len(phis)-1)
                 dx = np.sin(phi) * velocity * t_step
                 dy = np.cos(phi) * velocity * t_step
+                
+                new_k_min = int(round((phi - ph + phi_range/2) / phi_range * (len(phis)-1)))
+                new_k_max = int(round((phi + ph + phi_range/2) / phi_range * (len(phis)-1)))
+                dynamics[i, j, t, 0:4, 2] = min(max(0, new_k_min), len(phis)-1)
+                dynamics[i, j, t, 4:8, 2] = min(max(0, new_k_max), len(phis)-1)
 
                 dynamics[i, j, t, 0, 0] = int(round((dx -h) * resolution))
                 dynamics[i, j, t, 0, 1] = int(round((dy -h) * resolution))
@@ -192,6 +197,15 @@ def build_dynamics_table(phis, qs, velocity, time, resolution):
                 dynamics[i, j, t, 2, 1] = int(round((dy +h )* resolution))
                 dynamics[i, j, t, 3, 0] = int(round((dx +h) * resolution))
                 dynamics[i, j, t, 3, 1] = int(round((dy -h) * resolution))
+
+                dynamics[i, j, t, 4, 0] = int(round((dx -h) * resolution))
+                dynamics[i, j, t, 4, 1] = int(round((dy -h) * resolution))
+                dynamics[i, j, t, 5, 0] = int(round((dx -h) * resolution))
+                dynamics[i, j, t, 5, 1] = int(round((dy +h) * resolution))
+                dynamics[i, j, t, 6, 0] = int(round((dx +h) * resolution))
+                dynamics[i, j, t, 6, 1] = int(round((dy +h )* resolution))
+                dynamics[i, j, t, 7, 0] = int(round((dx +h) * resolution))
+                dynamics[i, j, t, 7, 1] = int(round((dy -h) * resolution))
 
                 pass
 
@@ -216,7 +230,7 @@ def check_kernel_state(i, j, k, n_modes, dynamics, previous_kernel, xs, ys):
         safe = True
         # check all concatanation points and offsets and if none are occupied, then it is safe.
         for t in range(n_pts):
-            for n in range(4):
+            for n in range(dynamics.shape[3]):
                 di, dj, new_k = dynamics[k, l, t, n, :]
                 new_i = min(max(0, i + di), len(xs)-1)  
                 new_j = min(max(0, j + dj), len(ys)-1)
