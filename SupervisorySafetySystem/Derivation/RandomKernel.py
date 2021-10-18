@@ -22,7 +22,7 @@ class SimThree(BaseSim):
     def check_done(self):
         return self.base_check_done()
 
-# @njit(cache=True)
+@njit(cache=True)
 def update_state(state, action, dt):
     """
     Updates x, y, th pos accoridng to th_d, v
@@ -95,9 +95,6 @@ class DiscriminatingImgKernel:
         np.save("SupervisorySafetySystem/Discrete/SetObsKern.npy", self.kernel)
         print(f"Saved kernel to file")
 
-    def load_kernel(self):
-        self.kernel = np.load("SupervisorySafetySystem/Discrete/SetObsKern.npy")
-
     def view_kernel(self, phi, show=True):
         phi_ind = np.argmin(np.abs(self.phis - phi))
         plt.figure(1)
@@ -125,7 +122,7 @@ class Kernel:
         self.kernel = np.load("SupervisorySafetySystem/Discrete/SetObsKern.npy")
         self.resolution = 100
 
-        self.view_kernel(0)
+        # self.view_kernel(0)
 
     def view_kernel(self, theta):
         phi_range = np.pi
@@ -171,7 +168,6 @@ class RandoPlanner:
     def __init__(self):
         self.d_max = 0.4 # radians  
         self.v = 2
-        # self.history = History()
         self.kernel = Kernel()
 
     def plan(self, obs):
@@ -184,25 +180,15 @@ class RandoPlanner:
             # self.plot_single_flower(obs, next_state)
             return pp_action
 
-        # sample actions
         dw = self.generate_dw()
-        # next_states = simulate_sampled_actions(state, dw)
-        # valids = classify_next_states(next_states, self.kernel)
         valids = simulate_and_classify(state, dw, self.kernel)
         if not valids.any():
             print('No Valid options')
             print(f"State: {obs['state']}")
-            print(f"Next_states: {next_states}")
-            # if self.history.obstacles is not None:
-                # print(f"Previous action: {self.history.action[0]}")
-                # self.plot_local_linky(self.history.obstacles, self.history.observation, self.history.valids, self.history.next_states, 4)
-            # self.plot_local_linky(obstacles, obs, valids, next_states, 3)
-            # self.plot_flower(obs, next_states, obstacles, valids)
-            # plt.show()
             return pp_action
         
         action = modify_action(pp_action, valids, dw)
-        print(f"Valids: {valids} -> new action: {action}")
+        # print(f"Valids: {valids} -> new action: {action}")
 
 
         return action
@@ -212,7 +198,6 @@ class RandoPlanner:
         steering = np.random.normal(0, 0.1)
         steering = np.clip(steering, -self.d_max, self.d_max)
         return np.array([steering, self.v])
-
 
     def run_pure_pursuit(self, state):
         lookahead_distance = 1
@@ -308,7 +293,6 @@ class RandoPlanner:
     
 
 def check_init_action(state, u0, kernel):
-    # state = np.array([0, 0, 0])
     next_state = update_state(state, u0, 0.2)
     safe = kernel.check_state(next_state)
     
@@ -321,42 +305,18 @@ def simulate_and_classify(state, dw, kernel):
         safe = kernel.check_state(next_state)
         valid_ds[i] = safe 
 
-        print(f"State: {state} + Action: {dw[i]} --> Expected: {next_state}  :: Safe: {safe}")
+        # print(f"State: {state} + Action: {dw[i]} --> Expected: {next_state}  :: Safe: {safe}")
 
     return valid_ds 
 
 
-
-# no changes required 
-def simulate_sampled_actions(state, dw):
-    # state = np.array([0, 0, 0])
-    next_states = np.zeros((len(dw), 3))
-    for i in range(len(dw)):
-        next_states[i] = update_state(state, dw[i], 0.2)
-
-    return next_states
-
-# no change required
-def classify_next_states(next_states, kernel):
-    n = len(next_states) 
-    valid_ds = np.ones(n)
-    for i in range(n):
-        safe = kernel.check_state(next_states[i])
-        valid_ds[i] = safe 
-
-    return valid_ds 
 
 # no change required
 def modify_action(pp_action, valid_window, dw):
     """ 
     By the time that I get here, I have already established that pp action is not ok so I cannot select it, I must modify the action. 
     """
-    dw_d = dw[:, 0]
-    # d_idx = np.count_nonzero(dw_d[dw_d<pp_action[0]])
-    # if valid_window[d_idx]:
-    #     return pp_action
-    # else:
-    d_idx_search = np.argmin(np.abs(dw_d))
+    d_idx_search = np.argmin(np.abs(dw[:, 0]))
     d_idx = int(find_new_action(valid_window, d_idx_search))
     return dw[d_idx]
     
@@ -379,7 +339,6 @@ def find_new_action(valid_window, idx_search):
 
 # @njit(cache=True)
 def build_dynamics_table(phis, qs, velocity, time, resolution):
-    # add 5 sample points
     block_size = 1 / (resolution)
     h = 1 * block_size
     phi_size = np.pi / (len(phis) -1)
@@ -451,16 +410,10 @@ def check_kernel_state(i, j, k, n_modes, dynamics, previous_kernel, xs, ys):
                     # if you hit a constraint, break
                     safe = False # breached a limit.
                     break
-
-            # if not previous_kernel[new_i, new_j, new_k] and t == n_pts - 1:
-            #     return False
         if safe:
             return False
 
     return True
-
-
-
 
 
 
@@ -483,7 +436,7 @@ if __name__ == "__main__":
         state = env.reset()
         while not done:
             a = planner.plan(state)
-            print(f"State: {state['state']} --> Action: {a}")
+            # print(f"State: {state['state']} --> Action: {a}")
             s_p, r, done, _ = env.step(a)
             state = s_p
             # env.render_pose()
