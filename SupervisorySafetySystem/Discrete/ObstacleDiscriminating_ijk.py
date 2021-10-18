@@ -61,7 +61,8 @@ class DiscriminatingKernel:
 
             plt.figure(2)
             plt.title(f"Kernel after loop: {z}")
-            img = self.kernel[:, :, 30].T - self.previous_kernel[:, :, 10].T
+            phi_n = 30
+            img = self.kernel[:, :, phi_n].T - self.previous_kernel[:, :, phi_n].T
             plt.imshow(img, origin='lower')
             plt.pause(0.0001)
 
@@ -163,6 +164,65 @@ class DiscriminatingKernel:
         # plt.plot(pts[:, 0], pts[:, 1], 'x', markersize=20)
         # plt.show()
             
+    def run_random_test(self, n):
+        np.random.seed(0)
+
+        rands = np.random.random((n, 3))
+        states = np.zeros_like(rands)
+        states[:, 0] = rands[:, 0] * 1
+        states[:, 1] = rands[:, 1] * 2
+        states[:, 2] = (rands[:, 2] * np.pi) - np.pi/2
+
+        action_set = np.linspace(-0.4, 0.4, 6)
+
+        for test_n in range(n):
+            oi, oj, ok = self.get_indices(states[test_n])
+            if self.kernel[oi, oj, ok] == 1:
+                continue # if I am already in the kernel then don't do anything  
+            
+            option = False
+            for action in action_set:
+                new_state = self.get_new_state(states[test_n], action)
+                i, j, k = self.get_indices(new_state)
+                if self.kernel[i, j, k] != 1:
+                    option = True 
+                
+            if not option:
+                print(f"State: {states[i]} --> {oi}, {oj}, {ok}")
+                self.view_kernel(states[test_n, 2], False)
+                plt.plot(oi, oj, 'x', markersize=30)
+                # plt.plot(i, j, 'x', markersize=20)
+                plt.show()
+
+        print(f"Tests complete")
+
+    
+    def get_indices(self, state):
+        phi_range = np.pi
+        x_ind = min(max(0, int(round((state[0])*self.resolution))), self.kernel.shape[0]-1)
+        y_ind = min(max(0, int(round((state[1])*self.resolution))), self.kernel.shape[1]-1)
+        theta_ind = int(round((state[2] + phi_range/2) / phi_range * (self.kernel.shape[2]-1)))
+        theta_ind = min(max(0, theta_ind), self.kernel.shape[2]-1)
+
+        return x_ind, y_ind, theta_ind
+
+    def get_new_state(self, state, action):
+        """
+        Updates the state based on the action
+
+        Args:
+            state: (x, y, theta)
+            action (float): steering angle
+            dt: time step
+        """
+        L = 0.33
+        velocity = 2
+        theta_update = state[2] +  ((velocity / L) * np.tan(action) * self.t_step)
+        dx = np.array([velocity * np.sin(theta_update),
+                    velocity*np.cos(theta_update),
+                    velocity / L * np.tan(action)])
+
+        return state + dx * self.t_step
 
 
 # @njit(cache=True)
@@ -248,6 +308,9 @@ def check_kernel_state(i, j, k, n_modes, dynamics, previous_kernel, xs, ys):
     return True
 
 
+    
+
+
 def run_original():
     viab = DiscriminatingKernel()
     # viab.load_kernel()
@@ -261,11 +324,18 @@ def run_original():
     # viab.view_kernel(0.2)
     # viab.view_all_modes(0)
 
+def test_kernel():
+    kern = DiscriminatingKernel()
+    # kern.load_kernel()
+    kern.calculate_kernel(20)
+
+    kern.run_random_test(100000)
 
 
 if __name__ == "__main__":
     # t = timeit.timeit(run_original, number=1)
     # print(f"Time taken: {t}")
-    run_original()
+    # run_original()
+    test_kernel()
 
 
