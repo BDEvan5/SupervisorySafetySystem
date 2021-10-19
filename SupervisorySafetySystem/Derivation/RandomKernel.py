@@ -221,6 +221,7 @@ class Kernel:
         x_ind = min(max(0, int(round((state[0])*self.resolution))), self.kernel.shape[0]-1)
         y_ind = min(max(0, int(round((state[1])*self.resolution))), self.kernel.shape[1]-1)
         theta_ind = int(round((state[2] + phi_range/2) / phi_range * (self.kernel.shape[2]-1)))
+        theta_ind = min(max(0, theta_ind), self.kernel.shape[2]-1)
 
         return x_ind, y_ind, theta_ind
 
@@ -450,6 +451,7 @@ if __name__ == "__main__":
             success += 1 
 
         env.render_ep()
+        plt.pause(0.5)
 
         if r == -1:
             plt.show()
