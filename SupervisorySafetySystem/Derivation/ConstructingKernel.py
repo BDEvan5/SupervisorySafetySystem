@@ -15,7 +15,7 @@ class SimThree(BaseSim):
         return update_state(self.state, action, dt)
         
     def reset(self, rand_seed=0):
-        np.random.seed(rand_seed)
+        # np.random.seed(rand_seed)
         self.state = self.env_map.start_pose[0:3]
         return self.base_reset()
 
@@ -232,28 +232,34 @@ class Kernel:
         # self.kernel = np.load("SupervisorySafetySystem/Discrete/SetObsKern.npy")
         self.kernel = None
         self.resolution = 100
+        self.side_kernel = np.load("SupervisorySafetySystem/Discrete/Side2mKernel.npy")
+        self.obs_kernel = np.load("SupervisorySafetySystem/Discrete/ObsKernel.npy")
 
         # self.view_kernel(0)
 
     def construct_kernel(self, track_size, obs_locations):
-        side_kernel = np.load("SupervisorySafetySystem/Discrete/Side2mKernel.npy")
-        n_phi = side_kernel.shape[2]
-        self.kernel = np.zeros((track_size[0], track_size[1], n_phi))
+        self.kernel = np.zeros((track_size[0], track_size[1], self.side_kernel.shape[2]))
         length = int(track_size[1] / self.resolution)
         for i in range(length):
-            self.kernel[:, i*self.resolution:(i+1)*self.resolution] = side_kernel
+            self.kernel[:, i*self.resolution:(i+1)*self.resolution] = self.side_kernel
 
-        obs_kernel = np.load("SupervisorySafetySystem/Discrete/ObsKernel.npy")
         offset = [40, 80]
         resolution = 100
         for obs in obs_locations:
             i = int(round(obs[0] * resolution)) - offset[0]
             j = int(round(obs[1] * resolution)) - offset[1]
-            if i < 0 or j < 0:
-                raise ValueError("Obs kernel not located on track")
+            if i < 0:
+                self.kernel[0:i+self.obs_kernel.shape[0], j:j+self.obs_kernel.shape[1]] += self.obs_kernel[abs(i):self.kernel.shape[0], :]
+                continue
 
-            self.kernel[i:i+obs_kernel.shape[0], j:j+obs_kernel.shape[1]] = obs_kernel
+            if self.kernel.shape[0] - i <= (self.obs_kernel.shape[0]):
+                self.kernel[i:i+self.obs_kernel.shape[0], j:j+self.obs_kernel.shape[1]] += self.obs_kernel[0:self.kernel.shape[0]-i, :]
+                continue
 
+
+            self.kernel[i:i+self.obs_kernel.shape[0], j:j+self.obs_kernel.shape[1]] += self.obs_kernel
+
+        self.kernel = np.clip(self.kernel, 0, 1)
 
         # self.view_kernel(np.pi/4)
 
@@ -477,12 +483,12 @@ def run_test_loop():
     # kernel.view_kernel(0, True)
 
     planner = RandoPlanner()
-    planner.kernel.construct_kernel(env.env_map.map_img.shape, env.env_map.obs_pts)
     success = 0
 
     for i in range(100):
         done = False
         state = env.reset()
+        planner.kernel.construct_kernel(env.env_map.map_img.shape, env.env_map.obs_pts)
         while not done:
             a = planner.plan(state)
             # print(f"State: {state['state']} --> Action: {a}")
