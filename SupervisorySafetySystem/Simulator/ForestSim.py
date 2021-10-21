@@ -78,7 +78,8 @@ class ForestMap:
         box_factor = 1.4
         y_box = y_length / (self.n_obs * box_factor)
         rands = np.random.random((self.n_obs, 2))
-        xs = rands[:, 0] * (self.forest_width-self.obs_size) 
+        # xs = rands[:, 0] * (self.forest_width-self.obs_size) 
+        xs = rands[:, 0] * (self.forest_width-self.obs_size*2) + self.obs_size /2
         ys = rands[:, 1] * y_box
         y_start = self.start_pose[1] + self.obstacle_buffer
         y_pts = [y_start + y_box * box_factor * i for i in range(self.n_obs)]
