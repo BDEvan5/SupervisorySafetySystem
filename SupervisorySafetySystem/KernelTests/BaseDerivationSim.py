@@ -29,11 +29,9 @@ class BaseSim:
         check_done: additional done checks like turning around
         update_state: implement the specific kinematic model
      """
-    def __init__(self, sim_conf=None):
-        self.env_map = ForestMap("forest2")
-        if sim_conf is None:
-            sim_conf = load_conf("config/fgm_config")
+    def __init__(self, sim_conf):
         self.sim_conf = sim_conf
+        self.env_map = ForestMap(sim_conf)
 
         self.scan_sim = ScanSimulator(self.sim_conf.n_beams)
         self.scan_sim.init_sim_map(self.env_map)
@@ -41,6 +39,9 @@ class BaseSim:
         self.wheelbase = sim_conf.l_f + sim_conf.l_r
         self.mass = sim_conf.m
         self.mu = sim_conf.mu
+
+        self.time_step = sim_conf.time_step
+        self.update_steps = sim_conf.update_steps
 
         self.max_d_dot = sim_conf.max_d_dot
         self.max_steer = sim_conf.max_steer
@@ -54,11 +55,9 @@ class BaseSim:
         self.pos_history = []
 
     def step(self, action):
-        # n_splits = 5
-        # t = 0.2/ n_splits
-        # for _ in range(n_splits):
-        #     self.state = self.update_state(action, t)
-        self.state = self.update_state(action, 0.2)
+        for _ in range(self.update_steps):
+            self.state = self.update_state(action, self.time_step)
+        # self.state = self.update_state(action, 0.2)
 
             # if self.check_done():
             #     break
@@ -87,8 +86,8 @@ class BaseSim:
         """
         observation = {}
         observation['state'] = self.state
-        observation['scan'] = self.scan_sim.scan(self.state[0:3],10) 
-        observation['full_scan'] = self.scan_sim.scan(self.state[0:3], 1000)
+        # observation['scan'] = self.scan_sim.scan(self.state[0:3],10) 
+        # observation['full_scan'] = self.scan_sim.scan(self.state[0:3], 1000)
         observation['reward'] = self.reward
         obs_pts1, obs_pts2 =  self.env_map.get_relative_obs_pts(self.state[0:2])
         observation['obs_pts1'] = obs_pts1

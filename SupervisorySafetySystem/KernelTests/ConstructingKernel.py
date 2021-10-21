@@ -1,14 +1,14 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-from SupervisorySafetySystem.Derivation.BaseDerivationSim import BaseSim
+from SupervisorySafetySystem.KernelTests.BaseDerivationSim import BaseSim
 from numba import njit
 from SupervisorySafetySystem.SafetySys.safety_utils import *
 
-
-class KernelSim(BaseSim):
-    def __init__(self):
-        BaseSim.__init__(self)
+#TODO: recombine with proper simulator files
+class KernelSim(BaseSim):  #time to move back to proper sim?
+    def __init__(self, conf):
+        BaseSim.__init__(self, conf)
         self.state = np.zeros(3) #[x, y, th]
 
     def update_state(self, action, dt):
@@ -92,7 +92,7 @@ class DiscriminatingImgKernel:
         # self.save_kernel()
 
     def save_kernel(self, name="std_kernel"):
-        np.save(f"SupervisorySafetySystem/Discrete/{name}.npy", self.kernel)
+        np.save(f"SupervisorySafetySystem/Kernels/{name}.npy", self.kernel)
         print(f"Saved kernel to file")
 
     def view_kernel(self, phi, show=True):
@@ -199,14 +199,12 @@ def check_kernel_state(i, j, k, n_modes, dynamics, previous_kernel, xs, ys):
 
 
 class Kernel:
-    def __init__(self, side_name="Side2mKernel", obs_name="ObsKernel", resolution=100):
-        # self.kernel = np.load("SupervisorySafetySystem/Discrete/SetObsKern.npy")
+    def __init__(self, sim_conf):
         self.kernel = None
-        self.resolution = resolution
-        self.side_kernel = np.load(f"SupervisorySafetySystem/Discrete/{side_name}.npy")
-        self.obs_kernel = np.load(f"SupervisorySafetySystem/Discrete/{obs_name}.npy")
+        self.resolution = int(1 / sim_conf.resolution)
+        self.side_kernel = np.load(f"{sim_conf.kernel_path}SideKernel_{sim_conf.kernel_name}.npy")
+        self.obs_kernel = np.load(f"{sim_conf.kernel_path}ObsKernel_{sim_conf.kernel_name}.npy")
 
-        # self.view_kernel(0)
 
     def construct_kernel(self, track_size, obs_locations):
         self.kernel = np.zeros((track_size[0], track_size[1], self.side_kernel.shape[2]))
@@ -284,7 +282,7 @@ class SafetyPlannerPP:
     def plan(self, obs):
         pp_action = self.run_pure_pursuit(obs['state'])
         # pp_action = self.take_random_action()
-        state = obs['state']
+        state = np.array(obs['state'])
 
         safe, next_state = check_init_action(state, pp_action, self.kernel)
         if safe:

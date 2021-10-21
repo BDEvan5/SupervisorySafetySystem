@@ -1,0 +1,41 @@
+
+
+
+mu: 0.523
+m: 3.47
+g: 9.81
+l_r: 0.171
+l_f: 0.158
+force_f: 0.9
+
+max_v: 7
+max_a: 8.5
+max_steer: 0.4
+max_d_dot: 3.2
+
+n_beams: 1000
+time_step: 0.2
+update_steps: 1
+max_steps: 5000
+
+end_distance: 2.5
+
+dis_scale: 1 # I don't know if this is the right place for this???
+
+# map info
+map_name: "forest2"
+resolution: 0.01
+forest_length: 25
+forest_width: 2
+start_pose: [1, 1, 0]
+end_y: 21
+obstacle_buffer: 3
+
+n_obs: 4
+obs_size: 0.5
+
+kernel_path: "SupervisorySafetySystem/Kernels/"
+kernel_name: "std"
+obs_img_size: 1.3 # size in meters 
+side_img_size: [2, 1]
+
