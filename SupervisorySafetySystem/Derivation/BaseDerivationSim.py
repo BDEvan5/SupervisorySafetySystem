@@ -29,9 +29,10 @@ class BaseSim:
         check_done: additional done checks like turning around
         update_state: implement the specific kinematic model
      """
-    def __init__(self):
+    def __init__(self, sim_conf=None):
         self.env_map = ForestMap("forest2")
-        sim_conf = load_conf("config/fgm_config")
+        if sim_conf is None:
+            sim_conf = load_conf("config/fgm_config")
         self.sim_conf = sim_conf
 
         self.scan_sim = ScanSimulator(self.sim_conf.n_beams)

@@ -13,26 +13,27 @@ from SupervisorySafetySystem.Simulator.BaseSimClasses import BaseSim
 
 
 class ForestMap:
-    def __init__(self, map_name) -> None:
-        self.map_name = map_name 
+    def __init__(self, sim_conf) -> None:
+        self.map_name = sim_conf.map_name 
 
         # map info
-        self.resolution = None
-        self.n_obs = None 
-        self.map_height = None
-        self.map_width = None
-        self.forest_length = None
-        self.forest_width = None
-        self.start_pose = None
-        self.obs_size = None
-        self.obstacle_buffer = None
-        self.end_y = None
-        self.end_goal = None
+        self.resolution = sim_conf.resolution
+        self.n_obs = sim_conf.n_obs
+        self.forest_length = sim_conf.forest_length
+        self.forest_width =  sim_conf.forest_width
+        self.start_pose = np.array(sim_conf.start_pose)
+        self.obs_size = sim_conf.obs_size
+        self.obstacle_buffer = sim_conf.obstacle_buffer
+        self.end_y = sim_conf.end_y
+
+        self.map_height = int(self.forest_length / self.resolution)
+        self.map_width = int(self.forest_width / self.resolution)
+        self.end_goal = np.array([self.start_pose[0], self.end_y])
+        self.map_img = np.zeros((self.map_width, self.map_height))
+        self.dt_img = None
+        self.set_dt()
 
         self.origin = [0, 0, 0] # for ScanSimulator
-        
-        self.dt_img = None
-        self.map_img = None
 
         self.ref_pts = None # std wpts that aren't expanded
         self.ss_normal = None # not expanded
@@ -41,35 +42,9 @@ class ForestMap:
 
         self.obs_pts = None
 
-        self.load_map()
         self.load_center_pts()
 
-    def load_map(self):
-        file_name = 'maps/' + self.map_name + '.yaml'
-        with open(file_name) as file:
-            documents = yaml.full_load(file)
-            yaml_file = dict(documents.items())
 
-        try:
-            self.resolution = yaml_file['resolution']
-            self.n_obs = yaml_file['n_obs']
-            self.obs_size = yaml_file['obs_size']
-            self.start_pose = np.array(yaml_file['start_pose'])
-            self.forest_length = yaml_file['forest_length']
-            self.forest_width = yaml_file['forest_width']
-            self.obstacle_buffer = yaml_file['obstacle_buffer']
-            self.end_y = yaml_file['end_y']
-        except Exception as e:
-            print(e)
-            raise FileNotFoundError("Problem loading map yaml file")
-
-        self.end_goal = np.array([self.start_pose[0], self.end_y])
-
-        self.map_height = int(self.forest_length / self.resolution)
-        self.map_width = int(self.forest_width / self.resolution)
-        self.map_img = np.zeros((self.map_width, self.map_height))
-
-        self.set_dt()
 
     def add_obstacles(self):
         self.map_img = np.zeros((self.map_width, self.map_height))
@@ -78,7 +53,8 @@ class ForestMap:
         box_factor = 1.4
         y_box = y_length / (self.n_obs * box_factor)
         rands = np.random.random((self.n_obs, 2))
-        xs = rands[:, 0] * (self.forest_width-self.obs_size) 
+        # xs = rands[:, 0] * (self.forest_width-self.obs_size) 
+        xs = rands[:, 0] * (self.forest_width-self.obs_size*2) + self.obs_size /2
         ys = rands[:, 1] * y_box
         y_start = self.start_pose[1] + self.obstacle_buffer
         y_pts = [y_start + y_box * box_factor * i for i in range(self.n_obs)]
@@ -129,7 +105,7 @@ class ForestMap:
     def render_map(self, figure_n=1, wait=False):
         #TODO: draw the track boundaries nicely
         f = plt.figure(figure_n)
-        # plt.clf()
+        plt.clf()
 
         plt.xlim([0, self.map_width])
         plt.ylim([0, self.map_height])
@@ -267,7 +243,7 @@ class ForestSim(BaseSim):
         map_name: name of the map to be used. Forest yaml file which stores the parameters for the forest. No image is required.
 
     """
-    def __init__(self, map_name, sim_conf):
+    def __init__(self, sim_conf):
         """
         Init function
 
@@ -276,7 +252,7 @@ class ForestSim(BaseSim):
             sim_conf: config file for simulation
         """
 
-        env_map = ForestMap(map_name)
+        env_map = ForestMap(sim_conf)
         BaseSim.__init__(self, env_map, self.check_done_forest, sim_conf
         )
 
