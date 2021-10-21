@@ -6,7 +6,7 @@ from numba import njit
 from SupervisorySafetySystem.SafetySys.safety_utils import *
 
 
-class SimThree(BaseSim):
+class KernelSim(BaseSim):
     def __init__(self):
         BaseSim.__init__(self)
         self.state = np.zeros(3) #[x, y, th]
@@ -88,7 +88,7 @@ class DiscriminatingImgKernel:
             # plt.imshow(img, origin='lower')
             # plt.pause(0.0001)
 
-            self.view_kernel(0, False)
+            # self.view_kernel(0, False)
         # self.save_kernel()
 
     def save_kernel(self, name="std_kernel"):
@@ -196,44 +196,15 @@ def check_kernel_state(i, j, k, n_modes, dynamics, previous_kernel, xs, ys):
 
     return True
 
-def construct_kernel():
-    constructy_kernel_sides()
-    construct_obs_kernel()
-
-
-
-def construct_obs_kernel():
-    img = np.zeros((130, 130))
-    img[40:90, 80:130] = 1
-    kernel = DiscriminatingImgKernel(img)
-    kernel.calculate_kernel()
-    kernel.save_kernel("ObsKernel")
-    kernel.view_kernel(0)
-    kernel.view_kernel(-np.pi/5)    
-    kernel.view_kernel(np.pi/5)
-
-def constructy_kernel_sides():
-    # resolution = 100 # one cm 
-    img = np.zeros((200, 100))
-    img[0, :] = 1
-    img[-1, :] = 1
-    kernel = DiscriminatingImgKernel(img)
-    kernel.calculate_kernel()
-    kernel.save_kernel("Side2mKernel")
-    kernel.view_kernel(-np.pi/2)
-    kernel.view_kernel(-np.pi/2+0.1)
-    kernel.view_kernel(-np.pi/4)
-    kernel.view_kernel(-np.pi/6)
-    kernel.view_kernel(0)
 
 
 class Kernel:
-    def __init__(self):
+    def __init__(self, side_name="Side2mKernel", obs_name="ObsKernel", resolution=100):
         # self.kernel = np.load("SupervisorySafetySystem/Discrete/SetObsKern.npy")
         self.kernel = None
-        self.resolution = 100
-        self.side_kernel = np.load("SupervisorySafetySystem/Discrete/Side2mKernel.npy")
-        self.obs_kernel = np.load("SupervisorySafetySystem/Discrete/ObsKernel.npy")
+        self.resolution = resolution
+        self.side_kernel = np.load(f"SupervisorySafetySystem/Discrete/{side_name}.npy")
+        self.obs_kernel = np.load(f"SupervisorySafetySystem/Discrete/{obs_name}.npy")
 
         # self.view_kernel(0)
 
@@ -243,7 +214,7 @@ class Kernel:
         for i in range(length):
             self.kernel[:, i*self.resolution:(i+1)*self.resolution] = self.side_kernel
 
-        offset = [40, 80]
+        offset = [40, 80] #TODO: see issue here
         resolution = 100
         for obs in obs_locations:
             i = int(round(obs[0] * resolution)) - offset[0]
@@ -304,15 +275,15 @@ class Kernel:
 
 
 
-class RandoPlanner:
+class SafetyPlannerPP:
     def __init__(self):
         self.d_max = 0.4 # radians  
         self.v = 2
-        self.kernel = Kernel()
+        self.kernel = None
 
     def plan(self, obs):
-        # pp_action = self.run_pure_pursuit(obs['state'])
-        pp_action = self.take_random_action()
+        pp_action = self.run_pure_pursuit(obs['state'])
+        # pp_action = self.take_random_action()
         state = obs['state']
 
         safe, next_state = check_init_action(state, pp_action, self.kernel)
@@ -474,43 +445,7 @@ def find_new_action(valid_window, idx_search):
     return np.count_nonzero(valid_window)
     
 
-def run_test_loop():
-    env = SimThree()  
-    env.reset()
 
-    # kernel = DiscriminatingImgKernel(env.env_map.map_img)
-    # kernel.calculate_kernel(20)
-    # kernel.view_kernel(0, True)
-
-    planner = RandoPlanner()
-    success = 0
-
-    for i in range(100):
-        done = False
-        state = env.reset()
-        planner.kernel.construct_kernel(env.env_map.map_img.shape, env.env_map.obs_pts)
-        while not done:
-            a = planner.plan(state)
-            # print(f"State: {state['state']} --> Action: {a}")
-            s_p, r, done, _ = env.step(a)
-            state = s_p
-            # env.render_pose()
-
-        if r == -1:
-            print(f"{i}: Crashed -> {s_p['state']}")
-        elif r == 1:
-            print(f"{i}: Success")
-            success += 1 
-
-        env.render_ep()
-        plt.pause(0.5)
-
-        if r == -1:
-            plt.show()
-
-    print("Success rate: {}".format(success/100))
-
-  
 
 
 
