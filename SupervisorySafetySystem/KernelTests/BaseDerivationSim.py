@@ -79,6 +79,18 @@ class BaseSim:
         self.scan_sim.dt = self.env_map.set_dt()
          
         return self.get_observation()
+    
+
+    def get_target_obs(self):
+        target = self.env_map.end_goal
+        pos = self.state[0:2]
+        base_angle = lib.get_bearing(pos, target) 
+        angle = lib.sub_angles_complex(base_angle, self.state[2])
+
+        em = self.env_map
+        s = calculate_progress(pos, em.ref_pts, em.diffs, em.l2s, em.ss_normal)
+
+        return [angle, s]
    
     def get_observation(self):
         """
@@ -86,12 +98,14 @@ class BaseSim:
         """
         observation = {}
         observation['state'] = self.state
-        # observation['scan'] = self.scan_sim.scan(self.state[0:3],10) 
+        observation['scan'] = self.scan_sim.scan(self.state[0:3],10) 
         # observation['full_scan'] = self.scan_sim.scan(self.state[0:3], 1000)
         observation['reward'] = self.reward
         obs_pts1, obs_pts2 =  self.env_map.get_relative_obs_pts(self.state[0:2])
         observation['obs_pts1'] = obs_pts1
         observation['obs_pts2'] = obs_pts2
+
+        observation['target'] = self.get_target_obs()
 
         return observation
 

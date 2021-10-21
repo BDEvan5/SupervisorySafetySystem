@@ -51,7 +51,7 @@ def construct_obs_kernel(conf):
     obs_offset = int((img_size - obs_size) / 2)
     img = np.zeros((img_size, img_size))
     img[obs_offset:obs_size+obs_offset, -obs_size:-1] = 1 
-    kernel = DiscriminatingImgKernel(img)
+    kernel = DiscriminatingImgKernel(img, conf)
     kernel.calculate_kernel()
     kernel.save_kernel(f"ObsKernel_{conf.kernel_name}")
 
@@ -60,7 +60,7 @@ def constructy_kernel_sides(conf): #TODO: combine to single fcn?
     img = np.zeros(img_size) # use res arg and set length
     img[0, :] = 1
     img[-1, :] = 1
-    kernel = DiscriminatingImgKernel(img)
+    kernel = DiscriminatingImgKernel(img, conf)
     kernel.calculate_kernel()
     kernel.save_kernel(f"SideKernel_{conf.kernel_name}")
 

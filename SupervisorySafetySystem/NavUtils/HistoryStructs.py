@@ -8,7 +8,7 @@ from matplotlib import pyplot as plt
 class TrainHistory():
     def __init__(self, agent_name, load=False) -> None:
         self.agent_name = agent_name
-        self.path = '/Vehicles/' + self.agent_name 
+        self.path = '/EvalVehicles/' + self.agent_name 
 
         # training data
         self.ptr = 0
@@ -72,13 +72,13 @@ class TrainHistory():
         data = []
         for i in range(len(self.rewards)):
             data.append([i, self.rewards[i], self.lengths[i]])
-        full_name = 'Vehicles/' + self.agent_name + '/training_data.csv'
+        full_name = 'EvalVehicles/' + self.agent_name + '/training_data.csv'
         with open(full_name, 'w') as csvfile:
             csvwriter = csv.writer(csvfile)
             csvwriter.writerows(data)
 
         plt.figure(2)
-        plt.savefig('Vehicles/' + self.agent_name + "/training_rewards.png")
+        plt.savefig('EvalVehicles/' + self.agent_name + "/training_rewards.png")
 
 
 class RewardAnalyser:

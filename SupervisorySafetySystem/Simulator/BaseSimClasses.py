@@ -126,7 +126,8 @@ class BaseSim:
 
         self.timestep = self.sim_conf.time_step
         self.max_steps = self.sim_conf.max_steps
-        self.plan_steps = self.sim_conf.plan_steps
+        self.plan_steps = self.sim_conf.update_steps
+        self.n_beams = self.sim_conf.n_beams
 
         self.state = np.zeros(5)
         self.scan_sim = ScanSimulator(self.sim_conf.n_beams)
@@ -279,13 +280,13 @@ class BaseSim:
         """
         car_obs = self.state
         pose = car_obs[0:3]
-        scan = self.scan_sim.scan(pose,10)
+        scan = self.scan_sim.scan(pose,self.n_beams)
         target = self.get_target_obs()
 
         observation = {}
         observation['state'] = car_obs
         observation['scan'] = scan 
-        observation['full_scan'] = self.scan_sim.scan(pose, 1000)
+        # observation['full_scan'] = self.scan_sim.scan(pose, 1000)
         observation['target'] = target
         observation['reward'] = self.reward
 

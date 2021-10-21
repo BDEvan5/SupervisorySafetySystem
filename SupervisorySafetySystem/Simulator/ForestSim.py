@@ -105,7 +105,7 @@ class ForestMap:
     def render_map(self, figure_n=1, wait=False):
         #TODO: draw the track boundaries nicely
         f = plt.figure(figure_n)
-        # plt.clf()
+        plt.clf()
 
         plt.xlim([0, self.map_width])
         plt.ylim([0, self.map_height])
@@ -243,7 +243,7 @@ class ForestSim(BaseSim):
         map_name: name of the map to be used. Forest yaml file which stores the parameters for the forest. No image is required.
 
     """
-    def __init__(self, map_name, sim_conf):
+    def __init__(self, sim_conf):
         """
         Init function
 
@@ -252,7 +252,7 @@ class ForestSim(BaseSim):
             sim_conf: config file for simulation
         """
 
-        env_map = ForestMap(map_name)
+        env_map = ForestMap(sim_conf)
         BaseSim.__init__(self, env_map, self.check_done_forest, sim_conf
         )
 

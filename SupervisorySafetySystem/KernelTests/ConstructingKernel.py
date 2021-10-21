@@ -37,16 +37,16 @@ def update_state(state, action, dt):
 
 
 class DiscriminatingImgKernel:
-    def __init__(self, track_img):
+    def __init__(self, track_img, sim_conf):
         self.track_img = track_img
-        self.resolution = 100
-        self.t_step = 0.2
-        self.velocity = 2
-        self.n_phi = 61
-        self.phi_range = np.pi
+        self.resolution = int(1/sim_conf.resolution)
+        self.t_step = sim_conf.time_step
+        self.velocity = 2 #TODO: make this a config param
+        self.n_phi = 61  #TODO: add to conf file
+        self.phi_range = np.pi #TODO: add to conf file
         self.half_block = 1 / (2*self.resolution)
         self.half_phi = self.phi_range / (2*self.n_phi)
-        self.n_modes = 5
+        self.n_modes = 5 #TODO: add to conf file
 
         self.n_x = track_img.shape[0]
         self.n_y = track_img.shape[1]
@@ -62,9 +62,6 @@ class DiscriminatingImgKernel:
         self.dynamics = build_dynamics_table(self.phis, self.qs, self.velocity, self.t_step, self.resolution)
 
         self.kernel[:, :, :] = track_img[:, :, None] * np.ones((self.n_x, self.n_y, self.n_phi))
-        # self.kernel[0, :, :] = 1
-        # self.kernel[-1, :, :] = 1
-        # self.previous_kernel = np.copy(self.kernel)
 
     # config functions
     def build_qs(self):
