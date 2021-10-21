@@ -68,8 +68,8 @@ if __name__ == "__main__":
     # test_planner(SerialVehicleTest, baseline_name)
 
 
-    train_planner(AgentKernelTrain, kernel_name)
-    # test_planner(AgentKernelTest, kernel_name)
+    # train_planner(AgentKernelTrain, kernel_name)
+    test_planner(AgentKernelTest, kernel_name)
 
 
 

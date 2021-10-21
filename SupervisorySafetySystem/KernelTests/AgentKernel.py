@@ -190,10 +190,11 @@ class AgentKernelTest(SerialVehicleTest):
         # integrate safey planner into here.
 
     def plan_act(self, obs):
-        agent_action = super().plan_act(obs)[0]
+        agent_action = super().plan_act(obs)
+        agent_action[0] = self.velocity
         # agent_steering = agent_action[0, 0]
     
-        state = np.array(obs['state'])
+        state = np.array(obs['state'])[0:3]
 
         safe, next_state = check_init_action(state, agent_action, self.kernel)
         if safe:
@@ -204,7 +205,7 @@ class AgentKernelTest(SerialVehicleTest):
         if not valids.any():
             print('No Valid options')
             print(f"State: {obs['state']}")
-            return pp_action
+            return agent_action
         
         action = modify_action(agent_action, valids, dw)
 
@@ -214,7 +215,7 @@ class AgentKernelTest(SerialVehicleTest):
         n_segments = 5
         dw = np.ones((5, 2))
         dw[:, 0] = np.linspace(-self.d_max, self.d_max, n_segments)
-        dw[:, 1] *= self.v
+        dw[:, 1] *= self.velocity
         return dw
 
 
