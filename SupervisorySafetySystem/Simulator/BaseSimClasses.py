@@ -162,13 +162,18 @@ class BaseSim:
         """
         action = np.array(action)
         self.action = action
-        for _ in range(self.plan_steps):
-            u = control_system(self.state, action, self.max_v, self.max_steer, 8, 3.2)
-            self.state = update_kinematic_state(self.state, u, self.timestep, self.wheelbase, self.max_steer, self.max_v)
-            self.steps += 1 
+        # for _ in range(self.plan_steps):
+        #     u = control_system(self.state, action, self.max_v, self.max_steer, 8, 3.2)
+        #     self.state = update_kinematic_state(self.state, u, self.timestep, self.wheelbase, self.max_steer, self.max_v)
+        #     self.steps += 1 
 
-            if self.done_fcn():
-                break
+
+        #     if self.done_fcn():
+        #         break
+
+        for _ in range(self.plan_steps):
+            self.state = update_simple_state(self.state, action, self.timestep, self.wheelbase, self.max_steer, self.max_v)
+        self.done_fcn()
 
         self.record_history(action)
 
@@ -375,14 +380,45 @@ def control_system(state, action, max_v, max_steer, max_a, max_d_dot):
     d_dot = (d_ref-state[4])*kp_delta
 
     # clip actions
-    a = min(a, max_a)
-    a = max(a, -max_a)
-    d_dot = min(d_dot, max_d_dot)
-    d_dot = max(d_dot, -max_d_dot)
+    #TODO: temporary removal of dynamic constraints
+    # a = min(a, max_a)
+    # a = max(a, -max_a)
+    # d_dot = min(d_dot, max_d_dot)
+    # d_dot = max(d_dot, -max_d_dot)
     
     u = np.array([d_dot, a])
 
     return u
 
 
+@njit(cache=True)
+def update_simple_state(x, u, dt, whlb, max_steer, max_v):
+    """
+    Updates the kinematic state according to bicycle model
 
+    Args:
+        X: State, x, y, theta, velocity, steering
+        u: control action, d_dot, a
+    Returns
+        new_state: updated state of vehicle
+    """
+    theta_update = x[2] +  ((u[1] / whlb) * np.tan(u[0]) * dt)
+    dx = np.array([u[1] * np.sin(theta_update),
+                u[1]*np.cos(theta_update),
+                u[1] / whlb * np.tan(u[0]),
+                u[1],
+                u[0]])
+    # dx = np.array([x[3]*np.sin(x[2]), # x
+    #             x[3]*np.cos(x[2]), # y
+    #             x[3]/whlb * np.tan(x[4]), # theta
+    #             u[1], # velocity
+    #             u[0]]) # steering
+
+    new_state = x + dx * dt 
+
+    # check limits
+    new_state[4] = min(new_state[4], max_steer)
+    new_state[4] = max(new_state[4], -max_steer)
+    new_state[3] = min(new_state[3], max_v)
+
+    return new_state

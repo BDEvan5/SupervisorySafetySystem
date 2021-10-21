@@ -56,6 +56,6 @@ s_mul: 1
 
 train_n: 40000
 # train_n: 100000
-buffer_n: 1000
+buffer_n: 0
 
 test_n: 100

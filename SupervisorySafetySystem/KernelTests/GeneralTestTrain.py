@@ -28,7 +28,7 @@ def test_single_vehicle(env, vehicle, show=False, laps=100, add_obs=True, wait=F
     done, score = False, 0.0
     for i in range(laps):
         try:
-            vehicle.plan_forest(env.env_map)
+            vehicle.kernel.construct_kernel(env.env_map.map_img.shape, env.env_map.obs_pts)
         except AttributeError as e:
             pass
         while not done:
@@ -360,6 +360,10 @@ def train_vehicle(env, vehicle, sim_conf):
     state = env.reset(True)
 
     print(f"Building Buffer: {sim_conf.buffer_n}")
+    try:
+        vehicle.kernel.construct_kernel(env.env_map.map_img.shape, env.env_map.obs_pts)
+    except AttributeError as e:
+        pass
     for n in range(sim_conf.buffer_n):
         a = vehicle.plan_act(state)
         s_prime, r, done, _ = env.step_plan(a)
@@ -367,10 +371,15 @@ def train_vehicle(env, vehicle, sim_conf):
         
         if done:
             vehicle.done_entry(s_prime)
+            
 
             vehicle.reset_lap()
             state = env.reset(True)
-        
+            try:
+                vehicle.kernel.construct_kernel(env.env_map.map_img.shape, env.env_map.obs_pts)
+            except AttributeError as e:
+                pass
+
         vehicle.reset_lap()
         state = env.reset(True)
 
@@ -384,9 +393,14 @@ def train_vehicle(env, vehicle, sim_conf):
         
         if done:
             vehicle.done_entry(s_prime)
+            env.render(wait=False)
 
             vehicle.reset_lap()
             state = env.reset(True)
+            try:
+                vehicle.kernel.construct_kernel(env.env_map.map_img.shape, env.env_map.obs_pts)
+            except AttributeError as e:
+                pass
 
     vehicle.t_his.print_update(True)
     vehicle.t_his.save_csv_data()
