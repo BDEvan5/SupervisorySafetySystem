@@ -2,17 +2,6 @@ import numpy as np
 from numba import njit
 from matplotlib import pyplot as plt
 
-class RandomPlanner:
-    def __init__(self):
-        self.d_max = 0.4 # radians  
-        self.v = 2        
-
-    def plan_act(self, obs):
-        np.random.seed()
-        steering = np.random.normal(0, 0.1)
-        steering = np.clip(steering, -self.d_max, self.d_max)
-        return np.array([steering, self.v])
-
 
 class Kernel:
     def __init__(self, sim_conf):

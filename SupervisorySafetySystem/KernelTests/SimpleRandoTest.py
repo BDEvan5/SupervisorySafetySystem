@@ -1,7 +1,8 @@
-from SupervisorySafetySystem.KernelTests.GeneralTestTrain import train_vehicle, test_single_vehicle
+from SupervisorySafetySystem.KernelTests.GeneralTestTrain import test_kernel_vehicle
 
 from SupervisorySafetySystem.Simulator.ForestSim import ForestSim
-from SupervisorySafetySystem.SafetyWrapper import SafetyWrapper, RandomPlanner
+from SupervisorySafetySystem.SafetyWrapper import SafetyWrapper
+from SupervisorySafetySystem.NavAgents.SimplePlanners import RandomPlanner, PurePursuit 
 from SupervisorySafetySystem.KernelGenerator import construct_obs_kernel, construct_kernel_sides
 
 import yaml
@@ -54,7 +55,7 @@ def run_test_loop(env, planner, show=False, n_tests=100):
     return success/n_tests
 
 
-def full_std_test():
+def rando_test():
     conf = load_conf("kernel_config")
 
     construct_obs_kernel(conf)
@@ -66,6 +67,19 @@ def full_std_test():
 
     run_test_loop(env, safety_planner, True, 10)
 
+def pp_test():
+    conf = load_conf("kernel_config")
+
+    # construct_obs_kernel(conf)
+    # construct_kernel_sides(conf)
+
+    env = ForestSim(conf)
+    planner = PurePursuit(conf)
+    safety_planner = SafetyWrapper(planner, conf)
+
+    # run_test_loop(env, safety_planner, True, 10)
+    test_kernel_vehicle(env, safety_planner, True, 10)
+
 if __name__ == "__main__":
-    # std_test()
-    full_std_test()
+    # rando_test()
+    pp_test()
