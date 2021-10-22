@@ -364,7 +364,6 @@ def train_kernel_vehicle(env, vehicle, sim_conf):
         if done:
             vehicle.planner.done_entry(s_prime)
             
-
             state = env.reset(True)
             vehicle.kernel.construct_kernel(env.env_map.map_img.shape, env.env_map.obs_pts)
 
@@ -381,6 +380,7 @@ def train_kernel_vehicle(env, vehicle, sim_conf):
         if done:
             vehicle.planner.done_entry(s_prime)
             env.render(wait=False)
+            vehicle.safe_history.plot_safe_history()
 
             state = env.reset(True)
             vehicle.kernel.construct_kernel(env.env_map.map_img.shape, env.env_map.obs_pts)

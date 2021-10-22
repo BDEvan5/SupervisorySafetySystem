@@ -1,15 +1,17 @@
-from SupervisorySafetySystem.NavAgents.SerialAgentPlanner import SerialVehicleTrain, SerialVehicleTest
-
-from matplotlib import pyplot as plt
 import numpy as np
 from numba import njit
+from matplotlib import pyplot as plt
+
 
 class Kernel:
     def __init__(self, sim_conf):
         self.kernel = None
-        self.resolution = int(1 / sim_conf.resolution)
+        self.resolution = sim_conf.n_dx
         self.side_kernel = np.load(f"{sim_conf.kernel_path}SideKernel_{sim_conf.kernel_name}.npy")
         self.obs_kernel = np.load(f"{sim_conf.kernel_path}ObsKernel_{sim_conf.kernel_name}.npy")
+        img_size = int(sim_conf.obs_img_size * sim_conf.n_dx)
+        obs_size = int(sim_conf.obs_size * sim_conf.n_dx)
+        self.obs_offset = int((img_size - obs_size) / 2)
 
     def construct_kernel(self, track_size, obs_locations):
         self.kernel = np.zeros((track_size[0], track_size[1], self.side_kernel.shape[2]))
@@ -17,11 +19,9 @@ class Kernel:
         for i in range(length):
             self.kernel[:, i*self.resolution:(i+1)*self.resolution] = self.side_kernel
 
-        offset = [40, 80] #TODO: see issue here
-        resolution = 100
         for obs in obs_locations:
-            i = int(round(obs[0] * resolution)) - offset[0]
-            j = int(round(obs[1] * resolution)) - offset[1]
+            i = int(round(obs[0] * self.resolution)) - self.obs_offset
+            j = int(round(obs[1] * self.resolution)) - self.obs_offset * 2
             if i < 0:
                 self.kernel[0:i+self.obs_kernel.shape[0], j:j+self.obs_kernel.shape[1]] += self.obs_kernel[abs(i):self.kernel.shape[0], :]
                 continue
@@ -35,7 +35,6 @@ class Kernel:
 
         self.kernel = np.clip(self.kernel, 0, 1)
 
-        # print(f"Kernel shape: {self.kernel.shape} --> successfully constructed")
         # self.view_kernel(np.pi/4)
 
     def view_kernel(self, theta):
@@ -78,20 +77,92 @@ class Kernel:
         plt.pause(0.0001)
 
 
-@njit(cache=True)
-def update_state(state, action, dt):
-    """
-    Updates x, y, th pos accoridng to th_d, v
-    """
-    L = 0.33
-    theta_update = state[2] +  ((action[1] / L) * np.tan(action[0]) * dt)
-    dx = np.array([action[1] * np.sin(theta_update),
-                action[1]*np.cos(theta_update),
-                action[1] / L * np.tan(action[0])])
+class SafetyHistory:
+    def __init__(self):
+        self.planned_actions = []
+        self.safe_actions = []
 
-    return state + dx * dt 
+    def add_locations(self, planned_action, safe_action=None):
+        self.planned_actions.append(planned_action)
+        if safe_action is None:
+            self.safe_actions.append(planned_action)
+        else:
+            self.safe_actions.append(safe_action)
 
+    def plot_safe_history(self):
+        plt.figure(5)
+        plt.clf()
+        plt.title("Safe History")
+        plt.plot(self.planned_actions, color='blue')
+        plt.plot(self.safe_actions, '-x', color='red')
+        plt.ylim([-0.5, 0.5])
+        # plt.show()
+        plt.pause(0.0001)
 
+        self.planned_actions = []
+        self.safe_actions = []
+
+class SafetyAgentWrapper:
+    def __init__(self, planner, conf):
+        """
+        A wrapper class that can be used with any other planner.
+        Requires a planner with:
+            - a method called 'plan_act' that takes a state and returns an action
+
+        """
+        
+        #TODO: make sure these parameters are defined in the planner an then remove them here. This is constructor dependency injection
+        self.d_max = conf.max_steer
+        self.v = 2
+        self.kernel = Kernel(conf)
+        self.planner = planner
+
+        self.intervene = False
+        self.safe_history = SafetyHistory()
+
+    def plan(self, obs):
+        obs['reward'] = self.calculate_reward()
+        init_action = self.planner.plan_act(obs)
+        init_action[1] = self.v
+        state = np.array(obs['state'])[0:3]
+
+        safe, next_state = check_init_action(state, init_action, self.kernel)
+
+        if safe:
+            self.safe_history.add_locations(init_action[0])
+            return init_action
+
+        self.intervene = True
+
+        dw = self.generate_dw()
+        valids = simulate_and_classify(state, dw, self.kernel)
+        if not valids.any():
+            print('No Valid options')
+            print(f"State: {obs['state']}")
+            return init_action
+        
+        action = modify_action(init_action, valids, dw)
+        # print(f"Valids: {valids} -> new action: {action}")
+        self.safe_history.add_locations(init_action[0], action[0])
+
+        return action
+
+    def generate_dw(self):
+        n_segments = 5
+        dw = np.ones((5, 2))
+        dw[:, 0] = np.linspace(-self.d_max, self.d_max, n_segments)
+        dw[:, 1] *= self.v
+        return dw
+
+    def calculate_reward(self):
+        if self.intervene:
+            self.intervene = False
+            return -1
+        return 0
+
+    def done_entry(self, s_prime):
+        s_prime['reward'] = self.calculate_reward()
+        self.planner.done_entry(s_prime)
 
 def check_init_action(state, u0, kernel):
     next_state = update_state(state, u0, 0.2)
@@ -135,88 +206,18 @@ def find_new_action(valid_window, idx_search):
     return np.count_nonzero(valid_window)
     
 
+@njit(cache=True)
+def update_state(state, action, dt):
+    """
+    Updates x, y, th pos accoridng to th_d, v
+    """
+    L = 0.33
+    theta_update = state[2] +  ((action[1] / L) * np.tan(action[0]) * dt)
+    dx = np.array([action[1] * np.sin(theta_update),
+                action[1]*np.cos(theta_update),
+                action[1] / L * np.tan(action[0])])
 
-
-class AgentKernelTrain(SerialVehicleTrain):
-    def __init__(self, agent_name, sim_conf):
-        SerialVehicleTrain.__init__(self, agent_name, sim_conf)
-        self.kernel = Kernel(sim_conf)
-
-        self.velocity = 2
-        self.d_max = 0.4
-        # integrate safey planner into here.
-
-    def plan_act(self, obs):
-        agent_action = super().plan_act(obs)
-        # agent_steering = agent_action[0, 0]
-        agent_action[1] = self.velocity
-    
-        state = np.array(obs['state'])[0:3]
-
-        safe, next_state = check_init_action(state, agent_action, self.kernel)
-        if safe:
-            return agent_action
-
-        dw = self.generate_dw()
-        valids = simulate_and_classify(state, dw, self.kernel)
-        if not valids.any():
-            print('No Valid options')
-            print(f"State: {obs['state']}")
-            return agent_action
-        
-        action = modify_action(agent_action, valids, dw)
-        # print(f"Valids: {valids} -> new action: {action}")
-
-        return action
-
-    def generate_dw(self):
-        n_segments = 5
-        dw = np.ones((5, 2))
-        dw[:, 0] = np.linspace(-self.d_max, self.d_max, n_segments)
-        dw[:, 1] *= self.velocity
-        return dw
-
-
-
-
-class AgentKernelTest(SerialVehicleTest):
-    def __init__(self, agent_name, sim_conf):
-        SerialVehicleTest.__init__(self, agent_name, sim_conf)
-
-        self.kernel = Kernel(sim_conf)
-
-        self.velocity = 2
-        self.d_max = 0.4
-        # integrate safey planner into here.
-
-    def plan_act(self, obs):
-        agent_action = super().plan_act(obs)
-        agent_action[0] = self.velocity
-        # agent_steering = agent_action[0, 0]
-    
-        state = np.array(obs['state'])[0:3]
-
-        safe, next_state = check_init_action(state, agent_action, self.kernel)
-        if safe:
-            return agent_action
-
-        dw = self.generate_dw()
-        valids = simulate_and_classify(state[0:3], dw, self.kernel)
-        if not valids.any():
-            print('No Valid options')
-            print(f"State: {obs['state']}")
-            return agent_action
-        
-        action = modify_action(agent_action, valids, dw)
-
-        return action
-
-    def generate_dw(self):
-        n_segments = 5
-        dw = np.ones((5, 2))
-        dw[:, 0] = np.linspace(-self.d_max, self.d_max, n_segments)
-        dw[:, 1] *= self.velocity
-        return dw
+    return state + dx * dt 
 
 
 
