@@ -1,9 +1,8 @@
 from SupervisorySafetySystem.KernelTests.GeneralTestTrain import train_vehicle, test_single_vehicle
-from SupervisorySafetySystem.NavAgents.SerialAgentPlanner import SerialVehicleTest, SerialVehicleTrain
-from SupervisorySafetySystem.AgentKernel import AgentKernelTrain, AgentKernelTest
 
-from SupervisorySafetySystem.KernelTests.ConstructingKernel import DiscriminatingImgKernel, Kernel, SafetyPlannerPP, KernelSim
+# from SupervisorySafetySystem.KernelTests.ConstructingKernel import DiscriminatingImgKernel, Kernel, SafetyPlannerPP, KernelSim
 from SupervisorySafetySystem.Simulator.ForestSim import ForestSim
+from SupervisorySafetySystem.SafetyWrapper import SafetyWrapper, RandomPlanner
 
 import yaml
 from argparse import Namespace
@@ -34,7 +33,7 @@ def run_test_loop(env, planner, show=False, n_tests=100):
         planner.kernel.construct_kernel(env.env_map.map_img.shape, env.env_map.obs_pts)
         while not done:
             a = planner.plan(state)
-            s_p, r, done, _ = env.step(a)
+            s_p, r, done, _ = env.step_plan(a)
             state = s_p
 
         if r == -1:
@@ -44,7 +43,7 @@ def run_test_loop(env, planner, show=False, n_tests=100):
             success += 1 
 
         if show:
-            env.render_ep()
+            env.render()
             plt.pause(0.5)
 
             if r == -1:
@@ -68,6 +67,15 @@ def std_test():
     run_test_loop(env, planner, False, 10)
 
 
-if __name__ == "__main__":
-    std_test()
+def full_std_test():
+    conf = load_conf("kernel_config")
 
+    env = ForestSim(conf)
+    planner = RandomPlanner()
+    safety_planner = SafetyWrapper(planner, conf)
+
+    run_test_loop(env, safety_planner, True, 10)
+
+if __name__ == "__main__":
+    # std_test()
+    full_std_test()
