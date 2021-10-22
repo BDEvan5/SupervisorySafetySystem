@@ -9,6 +9,9 @@ class Kernel:
         self.resolution = sim_conf.n_dx
         self.side_kernel = np.load(f"{sim_conf.kernel_path}SideKernel_{sim_conf.kernel_name}.npy")
         self.obs_kernel = np.load(f"{sim_conf.kernel_path}ObsKernel_{sim_conf.kernel_name}.npy")
+        img_size = int(sim_conf.obs_img_size * sim_conf.n_dx)
+        obs_size = int(sim_conf.obs_size * sim_conf.n_dx)
+        self.obs_offset = int((img_size - obs_size) / 2)
 
     def construct_kernel(self, track_size, obs_locations):
         self.kernel = np.zeros((track_size[0], track_size[1], self.side_kernel.shape[2]))
@@ -16,11 +19,9 @@ class Kernel:
         for i in range(length):
             self.kernel[:, i*self.resolution:(i+1)*self.resolution] = self.side_kernel
 
-        offset = [40, 80] #TODO: see issue here
-        resolution = 100
         for obs in obs_locations:
-            i = int(round(obs[0] * resolution)) - offset[0]
-            j = int(round(obs[1] * resolution)) - offset[1]
+            i = int(round(obs[0] * self.resolution)) - self.obs_offset
+            j = int(round(obs[1] * self.resolution)) - self.obs_offset * 2
             if i < 0:
                 self.kernel[0:i+self.obs_kernel.shape[0], j:j+self.obs_kernel.shape[1]] += self.obs_kernel[abs(i):self.kernel.shape[0], :]
                 continue

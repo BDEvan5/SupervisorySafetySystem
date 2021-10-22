@@ -23,7 +23,7 @@ dis_scale: 1 # I don't know if this is the right place for this???
 
 # map info
 map_name: "forest2"
-n_dx: 100
+n_dx: 80
 # resolution: 0.01
 forest_length: 25
 forest_width: 2
