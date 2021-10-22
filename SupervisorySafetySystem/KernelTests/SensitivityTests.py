@@ -45,8 +45,60 @@ def disretization_test():
     print(n_dxs)
     print(results)  
 
+def timestep_tests():
+    # time_steps = [0.18, 0.2, 0.25, 0.3]
+    time_steps = [0.1, 0.15, 0.18]
+    results = np.zeros_like(time_steps)
+    conf = load_conf("kernel_config")
+
+    for i, time in enumerate(time_steps):
+        print(f"Running discretisation test: {time}")
+        
+        conf.time_step = time
+        conf.kernel_name = f"time_{time}"
+
+        construct_obs_kernel(conf)
+        construct_kernel_sides(conf)
+
+        env = ForestSim(conf)
+        planner = PurePursuit(conf)
+        safety_planner = SafetyWrapper(planner, conf)
+
+        results[i] = test_kernel_vehicle(env, safety_planner, True, 20)
+
+
+    print(time_steps)
+    print(results)  
+
+def phi_tests():
+    phis = [21, 41, 61, 81]
+    results = np.zeros_like(phis)
+    conf = load_conf("kernel_config")
+
+    for i, n_phi in enumerate(phis):
+        print(f"Running Phi test: {n_phi}")
+        
+        conf.n_phi = n_phi
+        conf.kernel_name = f"phi_{n_phi}"
+
+        construct_obs_kernel(conf)
+        construct_kernel_sides(conf)
+
+        env = ForestSim(conf)
+        planner = PurePursuit(conf)
+        safety_planner = SafetyWrapper(planner, conf)
+
+        results[i] = test_kernel_vehicle(env, safety_planner, True, 20)
+
+
+    print(phi_tests)
+    print(results)  
+
+
 if __name__ == "__main__":
     # std_test()
-    disretization_test()
+    # disretization_test()
+    timestep_tests()
+    # phi_tests()
 
 
