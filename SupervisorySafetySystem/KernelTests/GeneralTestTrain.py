@@ -41,7 +41,7 @@ def test_kernel_vehicle(env, vehicle, show=False, laps=100, add_obs=True, wait=F
         if r == -1:
             crashes += 1
             print(f"({i}) Crashed -> time: {env.steps} ")
-            plt.show()
+            # plt.show()
         else:
             completes += 1
             print(f"({i}) Complete -> time: {env.steps}")
@@ -53,6 +53,8 @@ def test_kernel_vehicle(env, vehicle, show=False, laps=100, add_obs=True, wait=F
     print(f"Crashes: {crashes}")
     print(f"Completes: {completes} --> {(completes / (completes + crashes) * 100):.2f} %")
     print(f"Lap times Avg: {np.mean(lap_times)} --> Std: {np.std(lap_times)}")
+
+    return completes
 
 def eval_vehicle(env, vehicle, sim_conf, show=False):
     crashes = 0

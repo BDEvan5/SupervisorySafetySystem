@@ -22,26 +22,31 @@ def std_test():
 
     
 def disretization_test():
-    resolutions = [50, 80, 100, 120]
-    results = np.zeros_like(resolutions)
-    for i, resolution in enumerate(resolutions):
+    n_dxs = [80, 100, 120]
+    results = np.zeros_like(n_dxs)
+    conf = load_conf("kernel_config")
+
+    for i, resolution in enumerate(n_dxs):
         print(f"Running discretisation test: {resolution}")
-        side_name = f"discret_side_kernel_{resolution}"
-        obs_name = f"discret_obs_kernel_{resolution}"
-        constructy_kernel_sides(side_name, resolution)
-        construct_obs_kernel(obs_name, resolution)
+        
+        conf.resolution = resolution
+        conf.kernel_name = f"n_dx_{resolution}"
 
-        env = KernelSim()  
-        planner = SafetyPlannerPP()
-        planner.kernel = Kernel(side_name, obs_name, resolution)
+        construct_obs_kernel(conf)
+        construct_kernel_sides(conf)
 
-        results[i] = run_test_loop(env, planner, False, 10)
+        env = ForestSim(conf)
+        planner = PurePursuit(conf)
+        safety_planner = SafetyWrapper(planner, conf)
 
-    print(resolutions)
+        results[i] = test_kernel_vehicle(env, safety_planner, True, 20)
+
+
+    print(n_dxs)
     print(results)  
 
 if __name__ == "__main__":
-    std_test()
-    # disretization_test()
+    # std_test()
+    disretization_test()
 
 
