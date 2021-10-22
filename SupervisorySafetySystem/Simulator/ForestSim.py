@@ -17,7 +17,7 @@ class ForestMap:
         self.map_name = sim_conf.map_name 
 
         # map info
-        self.resolution = sim_conf.resolution
+        self.resolution = 1/sim_conf.n_dx
         self.n_obs = sim_conf.n_obs
         self.forest_length = sim_conf.forest_length
         self.forest_width =  sim_conf.forest_width
@@ -43,8 +43,6 @@ class ForestMap:
         self.obs_pts = None
 
         self.load_center_pts()
-
-
 
     def add_obstacles(self):
         self.map_img = np.zeros((self.map_width, self.map_height))
@@ -88,8 +86,7 @@ class ForestMap:
         r_pts2 = np.array(r_p2)
         
         return r_pts1, r_pts2
-
-        
+      
     def set_dt(self):
         img = np.ones_like(self.map_img) - self.map_img
         img[0, :] = 0 #TODO: move this to the original map img that I make
