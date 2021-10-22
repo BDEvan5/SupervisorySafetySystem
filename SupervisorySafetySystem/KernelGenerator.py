@@ -21,15 +21,16 @@ class DiscriminatingImgKernel:
     def __init__(self, track_img, sim_conf):
         self.velocity = 2 #TODO: make this a config param
         self.track_img = track_img
-        self.resolution = int(1/sim_conf.resolution)
+        self.n_dx = int(sim_conf.n_dx)
         self.t_step = sim_conf.time_step
         self.n_phi = sim_conf.n_phi
         self.phi_range = sim_conf.phi_range
-        self.half_block = 1 / (2*self.resolution)
+        self.half_block = 1 / (2*self.n_dx)
         self.half_phi = self.phi_range / (2*self.n_phi)
         self.n_modes = sim_conf.n_modes
+        self.sim_conf = sim_conf
 
-        self.max_steer = sim_conf.max_steer * 0.9 #TODO remove this and test
+        self.max_steer = sim_conf.max_steer 
         self.L = sim_conf.l_f + sim_conf.l_r
 
         self.n_x = track_img.shape[0]
@@ -43,7 +44,7 @@ class DiscriminatingImgKernel:
         self.kernel = np.zeros((self.n_x, self.n_y, self.n_phi))
         self.previous_kernel = np.zeros((self.n_x, self.n_y, self.n_phi))
         self.build_qs()
-        self.dynamics = build_dynamics_table(self.phis, self.qs, self.velocity, self.t_step, self.resolution)
+        self.dynamics = build_dynamics_table(self.phis, self.qs, self.velocity, self.t_step, self.sim_conf)
 
         self.kernel[:, :, :] = track_img[:, :, None] * np.ones((self.n_x, self.n_y, self.n_phi))
 
@@ -95,14 +96,16 @@ def update_dynamics(phi, th_dot, velocity, time_step):
     return dx, dy, new_phi
 
 # @njit(cache=True)
-def build_dynamics_table(phis, qs, velocity, time, resolution):
-    n_pts = 5
+def build_dynamics_table(phis, qs, velocity, time, conf):
+    resolution = conf.n_dx
+    n_pts = conf.dynamics_pts
+    phi_range = conf.phi_range
     block_size = 1 / (resolution)
-    h = 1 * block_size
-    phi_size = np.pi / (len(phis) -1)
-    ph = 0.1 * phi_size
+    h = conf.discrim_block * block_size 
+    phi_size = phi_range / (conf.n_phi -1)
+    ph = conf.discrim_phi * phi_size
+
     dynamics = np.zeros((len(phis), len(qs), n_pts, 8, 3), dtype=np.int)
-    phi_range = np.pi
     for i, p in enumerate(phis):
         for j, m in enumerate(qs):
             for t in range(n_pts): 
@@ -179,8 +182,8 @@ def check_kernel_state(i, j, k, n_modes, dynamics, previous_kernel, xs, ys):
 """
 
 def construct_obs_kernel(conf):
-    img_size = int(conf.obs_img_size / conf.resolution)
-    obs_size = int(conf.obs_size / conf.resolution)
+    img_size = int(conf.obs_img_size * conf.n_dx)
+    obs_size = int(conf.obs_size * conf.n_dx)
     obs_offset = int((img_size - obs_size) / 2)
     img = np.zeros((img_size, img_size))
     img[obs_offset:obs_size+obs_offset, -obs_size:-1] = 1 
@@ -189,7 +192,7 @@ def construct_obs_kernel(conf):
     kernel.save_kernel(f"ObsKernel_{conf.kernel_name}")
 
 def construct_kernel_sides(conf): #TODO: combine to single fcn?
-    img_size = np.array(np.array(conf.side_img_size) / conf.resolution , dtype=int) 
+    img_size = np.array(np.array(conf.side_img_size) * conf.n_dx , dtype=int) 
     img = np.zeros(img_size) # use res arg and set length
     img[0, :] = 1
     img[-1, :] = 1

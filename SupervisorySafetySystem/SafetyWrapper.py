@@ -6,7 +6,7 @@ from matplotlib import pyplot as plt
 class Kernel:
     def __init__(self, sim_conf):
         self.kernel = None
-        self.resolution = int(1 / sim_conf.resolution)
+        self.resolution = sim_conf.n_dx
         self.side_kernel = np.load(f"{sim_conf.kernel_path}SideKernel_{sim_conf.kernel_name}.npy")
         self.obs_kernel = np.load(f"{sim_conf.kernel_path}ObsKernel_{sim_conf.kernel_name}.npy")
 
