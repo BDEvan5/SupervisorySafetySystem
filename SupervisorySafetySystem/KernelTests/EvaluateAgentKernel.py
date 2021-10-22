@@ -1,4 +1,4 @@
-from SupervisorySafetySystem.KernelTests.GeneralTestTrain import train_vehicle, test_kernel_vehicle
+from SupervisorySafetySystem.KernelTests.GeneralTestTrain import train_kernel_vehicle, test_kernel_vehicle
 from SupervisorySafetySystem.NavAgents.SerialAgentPlanner import SerialVehicleTest, SerialVehicleTrain
 from SupervisorySafetySystem.KernelGenerator import construct_obs_kernel, construct_kernel_sides
 from SupervisorySafetySystem.SafetyWrapper import SafetyWrapper
@@ -27,9 +27,10 @@ def load_conf(fname):
 def train_planner(VehicleClass, agent_name):
     sim_conf = load_conf("kernel_config")
     env = ForestSim(sim_conf)
-    vehicle = VehicleClass(agent_name, sim_conf)
+    planner = VehicleClass(agent_name, sim_conf)
+    safety_planner = SafetyWrapper(planner, sim_conf)
 
-    train_vehicle(env, vehicle, sim_conf)
+    train_kernel_vehicle(env, safety_planner, sim_conf)
 
 def test_planner(VehicleClass, vehicle_name):
     sim_conf = load_conf("kernel_config")
@@ -47,8 +48,8 @@ if __name__ == "__main__":
     # test_planner(SerialVehicleTest, baseline_name)
 
 
-    # train_planner(AgentKernelTrain, kernel_name)
-    test_planner(SerialVehicleTest, kernel_name)
+    train_planner(SerialVehicleTrain, kernel_name)
+    # test_planner(SerialVehicleTest, kernel_name)
 
 
 

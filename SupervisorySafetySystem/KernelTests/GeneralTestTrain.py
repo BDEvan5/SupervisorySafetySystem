@@ -2,8 +2,8 @@
 from LearningLocalPlanning.Simulator.ForestSim import ForestSim
 import yaml   
 from argparse import Namespace
-# from ResultsTest import TestVehicles
 
+from matplotlib import pyplot as plt
 import numpy as np
 import csv, time
 
@@ -41,6 +41,7 @@ def test_kernel_vehicle(env, vehicle, show=False, laps=100, add_obs=True, wait=F
         if r == -1:
             crashes += 1
             print(f"({i}) Crashed -> time: {env.steps} ")
+            plt.show()
         else:
             completes += 1
             print(f"({i}) Complete -> time: {env.steps}")
@@ -345,61 +346,49 @@ class TestVehicles(TestData):
 
 
 
-def train_vehicle(env, vehicle, sim_conf):
+def train_kernel_vehicle(env, vehicle, sim_conf):
     start_time = time.time()
 
     done = False
     state = env.reset(True)
 
     print(f"Building Buffer: {sim_conf.buffer_n}")
-    try:
-        vehicle.kernel.construct_kernel(env.env_map.map_img.shape, env.env_map.obs_pts)
-    except AttributeError as e:
-        pass
+    vehicle.kernel.construct_kernel(env.env_map.map_img.shape, env.env_map.obs_pts)
     for n in range(sim_conf.buffer_n):
-        a = vehicle.plan_act(state)
+        a = vehicle.plan(state)
         s_prime, r, done, _ = env.step_plan(a)
         state = s_prime
         
         if done:
-            vehicle.done_entry(s_prime)
+            vehicle.planner.done_entry(s_prime)
             
 
-            vehicle.reset_lap()
             state = env.reset(True)
-            try:
-                vehicle.kernel.construct_kernel(env.env_map.map_img.shape, env.env_map.obs_pts)
-            except AttributeError as e:
-                pass
+            vehicle.kernel.construct_kernel(env.env_map.map_img.shape, env.env_map.obs_pts)
 
-        vehicle.reset_lap()
         state = env.reset(True)
 
-    print(f"Starting Training: {vehicle.name}")
+    print(f"Starting Training: {vehicle.planner.name}")
     for n in range(sim_conf.train_n):
-        a = vehicle.plan_act(state)
+        a = vehicle.plan(state)
         s_prime, r, done, _ = env.step_plan(a)
 
         state = s_prime
-        vehicle.agent.train(2)
+        vehicle.planner.agent.train(2)
         
         if done:
-            vehicle.done_entry(s_prime)
+            vehicle.planner.done_entry(s_prime)
             env.render(wait=False)
 
-            vehicle.reset_lap()
             state = env.reset(True)
-            try:
-                vehicle.kernel.construct_kernel(env.env_map.map_img.shape, env.env_map.obs_pts)
-            except AttributeError as e:
-                pass
+            vehicle.kernel.construct_kernel(env.env_map.map_img.shape, env.env_map.obs_pts)
 
-    vehicle.t_his.print_update(True)
-    vehicle.t_his.save_csv_data()
-    vehicle.agent.save(vehicle.path)
+    vehicle.planner.t_his.print_update(True)
+    vehicle.planner.t_his.save_csv_data()
+    vehicle.planner.agent.save(vehicle.path)
 
     train_time = time.time() - start_time
-    print(f"Finished Training: {vehicle.name} in {train_time} seconds")
+    print(f"Finished Training: {vehicle.planner.name} in {train_time} seconds")
 
     return train_time 
 
