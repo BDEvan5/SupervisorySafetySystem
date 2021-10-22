@@ -59,16 +59,6 @@ class DiscriminatingImgKernel:
             self.previous_kernel = np.copy(self.kernel)
             self.kernel = kernel_loop(self.kernel, self.xs, self.ys, self.phis, self.n_modes, self.dynamics)
 
-            # plt.figure(2)
-            # plt.title(f"Kernel after loop: {z}")
-            # phi_n = 30
-            # img = self.kernel[:, :, phi_n].T - self.previous_kernel[:, :, phi_n].T
-            # plt.imshow(img, origin='lower')
-            # plt.pause(0.0001)
-
-            # self.view_kernel(0, False)
-        # self.save_kernel()
-
     def save_kernel(self, name="std_kernel"):
         np.save(f"SupervisorySafetySystem/Kernels/{name}.npy", self.kernel)
         print(f"Saved kernel to file")
@@ -105,51 +95,48 @@ def update_dynamics(phi, th_dot, velocity, time_step):
 
 # @njit(cache=True)
 def build_dynamics_table(phis, qs, velocity, time, resolution):
+    n_pts = 5
     block_size = 1 / (resolution)
     h = 1 * block_size
     phi_size = np.pi / (len(phis) -1)
     ph = 0.1 * phi_size
-    n_pts = 5
     dynamics = np.zeros((len(phis), len(qs), n_pts, 8, 3), dtype=np.int)
     phi_range = np.pi
-    n_steps = 1
     for i, p in enumerate(phis):
         for j, m in enumerate(qs):
             for t in range(n_pts): 
-                #TODO: I somehow want to extricate the dynamics. I want to be able to use an external set of dynamics here....
                 t_step = time * (t+1)  / n_pts
-                # phi = p + m * t_step * n_steps # phi must be at end
-                # dx = np.sin(phi) * velocity * t_step
-                # dy = np.cos(phi) * velocity * t_step
                 dx, dy, phi = update_dynamics(p, m, velocity, t_step)
-                
+
                 new_k_min = int(round((phi - ph + phi_range/2) / phi_range * (len(phis)-1)))
-                new_k_max = int(round((phi + ph + phi_range/2) / phi_range * (len(phis)-1)))
                 dynamics[i, j, t, 0:4, 2] = min(max(0, new_k_min), len(phis)-1)
+                
+                new_k_max = int(round((phi + ph + phi_range/2) / phi_range * (len(phis)-1)))
                 dynamics[i, j, t, 4:8, 2] = min(max(0, new_k_max), len(phis)-1)
 
-                #TODO: add some looping here...
-                dynamics[i, j, t, 0, 0] = int(round((dx -h) * resolution))
-                dynamics[i, j, t, 0, 1] = int(round((dy -h) * resolution))
-                dynamics[i, j, t, 1, 0] = int(round((dx -h) * resolution))
-                dynamics[i, j, t, 1, 1] = int(round((dy +h) * resolution))
-                dynamics[i, j, t, 2, 0] = int(round((dx +h) * resolution))
-                dynamics[i, j, t, 2, 1] = int(round((dy +h )* resolution))
-                dynamics[i, j, t, 3, 0] = int(round((dx +h) * resolution))
-                dynamics[i, j, t, 3, 1] = int(round((dy -h) * resolution))
-
-                dynamics[i, j, t, 4, 0] = int(round((dx -h) * resolution))
-                dynamics[i, j, t, 4, 1] = int(round((dy -h) * resolution))
-                dynamics[i, j, t, 5, 0] = int(round((dx -h) * resolution))
-                dynamics[i, j, t, 5, 1] = int(round((dy +h) * resolution))
-                dynamics[i, j, t, 6, 0] = int(round((dx +h) * resolution))
-                dynamics[i, j, t, 6, 1] = int(round((dy +h )* resolution))
-                dynamics[i, j, t, 7, 0] = int(round((dx +h) * resolution))
-                dynamics[i, j, t, 7, 1] = int(round((dy -h) * resolution))
+                temp_dynamics = generate_temp_dynamics(dx, dy, h, resolution)
+                
+                dynamics[i, j, t, :, 0:2] = np.copy(temp_dynamics)
 
                 pass
 
     return dynamics
+
+@njit(cache=True)
+def generate_temp_dynamics(dx, dy, h, resolution):
+    temp_dynamics = np.zeros((8, 2))
+
+    for i in range(2):
+        temp_dynamics[0 + i*4, 0] = int(round((dx -h) * resolution))
+        temp_dynamics[0 + i*4, 1] = int(round((dy -h) * resolution))
+        temp_dynamics[1 + i*4, 0] = int(round((dx -h) * resolution))
+        temp_dynamics[1 + i*4, 1] = int(round((dy +h) * resolution))
+        temp_dynamics[2 + i*4, 0] = int(round((dx +h) * resolution))
+        temp_dynamics[2 + i*4, 1] = int(round((dy +h )* resolution))
+        temp_dynamics[3 + i*4, 0] = int(round((dx +h) * resolution))
+        temp_dynamics[3 + i*4, 1] = int(round((dy -h) * resolution))
+
+    return temp_dynamics
 
 # @jit(cache=True)
 def kernel_loop(kernel, xs, ys, phis, n_modes, dynamics):
@@ -165,7 +152,7 @@ def kernel_loop(kernel, xs, ys, phis, n_modes, dynamics):
 
 @njit(cache=True)
 def check_kernel_state(i, j, k, n_modes, dynamics, previous_kernel, xs, ys):
-    n_pts = 5
+    n_pts = dynamics.shape[2]
     for l in range(n_modes):
         safe = True
         # check all concatanation points and offsets and if none are occupied, then it is safe.

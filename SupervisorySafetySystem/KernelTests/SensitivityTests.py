@@ -17,7 +17,7 @@ def std_test():
     planner = PurePursuit(conf)
     safety_planner = SafetyWrapper(planner, conf)
 
-    test_kernel_vehicle(env, safety_planner, True, 10)
+    test_kernel_vehicle(env, safety_planner, True, 20)
 
     
 def disretization_test():
