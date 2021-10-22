@@ -1,8 +1,8 @@
 from SupervisorySafetySystem.KernelTests.GeneralTestTrain import train_vehicle, test_single_vehicle
 
-# from SupervisorySafetySystem.KernelTests.ConstructingKernel import DiscriminatingImgKernel, Kernel, SafetyPlannerPP, KernelSim
 from SupervisorySafetySystem.Simulator.ForestSim import ForestSim
 from SupervisorySafetySystem.SafetyWrapper import SafetyWrapper, RandomPlanner
+from SupervisorySafetySystem.KernelGenerator import construct_obs_kernel, construct_kernel_sides
 
 import yaml
 from argparse import Namespace
@@ -54,21 +54,11 @@ def run_test_loop(env, planner, show=False, n_tests=100):
     return success/n_tests
 
 
-def std_test():
-    conf = load_conf("kernel_config")
-
-    # constructy_kernel_sides(conf)
-    # construct_obs_kernel(conf)
-
-    env = KernelSim(conf)  
-    planner = SafetyPlannerPP()
-    planner.kernel = Kernel(conf)
-
-    run_test_loop(env, planner, False, 10)
-
-
 def full_std_test():
     conf = load_conf("kernel_config")
+
+    construct_obs_kernel(conf)
+    construct_kernel_sides(conf)
 
     env = ForestSim(conf)
     planner = RandomPlanner()
