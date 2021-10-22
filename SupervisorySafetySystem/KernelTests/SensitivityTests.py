@@ -9,9 +9,10 @@ from SupervisorySafetySystem.SafetyWrapper import SafetyWrapper
 
 def std_test():
     conf = load_conf("kernel_config")
+    # conf.resolution = 0.0125
 
     construct_obs_kernel(conf)
-    # construct_kernel_sides(conf)
+    construct_kernel_sides(conf)
 
     env = ForestSim(conf)
     planner = PurePursuit(conf)

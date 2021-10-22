@@ -19,20 +19,23 @@ def update_state(state, action, dt):
 
 class DiscriminatingImgKernel:
     def __init__(self, track_img, sim_conf):
+        self.velocity = 2 #TODO: make this a config param
         self.track_img = track_img
         self.resolution = int(1/sim_conf.resolution)
         self.t_step = sim_conf.time_step
-        self.velocity = 2 #TODO: make this a config param
-        self.n_phi = 61  #TODO: add to conf file
-        self.phi_range = np.pi #TODO: add to conf file
+        self.n_phi = sim_conf.n_phi
+        self.phi_range = sim_conf.phi_range
         self.half_block = 1 / (2*self.resolution)
         self.half_phi = self.phi_range / (2*self.n_phi)
-        self.n_modes = 5 #TODO: add to conf file
+        self.n_modes = sim_conf.n_modes
+
+        self.max_steer = sim_conf.max_steer * 0.9 #TODO remove this and test
+        self.L = sim_conf.l_f + sim_conf.l_r
 
         self.n_x = track_img.shape[0]
         self.n_y = track_img.shape[1]
-        self.xs = np.linspace(0, 2, self.n_x)
-        self.ys = np.linspace(0, 25, self.n_y)
+        self.xs = np.linspace(0, sim_conf.forest_width, self.n_x)
+        self.ys = np.linspace(0, sim_conf.forest_length, self.n_y)
         self.phis = np.linspace(-self.phi_range/2, self.phi_range/2, self.n_phi)
         
         self.qs = None
@@ -46,9 +49,8 @@ class DiscriminatingImgKernel:
 
     # config functions
     def build_qs(self):
-        max_steer = 0.35
-        ds = np.linspace(-max_steer, max_steer, self.n_modes)
-        self.qs = self.velocity / 0.33 * np.tan(ds)
+        ds = np.linspace(-self.max_steer, self.max_steer, self.n_modes)
+        self.qs = self.velocity / self.L * np.tan(ds)
 
     def calculate_kernel(self, n_loops=20):
         for z in range(n_loops):
@@ -68,7 +70,6 @@ class DiscriminatingImgKernel:
         plt.figure(1)
         plt.title(f"Kernel phi: {phi} (ind: {phi_ind})")
         # mode = int((self.n_modes-1)/2)
-        mode = 4
         img = self.kernel[:, :, phi_ind].T 
         plt.imshow(img, origin='lower')
 
