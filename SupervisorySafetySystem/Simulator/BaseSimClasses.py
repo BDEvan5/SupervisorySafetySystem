@@ -165,13 +165,13 @@ class BaseSim:
         # for _ in range(self.plan_steps):
         #     u = control_system(self.state, action, self.max_v, self.max_steer, 8, 3.2)
         #     self.state = update_kinematic_state(self.state, u, self.timestep, self.wheelbase, self.max_steer, self.max_v)
-        #     self.steps += 1 
 
 
         #     if self.done_fcn():
         #         break
 
         for _ in range(self.plan_steps):
+            self.steps += 1 
             self.state = update_simple_state(self.state, action, self.timestep, self.wheelbase, self.max_steer, self.max_v)
         self.done_fcn()
 

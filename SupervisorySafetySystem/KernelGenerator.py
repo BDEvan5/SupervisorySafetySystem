@@ -108,7 +108,8 @@ def build_dynamics_table(phis, qs, velocity, time, resolution):
     n_steps = 1
     for i, p in enumerate(phis):
         for j, m in enumerate(qs):
-            for t in range(n_pts):
+            for t in range(n_pts): 
+                #TODO: I somehow want to extricate the dynamics. I want to be able to use an external set of dynamics here....
                 t_step = time * (t+1)  / n_pts
                 phi = p + m * t_step * n_steps # phi must be at end
                 dx = np.sin(phi) * velocity * t_step

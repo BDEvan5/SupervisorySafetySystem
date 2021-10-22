@@ -201,7 +201,6 @@ class Kernel:
         self.side_kernel = np.load(f"{sim_conf.kernel_path}SideKernel_{sim_conf.kernel_name}.npy")
         self.obs_kernel = np.load(f"{sim_conf.kernel_path}ObsKernel_{sim_conf.kernel_name}.npy")
 
-
     def construct_kernel(self, track_size, obs_locations):
         self.kernel = np.zeros((track_size[0], track_size[1], self.side_kernel.shape[2]))
         length = int(track_size[1] / self.resolution)

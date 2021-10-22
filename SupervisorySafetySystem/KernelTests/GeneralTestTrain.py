@@ -19,7 +19,7 @@ def load_conf(path, fname):
 
 
 """General test function"""
-def test_single_vehicle(env, vehicle, show=False, laps=100, add_obs=True, wait=False, vis=False):
+def test_kernel_vehicle(env, vehicle, show=False, laps=100, add_obs=True, wait=False):
     crashes = 0
     completes = 0
     lap_times = [] 
@@ -27,21 +27,16 @@ def test_single_vehicle(env, vehicle, show=False, laps=100, add_obs=True, wait=F
     state = env.reset(add_obs)
     done, score = False, 0.0
     for i in range(laps):
-        try:
-            vehicle.kernel.construct_kernel(env.env_map.map_img.shape, env.env_map.obs_pts)
-        except AttributeError as e:
-            pass
+        vehicle.kernel.construct_kernel(env.env_map.map_img.shape, env.env_map.obs_pts)
         while not done:
-            a = vehicle.plan_act(state)
+            a = vehicle.plan(state)
             s_p, r, done, _ = env.step_plan(a)
             state = s_p
             # env.render(False)
         if show:
             # env.history.show_history()
             # vehicle.history.save_nn_output()
-            env.render(wait=False, name=vehicle.name)
-            if wait:
-                env.render(wait=True)
+            env.render(wait=wait, name=vehicle.planner.name)
 
         if r == -1:
             crashes += 1
@@ -50,11 +45,8 @@ def test_single_vehicle(env, vehicle, show=False, laps=100, add_obs=True, wait=F
             completes += 1
             print(f"({i}) Complete -> time: {env.steps}")
             lap_times.append(env.steps)
-        if vis:
-            vehicle.vis.play_visulisation()
         state = env.reset(add_obs)
         
-        vehicle.reset_lap()
         done = False
 
     print(f"Crashes: {crashes}")
