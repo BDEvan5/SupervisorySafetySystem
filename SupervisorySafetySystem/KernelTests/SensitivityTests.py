@@ -1,83 +1,25 @@
-from SupervisorySafetySystem.KernelTests.ConstructingKernel import DiscriminatingImgKernel, Kernel, SafetyPlannerPP, KernelSim
-
 from matplotlib import pyplot as plt
 import numpy as np
-from argparse import Namespace
-import yaml
 
-def load_conf(fname):
-    full_path =  "config/" + fname + '.yaml'
-    with open(full_path) as file:
-        conf_dict = yaml.load(file, Loader=yaml.FullLoader)
-
-    conf = Namespace(**conf_dict)
-
-    return conf
-
-
-def run_test_loop(env, planner, show=False, n_tests=100):
-    success = 0
-
-    for i in range(n_tests):
-        done = False
-        state = env.reset()
-        planner.kernel.construct_kernel(env.env_map.map_img.shape, env.env_map.obs_pts)
-        while not done:
-            a = planner.plan(state)
-            s_p, r, done, _ = env.step(a)
-            state = s_p
-
-        if r == -1:
-            print(f"{i}: Crashed -> {s_p['state']}")
-        elif r == 1:
-            print(f"{i}: Success")
-            success += 1 
-
-        if show:
-            env.render_ep()
-            plt.pause(0.5)
-
-            if r == -1:
-                plt.show()
-
-    print("Success rate: {}".format(success/n_tests))
-
-    return success/n_tests
-
-
-def construct_obs_kernel(conf):
-    img_size = int(conf.obs_img_size / conf.resolution)
-    obs_size = int(conf.obs_size / conf.resolution)
-    obs_offset = int((img_size - obs_size) / 2)
-    img = np.zeros((img_size, img_size))
-    img[obs_offset:obs_size+obs_offset, -obs_size:-1] = 1 
-    kernel = DiscriminatingImgKernel(img, conf)
-    kernel.calculate_kernel()
-    kernel.save_kernel(f"ObsKernel_{conf.kernel_name}")
-
-def constructy_kernel_sides(conf): #TODO: combine to single fcn?
-    img_size = np.array(np.array(conf.side_img_size) / conf.resolution , dtype=int) 
-    img = np.zeros(img_size) # use res arg and set length
-    img[0, :] = 1
-    img[-1, :] = 1
-    kernel = DiscriminatingImgKernel(img, conf)
-    kernel.calculate_kernel()
-    kernel.save_kernel(f"SideKernel_{conf.kernel_name}")
-
-
+from SupervisorySafetySystem.KernelTests.GeneralTestTrain import test_kernel_vehicle, load_conf
+from SupervisorySafetySystem.KernelGenerator import construct_obs_kernel, construct_kernel_sides
+from SupervisorySafetySystem.Simulator.ForestSim import ForestSim
+from SupervisorySafetySystem.NavAgents.SimplePlanners import PurePursuit
+from SupervisorySafetySystem.SafetyWrapper import SafetyWrapper
 
 def std_test():
     conf = load_conf("kernel_config")
 
-    constructy_kernel_sides(conf)
     construct_obs_kernel(conf)
+    # construct_kernel_sides(conf)
 
-    env = KernelSim(conf)  
-    planner = SafetyPlannerPP()
-    planner.kernel = Kernel(conf)
+    env = ForestSim(conf)
+    planner = PurePursuit(conf)
+    safety_planner = SafetyWrapper(planner, conf)
 
-    run_test_loop(env, planner, False, 10)
+    test_kernel_vehicle(env, safety_planner, True, 10)
 
+    
 def disretization_test():
     resolutions = [50, 80, 100, 120]
     results = np.zeros_like(resolutions)

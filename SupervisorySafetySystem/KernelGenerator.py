@@ -96,6 +96,13 @@ class DiscriminatingImgKernel:
             plt.show()
 
 
+def update_dynamics(phi, th_dot, velocity, time_step):
+    new_phi = phi + th_dot * time_step
+    dx = np.sin(phi) * velocity * time_step
+    dy = np.cos(phi) * velocity * time_step
+
+    return dx, dy, new_phi
+
 # @njit(cache=True)
 def build_dynamics_table(phis, qs, velocity, time, resolution):
     block_size = 1 / (resolution)
@@ -111,9 +118,10 @@ def build_dynamics_table(phis, qs, velocity, time, resolution):
             for t in range(n_pts): 
                 #TODO: I somehow want to extricate the dynamics. I want to be able to use an external set of dynamics here....
                 t_step = time * (t+1)  / n_pts
-                phi = p + m * t_step * n_steps # phi must be at end
-                dx = np.sin(phi) * velocity * t_step
-                dy = np.cos(phi) * velocity * t_step
+                # phi = p + m * t_step * n_steps # phi must be at end
+                # dx = np.sin(phi) * velocity * t_step
+                # dy = np.cos(phi) * velocity * t_step
+                dx, dy, phi = update_dynamics(p, m, velocity, t_step)
                 
                 new_k_min = int(round((phi - ph + phi_range/2) / phi_range * (len(phis)-1)))
                 new_k_max = int(round((phi + ph + phi_range/2) / phi_range * (len(phis)-1)))
