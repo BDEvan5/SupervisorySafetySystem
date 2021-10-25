@@ -116,7 +116,7 @@ class TrackKernel:
 
     def save_kernel(self, name="track_std_kernel"):
         np.save(f"SupervisorySafetySystem/Kernels/{name}.npy", self.kernel)
-        print(f"Saved kernel to file")
+        print(f"Saved kernel to file: {name}")
 
     def view_kernel(self, phi, show=True, fig_n=1):
         phi_ind = np.argmin(np.abs(self.phis - phi))
@@ -220,24 +220,6 @@ def check_kernel_state(i, j, k, n_modes, dynamics, previous_kernel, xs, ys):
 
 """
 
-def construct_obs_kernel(conf):
-    img_size = int(conf.obs_img_size * conf.n_dx)
-    obs_size = int(conf.obs_size * conf.n_dx)
-    obs_offset = int((img_size - obs_size) / 2)
-    img = np.zeros((img_size, img_size))
-    img[obs_offset:obs_size+obs_offset, -obs_size:-1] = 1 
-    kernel = DiscriminatingImgKernel(img, conf)
-    kernel.calculate_kernel()
-    kernel.save_kernel(f"ObsKernel_{conf.kernel_name}")
-
-def construct_kernel_sides(conf): #TODO: combine to single fcn?
-    img_size = np.array(np.array(conf.side_img_size) * conf.n_dx , dtype=int) 
-    img = np.zeros(img_size) # use res arg and set length
-    img[0, :] = 1
-    img[-1, :] = 1
-    kernel = DiscriminatingImgKernel(img, conf)
-    kernel.calculate_kernel()
-    kernel.save_kernel(f"SideKernel_{conf.kernel_name}")
 
 
 from SupervisorySafetySystem.KernelTests.GeneralTestTrain import load_conf
@@ -246,7 +228,7 @@ def build_track_kernel():
 
     kernel = TrackKernel(conf)
     kernel.calculate_kernel(50)
-    kernel.save_kernel()
+    kernel.save_kernel(f"TrackKernel_{conf.track_kernel_path}")
 
 
 if __name__ == "__main__":

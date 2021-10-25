@@ -197,7 +197,7 @@ def generate_temp_dynamics(dx, dy, h, resolution):
 # @jit(cache=True)
 l_xs = 1300
 l_ys = 480
-l_phis = 21
+l_phis = 41
 
 @njit(cache=True)
 def kernel_loop(kernel, xs, ys, phis, n_modes, dynamics):
@@ -264,7 +264,7 @@ def build_track_kernel():
 
     kernel = TrackKernel(conf)
     kernel.calculate_kernel(20)
-    kernel.save_kernel()
+    kernel.save_kernel(f"TrackKernel_{conf.track_kernel_path}")
 
 
 if __name__ == "__main__":
