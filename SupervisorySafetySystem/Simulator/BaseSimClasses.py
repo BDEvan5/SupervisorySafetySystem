@@ -175,6 +175,8 @@ class BaseSim:
             self.state = update_simple_state(self.state, action, self.timestep, self.wheelbase, self.max_steer, self.max_v)
         self.done_fcn()
 
+        self.check_angle_limit()
+
         self.record_history(action)
 
         obs = self.get_observation()
@@ -182,6 +184,15 @@ class BaseSim:
         reward = self.reward
 
         return obs, reward, done, None
+
+    def check_angle_limit(self):
+        """
+        Checks if the angle is within the limits of the car
+        """
+        if self.state[2] > np.pi:
+            self.state[2] -= 2*np.pi
+        elif self.state[2] < -np.pi:
+            self.state[2] += 2*np.pi
 
     def record_history(self, action):
         self.action = action

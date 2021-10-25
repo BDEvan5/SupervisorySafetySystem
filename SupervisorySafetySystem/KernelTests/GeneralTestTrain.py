@@ -1,5 +1,4 @@
 
-from LearningLocalPlanning.Simulator.ForestSim import ForestSim
 import yaml   
 from argparse import Namespace
 
@@ -25,6 +24,7 @@ def test_kernel_vehicle(env, vehicle, show=False, laps=100, add_obs=True, wait=F
     lap_times = [] 
 
     state = env.reset(add_obs)
+    # env.render(False)
     done, score = False, 0.0
     for i in range(laps):
         vehicle.kernel.construct_kernel(env.env_map.map_img.shape, env.env_map.obs_pts)
@@ -41,11 +41,11 @@ def test_kernel_vehicle(env, vehicle, show=False, laps=100, add_obs=True, wait=F
         if r == -1:
             crashes += 1
             print(f"({i}) Crashed -> time: {env.steps} ")
-            # plt.show()
         else:
             completes += 1
             print(f"({i}) Complete -> time: {env.steps}")
             lap_times.append(env.steps)
+        # plt.show()
         state = env.reset(add_obs)
         
         done = False
