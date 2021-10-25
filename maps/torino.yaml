@@ -1,11 +1,16 @@
 
 free_thresh: 0.196
-image: torino.pgm
+image: torino_filled.png
+# image: torino.pgm
 negate: 0
 occupied_thresh: 0.65
+# origin:
+# - -15.518384
+# - -7.278537
+# - 0.0
 origin:
-- -15.518384
-- -7.278537
+- -4
+- -1.278537
 - 0.0
 resolution: 0.05
 

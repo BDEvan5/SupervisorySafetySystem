@@ -145,9 +145,9 @@ class RandoKernel:
     def construct_kernel(self, img_shape, obs_pts):
         pass
 
-class KernelTrackPP:
-    def __init__(self, sim_conf):
-        self.planner = TrackPP(sim_conf)
+class EmptyPlanner:
+    def __init__(self, planner, sim_conf):
+        self.planner = planner
         self.kernel = RandoKernel()
 
     def plan(self, obs):

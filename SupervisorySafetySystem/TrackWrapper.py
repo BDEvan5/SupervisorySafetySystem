@@ -6,7 +6,8 @@ import yaml
 class TrackKernel:
     def __init__(self, sim_conf):
         self.resolution = sim_conf.n_dx
-        self.kernel = np.load(f"{sim_conf.kernel_path}TrackKernel_{sim_conf.track_kernel_path}.npy")
+        kernel_name = f"{sim_conf.kernel_path}TrackKernel_{sim_conf.track_kernel_path}_{sim_conf.map_name}.npy"
+        self.kernel = np.load(kernel_name)
 
         file_name = 'maps/' + sim_conf.map_name + '.yaml'
         with open(file_name) as file:
@@ -14,12 +15,13 @@ class TrackKernel:
             yaml_file = dict(documents.items())
         self.origin = yaml_file['origin']
 
+        # self.view_kernel(0)
 
     def construct_kernel(self, a, b):
         pass
 
     def view_kernel(self, theta):
-        phi_range = np.pi
+        phi_range = np.pi * 2
         theta_ind = int(round((theta + phi_range/2) / phi_range * (self.kernel.shape[2]-1)))
         plt.figure(5)
         plt.title(f"Kernel phi: {theta} (ind: {theta_ind})")
@@ -31,17 +33,19 @@ class TrackKernel:
 
     def get_indices(self, state):
         phi_range = np.pi * 2
-        o_x = -10.3
-        o_y = -2.8
-        x_ind = min(max(0, int(round((state[0]-o_x)*self.resolution))), self.kernel.shape[0]-1)
-        y_ind = min(max(0, int(round((state[1]-o_y)*self.resolution))), self.kernel.shape[1]-1)
+        x_ind = min(max(0, int(round((state[0]-self.origin[0])*self.resolution))), self.kernel.shape[0]-1)
+        y_ind = min(max(0, int(round((state[1]-self.origin[1])*self.resolution))), self.kernel.shape[1]-1)
 
         phi = state[2]
-        if phi > phi_range/2:
+        if phi >= phi_range/2:
             phi = phi - phi_range
         elif phi < -phi_range/2:
             phi = phi + phi_range
         theta_ind = int(round((phi + phi_range/2) / phi_range * (self.kernel.shape[2]-1)))
+
+        if theta_ind > 40 or theta_ind < -40:
+            print(f"Theta ind: {theta_ind}")
+
 
         return x_ind, y_ind, theta_ind
 
@@ -79,7 +83,7 @@ class TrackWrapper:
         self.d_max = 0.4 # radians  
         self.v = 2
         self.kernel = TrackKernel(conf)
-        # self.kernel.view_kernel(0)
+        self.kernel.view_kernel(np.pi/3)
         self.planner = planner
 
     def plan(self, obs):

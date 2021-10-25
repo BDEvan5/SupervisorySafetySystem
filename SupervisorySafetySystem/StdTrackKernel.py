@@ -121,6 +121,7 @@ class TrackKernel:
     def view_kernel(self, phi, show=True, fig_n=1):
         phi_ind = np.argmin(np.abs(self.phis - phi))
         plt.figure(fig_n)
+        plt.clf()
         plt.title(f"Kernel phi: {phi} (ind: {phi_ind})")
         # mode = int((self.n_modes-1)/2)
         img = self.kernel[:, :, phi_ind].T + self.o_map.T
@@ -178,8 +179,13 @@ def build_dynamics_table(phis, qs, velocity, time, conf):
     return dynamics
 
 # @jit(cache=True)
-l_xs = 1300
-l_ys = 480
+scale = 4
+# l_xs = 230 * scale # torino
+# l_ys = 460 * scale
+# l_xs = 410 * scale # berlin
+# l_ys = 599 * scale
+l_xs = 325 * scale # porto
+l_ys = 120 * scale
 l_phis = 41
 
 @njit(cache=True)
@@ -227,8 +233,8 @@ def build_track_kernel():
     conf = load_conf("track_kernel")
 
     kernel = TrackKernel(conf)
-    kernel.calculate_kernel(50)
-    kernel.save_kernel(f"TrackKernel_{conf.track_kernel_path}")
+    kernel.calculate_kernel(30)
+    kernel.save_kernel(f"TrackKernel_{conf.track_kernel_path}_{conf.map_name}")
 
 
 if __name__ == "__main__":
