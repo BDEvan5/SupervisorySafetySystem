@@ -8,7 +8,7 @@ from scipy import ndimage
 from argparse import Namespace
 
 
-from LearningLocalPlanning.Simulator.BaseSimClasses import BaseSim
+from SupervisorySafetySystem.Simulator.BaseSimClasses import BaseSim
 from PIL import Image
 
 
@@ -39,10 +39,11 @@ def sub_locations(x1=[0, 0], x2=[0, 0], dx=1):
 
 
 class TrackMap:
-    def __init__(self, map_name) -> None:
-        self.map_name = map_name 
+    def __init__(self, sim_conf) -> None:
+        self.map_name = sim_conf.map_name 
 
         # map info
+        #TODO: consider what to do with params like resolution with the kernel.
         self.resolution = None
         self.origin = None
         self.n_obs = None 
@@ -68,6 +69,8 @@ class TrackMap:
         self.diffs = None
         self.l2s = None
 
+        self.obs_pts = []
+
         try:
             # raise FileNotFoundError
             self._load_csv_track()
@@ -86,12 +89,17 @@ class TrackMap:
             self.n_obs = yaml_file['n_obs']
             self.obs_size = yaml_file['obs_size']
             map_img_path = 'maps/' + yaml_file['image']
-            self.start_pose = np.array(yaml_file['start_pose'])
+            start_pose = np.array(yaml_file['start_pose'])
+            start_orientation = yaml_file['start_orientation']
         except Exception as e:
             print(f"Problem loading, check key: {e}")
             raise FileNotFoundError("Problem loading map yaml file")
 
+        self.start_pose = np.zeros(3)
+        self.start_pose[0:2] = start_pose[0:2]
+        self.start_pose[2] = start_orientation
         self.end_goal = self.start_pose[0:2]
+
 
         self.map_img = np.array(Image.open(map_img_path).transpose(Image.FLIP_TOP_BOTTOM))
         self.map_img = self.map_img.astype(np.float64)
@@ -297,7 +305,7 @@ class TrackSim(BaseSim):
     Important to note the check_done function which checks if the episode is complete
         
     """
-    def __init__(self, map_name, sim_conf=None):
+    def __init__(self, sim_conf):
         """
         Init function
 
@@ -310,7 +318,7 @@ class TrackSim(BaseSim):
             path = os.path.dirname(__file__)
             sim_conf = load_conf(path, "std_config")
 
-        env_map = TrackMap(map_name)
+        env_map = TrackMap(sim_conf)
         BaseSim.__init__(self, env_map, self.check_done_reward_track_train, sim_conf)
         self.end_distance = sim_conf.end_distance
 
@@ -322,11 +330,12 @@ class TrackSim(BaseSim):
             Done flag
         """
         self.reward = 0 # normal
-        if self.env_map.check_scan_location([self.car.x, self.car.y]):
+        
+        if self.env_map.check_scan_location(self.state[0:2]):
             self.done = True
             self.colission = True
             self.reward = -1
-            self.done_reason = f"Crash obstacle: [{self.car.x:.2f}, {self.car.y:.2f}]"
+            self.done_reason = f"Crash obstacle: [{self.state[0:2]}]"
         # horizontal_force = self.car.mass * self.car.th_dot * self.car.velocity
         # self.y_forces.append(horizontal_force)
         # if horizontal_force > self.car.max_friction_force:
@@ -337,9 +346,8 @@ class TrackSim(BaseSim):
             self.done = True
             self.done_reason = f"Max steps"
 
-        car = [self.car.x, self.car.y]
-        cur_end_dis = get_distance(car, self.env_map.start_pose[0:2]) 
-        if cur_end_dis < self.end_distance and self.steps > 800:
+        cur_end_dis = get_distance(self.state[0:2], self.env_map.start_pose[0:2]) 
+        if cur_end_dis < self.end_distance and self.steps > 200:
             self.done = True
             self.reward = 1
             self.done_reason = f"Lap complete, d: {cur_end_dis}"

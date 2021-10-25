@@ -1,0 +1,62 @@
+
+
+
+mu: 0.523
+m: 3.47
+g: 9.81
+l_r: 0.171
+l_f: 0.158
+force_f: 0.9
+
+max_v: 7
+max_a: 8.5
+max_steer: 0.4
+max_d_dot: 3.2
+
+time_step: 0.2
+update_steps: 1
+max_steps: 5000
+end_distance: 2.5
+
+dis_scale: 1 # I don't know if this is the right place for this???
+
+# map info
+map_name: "berlin"
+n_dx: 80
+
+
+n_obs: 4
+obs_size: 0.5
+
+kernel_path: "SupervisorySafetySystem/Kernels/"
+kernel_name: "track"
+obs_img_size: 1.3 # size in meters 
+side_img_size: [2, 1]
+n_phi: 61
+n_modes: 5
+phi_range: 3.141
+dynamics_pts: 5
+discrim_block: 1 
+discrim_phi: 0.1
+
+# PP parametes
+v_gain: 0.5
+lookahead: 0.8
+max_reacquire: 20
+
+# training parameters
+n_beams: 20
+range_finder_scale: 5
+h_size: 100
+activation: 'relu'
+layers: 2
+
+# Reward
+reward: 'progress'
+s_mul: 1
+
+train_n: 40000
+# train_n: 100000
+buffer_n: 0
+
+test_n: 100
