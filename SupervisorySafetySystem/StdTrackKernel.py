@@ -72,10 +72,10 @@ class TrackKernel:
         map_img[map_img > 128.] = 0.
 
         # porto crop vals.
-        crop_x = [50, 375]
-        crop_y = [200, 320]
+        # crop_x = [50, 375]
+        # crop_y = [200, 320]
         map_img = map_img.T
-        map_img = map_img[crop_x[0]:crop_x[1], crop_y[0]:crop_y[1]]
+        # map_img = map_img[crop_x[0]:crop_x[1], crop_y[0]:crop_y[1]]
 
         self.map_height = map_img.shape[0]
         self.map_width = map_img.shape[1]

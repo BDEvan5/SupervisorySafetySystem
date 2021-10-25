@@ -35,8 +35,13 @@ class TrackKernel:
         o_y = -2.8
         x_ind = min(max(0, int(round((state[0]-o_x)*self.resolution))), self.kernel.shape[0]-1)
         y_ind = min(max(0, int(round((state[1]-o_y)*self.resolution))), self.kernel.shape[1]-1)
-        theta_ind = int(round((state[2] + phi_range/2) / phi_range * (self.kernel.shape[2]-1)))
-        theta_ind = min(max(0, theta_ind), self.kernel.shape[2]-1)
+
+        phi = state[2]
+        if phi > phi_range/2:
+            phi = phi - phi_range
+        elif phi < -phi_range/2:
+            phi = phi + phi_range
+        theta_ind = int(round((phi + phi_range/2) / phi_range * (self.kernel.shape[2]-1)))
 
         return x_ind, y_ind, theta_ind
 

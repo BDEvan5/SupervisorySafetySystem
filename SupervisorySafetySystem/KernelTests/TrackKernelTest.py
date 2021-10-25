@@ -50,7 +50,7 @@ def rando_test():
     safety_planner = TrackWrapper(planner, conf)
 
     # run_test_loop(env, safety_planner, True, 10)
-    test_kernel_vehicle(env, safety_planner, True, 10, add_obs=False)
+    test_kernel_vehicle(env, safety_planner, True, 100, add_obs=False)
 
 if __name__ == "__main__":
     rando_test()

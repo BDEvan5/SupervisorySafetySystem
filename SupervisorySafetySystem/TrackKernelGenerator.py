@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 from numba import njit
 import yaml
 from PIL import Image
+from SupervisorySafetySystem.KernelTests.GeneralTestTrain import load_conf
 
 
 @njit(cache=True)
@@ -72,10 +73,10 @@ class TrackKernel:
         map_img[map_img > 128.] = 0.
 
         # porto crop vals.
-        crop_x = [50, 375]
-        crop_y = [200, 320]
+        # crop_x = [50, 375]
+        # crop_y = [200, 320]
         map_img = map_img.T
-        map_img = map_img[crop_x[0]:crop_x[1], crop_y[0]:crop_y[1]]
+        # map_img = map_img[crop_x[0]:crop_x[1], crop_y[0]:crop_y[1]]
 
         self.map_height = map_img.shape[0]
         self.map_width = map_img.shape[1]
@@ -238,27 +239,7 @@ def check_kernel_state(i, j, k, n_modes, dynamics, previous_kernel, xs, ys):
 
 """
 
-def construct_obs_kernel(conf):
-    img_size = int(conf.obs_img_size * conf.n_dx)
-    obs_size = int(conf.obs_size * conf.n_dx)
-    obs_offset = int((img_size - obs_size) / 2)
-    img = np.zeros((img_size, img_size))
-    img[obs_offset:obs_size+obs_offset, -obs_size:-1] = 1 
-    kernel = DiscriminatingImgKernel(img, conf)
-    kernel.calculate_kernel()
-    kernel.save_kernel(f"ObsKernel_{conf.kernel_name}")
 
-def construct_kernel_sides(conf): #TODO: combine to single fcn?
-    img_size = np.array(np.array(conf.side_img_size) * conf.n_dx , dtype=int) 
-    img = np.zeros(img_size) # use res arg and set length
-    img[0, :] = 1
-    img[-1, :] = 1
-    kernel = DiscriminatingImgKernel(img, conf)
-    kernel.calculate_kernel()
-    kernel.save_kernel(f"SideKernel_{conf.kernel_name}")
-
-
-from SupervisorySafetySystem.KernelTests.GeneralTestTrain import load_conf
 def build_track_kernel():
     conf = load_conf("track_kernel")
 

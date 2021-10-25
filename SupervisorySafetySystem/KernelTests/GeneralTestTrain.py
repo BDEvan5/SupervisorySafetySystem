@@ -24,7 +24,7 @@ def test_kernel_vehicle(env, vehicle, show=False, laps=100, add_obs=True, wait=F
     lap_times = [] 
 
     state = env.reset(add_obs)
-    env.render(False)
+    # env.render(False)
     done, score = False, 0.0
     for i in range(laps):
         vehicle.kernel.construct_kernel(env.env_map.map_img.shape, env.env_map.obs_pts)
@@ -32,7 +32,7 @@ def test_kernel_vehicle(env, vehicle, show=False, laps=100, add_obs=True, wait=F
             a = vehicle.plan(state)
             s_p, r, done, _ = env.step_plan(a)
             state = s_p
-            env.render(False)
+            # env.render(False)
         if show:
             # env.history.show_history()
             # vehicle.history.save_nn_output()
@@ -45,7 +45,7 @@ def test_kernel_vehicle(env, vehicle, show=False, laps=100, add_obs=True, wait=F
             completes += 1
             print(f"({i}) Complete -> time: {env.steps}")
             lap_times.append(env.steps)
-        plt.show()
+        # plt.show()
         state = env.reset(add_obs)
         
         done = False
