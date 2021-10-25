@@ -347,7 +347,7 @@ class TrackSim(BaseSim):
             self.done_reason = f"Max steps"
 
         cur_end_dis = get_distance(self.state[0:2], self.env_map.start_pose[0:2]) 
-        if cur_end_dis < self.end_distance and self.steps > 200:
+        if cur_end_dis < self.end_distance and self.steps > 50:
             self.done = True
             self.reward = 1
             self.done_reason = f"Lap complete, d: {cur_end_dis}"
