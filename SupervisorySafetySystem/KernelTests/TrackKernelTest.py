@@ -39,8 +39,21 @@ def pp_kernel_test():
     # run_test_loop(env, safety_planner, True, 10)
     test_kernel_vehicle(env, safety_planner, True, 10, add_obs=False)
 
+def rando_test():
+    conf = load_conf("track_kernel")
+
+    # construct_obs_kernel(conf)
+    # construct_kernel_sides(conf)
+
+    env = TrackSim(conf)
+    planner = RandomPlanner()
+    safety_planner = TrackWrapper(planner, conf)
+
+    # run_test_loop(env, safety_planner, True, 10)
+    test_kernel_vehicle(env, safety_planner, True, 10, add_obs=False)
+
 if __name__ == "__main__":
-    # rando_test()
+    rando_test()
     # pp_test()
-    pp_kernel_test()
+    # pp_kernel_test()
 

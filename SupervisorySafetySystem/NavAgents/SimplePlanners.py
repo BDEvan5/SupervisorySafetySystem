@@ -12,6 +12,7 @@ class RandomPlanner:
     def __init__(self):
         self.d_max = 0.4 # radians  
         self.v = 2        
+        self.name = "RandoPlanner"
 
     def plan_act(self, obs):
         np.random.seed()
