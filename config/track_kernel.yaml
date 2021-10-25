@@ -21,9 +21,9 @@ end_distance: 1.5
 dis_scale: 1 # I don't know if this is the right place for this???
 
 # map info
-map_name: "torino"
+# map_name: "torino"
 # map_name: "berlin"
-# map_name: "porto"
+map_name: "porto"
 # map_name: "berlin"
 n_dx: 80
 
@@ -35,9 +35,9 @@ kernel_path: "SupervisorySafetySystem/Kernels/"
 kernel_name: "track"
 obs_img_size: 1.3 # size in meters 
 side_img_size: [2, 1]
-n_phi: 61
+n_phi: 21
 n_modes: 5
-phi_range: 3.141
+phi_range: 7.28
 dynamics_pts: 5
 discrim_block: 1 
 discrim_phi: 0.1
