@@ -6,8 +6,7 @@ from PIL import Image
 
 from SupervisorySafetySystem.KernelTests.GeneralTestTrain import load_conf
 
-
-class ViabilityGenerator:
+class BaseKernel:
     def __init__(self, track_img, sim_conf):
         self.velocity = 2 #TODO: make this a config param
         self.track_img = track_img
@@ -19,73 +18,29 @@ class ViabilityGenerator:
         self.half_phi = self.phi_range / (2*self.n_phi)
         self.n_modes = sim_conf.n_modes
         self.sim_conf = sim_conf
-
         self.max_steer = sim_conf.max_steer 
         self.L = sim_conf.l_f + sim_conf.l_r
 
         self.n_x = self.track_img.shape[0]
         self.n_y = self.track_img.shape[1]
-        self.xs = np.linspace(0, self.n_x/self.n_dx, self.n_x) #TODO: magic number what!!!!
+        self.xs = np.linspace(0, self.n_x/self.n_dx, self.n_x) 
         self.ys = np.linspace(0, self.n_y/self.n_dx, self.n_y)
         self.phis = np.linspace(-self.phi_range/2, self.phi_range/2, self.n_phi)
-        
         self.qs = None
-
-        self.kernel = np.zeros((self.n_x, self.n_y, self.n_phi))
-        self.previous_kernel = np.zeros((self.n_x, self.n_y, self.n_phi))
+        
         self.build_qs()
         self.dynamics = build_dynamics_table(self.phis, self.qs, self.velocity, self.t_step, self.sim_conf)
         self.o_map = np.copy(self.track_img)    
-        self.kernel[:, :, :] = self.track_img[:, :, None] * np.ones((self.n_x, self.n_y, self.n_phi))
-
 
     # config functions
     def build_qs(self):
         ds = np.linspace(-self.max_steer, self.max_steer, self.n_modes)
         self.qs = self.velocity / self.L * np.tan(ds)
 
-    def calculate_kernel(self, n_loops=20):
-        # self.view_kernel(0)
-        for z in range(n_loops):
-            print(f"Running loop: {z}")
-            if np.all(self.previous_kernel == self.kernel):
-                print("Kernel has not changed: convergence has been reached")
-                break
-            self.previous_kernel = np.copy(self.kernel)
-            self.kernel = kernel_loop(self.kernel, self.n_modes, self.dynamics)
-
-            self.view_kernel(0, False, 1)
-            self.view_kernel(-np.pi/2, False, 2)
-            self.view_kernel(np.pi/2, False, 3)
 
     def save_kernel(self, name):
         np.save(f"SupervisorySafetySystem/Kernels/{name}.npy", self.kernel)
         print(f"Saved kernel to file: {name}")
-
-    def view_kernel(self, phi, show=True, fig_n=1):
-        phi_ind = np.argmin(np.abs(self.phis - phi))
-        plt.figure(fig_n)
-        plt.clf()
-        plt.title(f"Kernel phi: {phi} (ind: {phi_ind})")
-        # mode = int((self.n_modes-1)/2)
-        img = self.kernel[:, :, phi_ind].T + self.o_map.T
-        plt.imshow(img, origin='lower')
-
-        arrow_len = 0.15
-        plt.arrow(0, 0, np.sin(phi)*arrow_len, np.cos(phi)*arrow_len, color='r', width=0.001)
-        for m in range(self.n_modes):
-            i, j = int(self.n_x/2), 0 
-            di, dj, new_k = self.dynamics[phi_ind, m, -1]
-
-
-            plt.arrow(i, j, di, dj, color='b', width=0.001)
-
-        plt.pause(0.0001)
-        if show:
-            plt.show()
-
-
-
 
 def update_dynamics(phi, th_dot, velocity, time_step):
     new_phi = phi + th_dot * time_step
@@ -125,8 +80,83 @@ def build_dynamics_table(phis, qs, velocity, time, conf):
     return dynamics
 
 
+
+class ViabilityGenerator(BaseKernel):
+    def __init__(self, track_img, sim_conf):
+        super().__init__(track_img, sim_conf)
+        
+        self.kernel = np.zeros((self.n_x, self.n_y, self.n_phi))
+        self.previous_kernel = np.zeros((self.n_x, self.n_y, self.n_phi))
+        
+        self.kernel[:, :, :] = self.track_img[:, :, None] * np.ones((self.n_x, self.n_y, self.n_phi))
+
+        self.fig, self.axs = plt.subplots(2, 2)
+
+
+    def view_kernel(self, phi, show=True, fig_n=1):
+        phi_ind = np.argmin(np.abs(self.phis - phi))
+        plt.figure(fig_n)
+        plt.clf()
+        plt.title(f"Kernel phi: {phi} (ind: {phi_ind})")
+        # mode = int((self.n_modes-1)/2)
+        img = self.kernel[:, :, phi_ind].T + self.o_map.T
+        plt.imshow(img, origin='lower')
+
+        arrow_len = 0.15
+        plt.arrow(0, 0, np.sin(phi)*arrow_len, np.cos(phi)*arrow_len, color='r', width=0.001)
+        for m in range(self.n_modes):
+            i, j = int(self.n_x/2), 0 
+            di, dj, new_k = self.dynamics[phi_ind, m, -1]
+
+
+            plt.arrow(i, j, di, dj, color='b', width=0.001)
+
+        plt.pause(0.0001)
+        if show:
+            plt.show()
+    
+    def view_build(self, show=True):
+        self.axs[0, 0].cla()
+        self.axs[1, 0].cla()
+        self.axs[0, 1].cla()
+        self.axs[1, 1].cla()
+
+        half_phi = int(len(self.phis)/2)
+        quarter_phi = int(len(self.phis)/4)
+
+        self.axs[0, 0].imshow(self.kernel[:, :, 0].T + self.o_map.T, origin='lower')
+        self.axs[0, 0].set_title(f"Kernel phi: {self.phis[0]}")
+        # axs[0, 0].clear()
+        self.axs[1, 0].imshow(self.kernel[:, :, half_phi].T + self.o_map.T, origin='lower')
+        self.axs[1, 0].set_title(f"Kernel phi: {self.phis[half_phi]}")
+        self.axs[0, 1].imshow(self.kernel[:, :, -quarter_phi].T + self.o_map.T, origin='lower')
+        self.axs[0, 1].set_title(f"Kernel phi: {self.phis[-quarter_phi]}")
+        self.axs[1, 1].imshow(self.kernel[:, :, quarter_phi].T + self.o_map.T, origin='lower')
+        self.axs[1, 1].set_title(f"Kernel phi: {self.phis[quarter_phi]}")
+
+        # plt.title(f"Building Kernel")
+
+        plt.pause(0.0001)
+        plt.pause(1)
+
+        if show:
+            plt.show()
+
+    def calculate_kernel(self, n_loops=20):
+        for z in range(n_loops):
+            print(f"Running loop: {z}")
+            if np.all(self.previous_kernel == self.kernel):
+                print("Kernel has not changed: convergence has been reached")
+                break
+            self.previous_kernel = np.copy(self.kernel)
+            self.kernel = viability_loop(self.kernel, self.n_modes, self.dynamics)
+
+            # self.view_build(False)
+
+
+
 @njit(cache=True)
-def kernel_loop(kernel, n_modes, dynamics):
+def viability_loop(kernel, n_modes, dynamics):
     previous_kernel = np.copy(kernel)
     l_xs, l_ys, l_phis = kernel.shape
     for i in range(l_xs):
@@ -134,12 +164,12 @@ def kernel_loop(kernel, n_modes, dynamics):
             for k in range(l_phis):
                     if kernel[i, j, k] == 1:
                         continue 
-                    kernel[i, j, k] = check_kernel_state(i, j, k, n_modes, dynamics, previous_kernel)
+                    kernel[i, j, k] = check_viable_state(i, j, k, n_modes, dynamics, previous_kernel)
 
     return kernel
 
 @njit(cache=True)
-def check_kernel_state(i, j, k, n_modes, dynamics, previous_kernel):
+def check_viable_state(i, j, k, n_modes, dynamics, previous_kernel):
     n_pts = dynamics.shape[2]
     l_xs, l_ys, l_phis = previous_kernel.shape
     for l in range(n_modes):
