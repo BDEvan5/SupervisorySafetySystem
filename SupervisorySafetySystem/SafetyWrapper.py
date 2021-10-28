@@ -3,7 +3,7 @@ from numba import njit
 from matplotlib import pyplot as plt
 
 
-class Kernel:
+class ForestKernel:
     def __init__(self, sim_conf):
         self.kernel = None
         self.resolution = sim_conf.n_dx
@@ -14,26 +14,7 @@ class Kernel:
         self.obs_offset = int((img_size - obs_size) / 2)
 
     def construct_kernel(self, track_size, obs_locations):
-        self.kernel = np.zeros((track_size[0], track_size[1], self.side_kernel.shape[2]))
-        length = int(track_size[1] / self.resolution)
-        for i in range(length):
-            self.kernel[:, i*self.resolution:(i+1)*self.resolution] = self.side_kernel
-
-        for obs in obs_locations:
-            i = int(round(obs[0] * self.resolution)) - self.obs_offset
-            j = int(round(obs[1] * self.resolution)) - self.obs_offset * 2
-            if i < 0:
-                self.kernel[0:i+self.obs_kernel.shape[0], j:j+self.obs_kernel.shape[1]] += self.obs_kernel[abs(i):self.kernel.shape[0], :]
-                continue
-
-            if self.kernel.shape[0] - i <= (self.obs_kernel.shape[0]):
-                self.kernel[i:i+self.obs_kernel.shape[0], j:j+self.obs_kernel.shape[1]] += self.obs_kernel[0:self.kernel.shape[0]-i, :]
-                continue
-
-
-            self.kernel[i:i+self.obs_kernel.shape[0], j:j+self.obs_kernel.shape[1]] += self.obs_kernel
-
-        self.kernel = np.clip(self.kernel, 0, 1)
+        self.kernel = construct_forest_kernel(track_size, obs_locations, self.resolution, self.side_kernel, self.obs_kernel, self.obs_offset)
 
         # self.view_kernel(np.pi/4)
 
@@ -76,7 +57,31 @@ class Kernel:
         # plt.show()
         plt.pause(0.0001)
 
+@njit(cache=True)
+def construct_forest_kernel(track_size, obs_locations, resolution, side_kernel, obs_kernel, obs_offset):
+    kernel = np.zeros((track_size[0], track_size[1], side_kernel.shape[2]))
+    length = int(track_size[1] / resolution)
+    for i in range(length):
+        kernel[:, i*resolution:(i+1)*resolution] = side_kernel
 
+    for obs in obs_locations:
+        i = int(round(obs[0] * resolution)) - obs_offset
+        j = int(round(obs[1] * resolution)) - obs_offset * 2
+        if i < 0:
+            kernel[0:i+obs_kernel.shape[0], j:j+obs_kernel.shape[1]] += obs_kernel[abs(i):kernel.shape[0], :]
+            continue
+
+        if kernel.shape[0] - i <= (obs_kernel.shape[0]):
+            kernel[i:i+obs_kernel.shape[0], j:j+obs_kernel.shape[1]] += obs_kernel[0:kernel.shape[0]-i, :]
+            continue
+
+
+        kernel[i:i+obs_kernel.shape[0], j:j+obs_kernel.shape[1]] += obs_kernel
+
+    
+    # kernel[kernel>1] = 1 #TODO: some values greater than 1, check not a problem
+    # kernel = np.clip(kernel, 0, 1)
+    return kernel
 
 class SafetyWrapper:
     def __init__(self, planner, conf):
@@ -88,9 +93,9 @@ class SafetyWrapper:
         """
         
         #TODO: make sure these parameters are defined in the planner an then remove them here. This is constructor dependency injection
-        self.d_max = 0.4 # radians  
+        self.d_max = conf.max_steer
         self.v = 2
-        self.kernel = Kernel(conf)
+        self.kernel = ForestKernel(conf)
         self.planner = planner
 
     def plan(self, obs):
