@@ -20,14 +20,14 @@ kernel_name = f"kernel_sap_{run_n}"
 def rando_test():
     conf = load_conf("kernel_config")
 
-    construct_obs_kernel(conf)
-    construct_kernel_sides(conf)
+    # construct_obs_kernel(conf)
+    # construct_kernel_sides(conf)
 
     env = ForestSim(conf)
     planner = RandomPlanner()
     safety_planner = SafetyWrapper(planner, conf)
 
-    test_kernel_vehicle(env, safety_planner, True, 10)
+    test_kernel_vehicle(env, safety_planner, True, 100)
 
 def pp_test():
     conf = load_conf("kernel_config")
@@ -43,5 +43,5 @@ def pp_test():
     test_kernel_vehicle(env, safety_planner, True, 10)
 
 if __name__ == "__main__":
-    # rando_test()
-    pp_test()
+    rando_test()
+    # pp_test()
