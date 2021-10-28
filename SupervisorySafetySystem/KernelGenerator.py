@@ -4,6 +4,7 @@ from numba import njit
 import yaml
 from PIL import Image
 
+from SupervisorySafetySystem.KernelTests.GeneralTestTrain import load_conf
 
 
 class ViabilityGenerator:
@@ -35,7 +36,6 @@ class ViabilityGenerator:
         self.build_qs()
         self.dynamics = build_dynamics_table(self.phis, self.qs, self.velocity, self.t_step, self.sim_conf)
         self.o_map = np.copy(self.track_img)    
-        self.view_kernel(0)
         self.kernel[:, :, :] = self.track_img[:, :, None] * np.ones((self.n_x, self.n_y, self.n_phi))
 
 
@@ -52,7 +52,7 @@ class ViabilityGenerator:
                 print("Kernel has not changed: convergence has been reached")
                 break
             self.previous_kernel = np.copy(self.kernel)
-            self.kernel = kernel_loop(self.kernel, self.xs, self.ys, self.phis, self.n_modes, self.dynamics)
+            self.kernel = kernel_loop(self.kernel, self.n_modes, self.dynamics)
 
             self.view_kernel(0, False, 1)
             self.view_kernel(-np.pi/2, False, 2)
@@ -84,30 +84,6 @@ class ViabilityGenerator:
         if show:
             plt.show()
 
-
-
-def prepare_track_img(sim_conf, resize=5):
-    file_name = 'maps/' + sim_conf.map_name + '.yaml'
-    with open(file_name) as file:
-        documents = yaml.full_load(file)
-        yaml_file = dict(documents.items())
-    img_resolution = yaml_file['resolution']
-    map_img_path = 'maps/' + yaml_file['image']
-
-    map_img = np.array(Image.open(map_img_path).transpose(Image.FLIP_TOP_BOTTOM))
-    map_img = map_img.astype(np.float64)
-    if len(map_img.shape) == 3:
-        map_img = map_img[:, :, 0]
-    map_img[map_img <= 128.] = 1.
-    map_img[map_img > 128.] = 0.
-
-    img = Image.fromarray(map_img.T)
-    img = img.resize((map_img.shape[0]*scale, map_img.shape[1]*scale))
-    img = np.array(img)
-    map_img2 = img.astype(np.float64)
-    map_img2[map_img2 != 0.] = 1.
-
-    return map_img2
 
 
 
@@ -148,38 +124,31 @@ def build_dynamics_table(phis, qs, velocity, time, conf):
 
     return dynamics
 
-# @jit(cache=True)
-scale = 4
-# l_xs = 230 * scale # torino
-# l_ys = 460 * scale
-# l_xs = 410 * scale # berlin
-# l_ys = 599 * scale
-l_xs = 325 * scale # porto
-l_ys = 120 * scale
-l_phis = 41
 
 @njit(cache=True)
-def kernel_loop(kernel, xs, ys, phis, n_modes, dynamics):
+def kernel_loop(kernel, n_modes, dynamics):
     previous_kernel = np.copy(kernel)
+    l_xs, l_ys, l_phis = kernel.shape
     for i in range(l_xs):
         for j in range(l_ys):
             for k in range(l_phis):
                     if kernel[i, j, k] == 1:
                         continue 
-                    kernel[i, j, k] = check_kernel_state(i, j, k, n_modes, dynamics, previous_kernel, xs, ys)
+                    kernel[i, j, k] = check_kernel_state(i, j, k, n_modes, dynamics, previous_kernel)
 
     return kernel
 
 @njit(cache=True)
-def check_kernel_state(i, j, k, n_modes, dynamics, previous_kernel, xs, ys):
+def check_kernel_state(i, j, k, n_modes, dynamics, previous_kernel):
     n_pts = dynamics.shape[2]
+    l_xs, l_ys, l_phis = previous_kernel.shape
     for l in range(n_modes):
         safe = True
         # check all concatanation points and offsets and if none are occupied, then it is safe.
         for t in range(n_pts):
             di, dj, new_k = dynamics[k, l, t, :]
-            new_i = min(max(0, i + di), len(xs)-1)  
-            new_j = min(max(0, j + dj), len(ys)-1)
+            new_i = min(max(0, i + di), l_xs-1)  
+            new_j = min(max(0, j + dj), l_ys-1)
 
             if previous_kernel[new_i, new_j, new_k]:
                 # if you hit a constraint, break
@@ -197,15 +166,38 @@ def check_kernel_state(i, j, k, n_modes, dynamics, previous_kernel, xs, ys):
 """
 
 
+def prepare_track_img(sim_conf, resize=5):
+    file_name = 'maps/' + sim_conf.map_name + '.yaml'
+    with open(file_name) as file:
+        documents = yaml.full_load(file)
+        yaml_file = dict(documents.items())
+    img_resolution = yaml_file['resolution']
+    map_img_path = 'maps/' + yaml_file['image']
 
-from SupervisorySafetySystem.KernelTests.GeneralTestTrain import load_conf
+    map_img = np.array(Image.open(map_img_path).transpose(Image.FLIP_TOP_BOTTOM))
+    map_img = map_img.astype(np.float64)
+    if len(map_img.shape) == 3:
+        map_img = map_img[:, :, 0]
+    map_img[map_img <= 128.] = 1.
+    map_img[map_img > 128.] = 0.
+
+    img = Image.fromarray(map_img.T)
+    img = img.resize((map_img.shape[0]*resize, map_img.shape[1]*resize))
+    img = np.array(img)
+    map_img2 = img.astype(np.float64)
+    map_img2[map_img2 != 0.] = 1.
+
+    return map_img2
+
+
+
 def build_track_kernel():
     conf = load_conf("track_kernel")
 
-    img = prepare_track_img(conf)
-    plt.figure(1)
-    plt.imshow(img)
-    plt.pause(0.0001)
+    img = prepare_track_img(conf, 4) #NB change this param to set the difference between the map resolution and the kernel resolution. 0.05 -> 80 ndx is good for now. 
+    # plt.figure(1)
+    # plt.imshow(img)
+    # plt.pause(0.0001)
     kernel = ViabilityGenerator(img, conf)
     kernel.calculate_kernel(30)
     kernel.save_kernel(f"TrackKernel_{conf.track_kernel_path}_{conf.map_name}")
