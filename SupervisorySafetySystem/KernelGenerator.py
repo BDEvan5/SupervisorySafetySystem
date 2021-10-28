@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from numba import njit
 import yaml
 from PIL import Image
-from SupervisorySafetySystem.Simulator.Dynamics import update_dynamics, update_inter_state
+from SupervisorySafetySystem.Simulator.Dynamics import update_dynamics, update_inter_state, update_state_dynamics
 from SupervisorySafetySystem.KernelTests.GeneralTestTrain import load_conf
 
 class BaseKernel:
@@ -127,7 +127,12 @@ def build_viability_dynamics(phis, qs, velocity, time, conf):
         for j, m in enumerate(qs):
             for t in range(n_pts): 
                 t_step = time * (t+1)  / n_pts
-                dx, dy, phi = update_dynamics(p, m, velocity, t_step)
+                # dx, dy, phi = update_dynamics(p, m, velocity, t_step)
+
+                state = np.array([0, 0, p, velocity, 0])
+                action = np.array([m, velocity])
+                new_state = update_state_dynamics(state, action, t_step)
+                dx, dy, phi = new_state[0], new_state[1], new_state[2]
 
                 if phi > np.pi:
                     phi = phi - 2*np.pi
