@@ -1,9 +1,9 @@
 from SupervisorySafetySystem.KernelTests.GeneralTestTrain import test_kernel_vehicle, load_conf
 
 from SupervisorySafetySystem.Simulator.ForestSim import ForestSim
-from SupervisorySafetySystem.ForestKernel import ForestKernel, construct_obs_kernel, construct_kernel_sides
+from SupervisorySafetySystem.ForestKernel import construct_obs_kernel, construct_kernel_sides
 from SupervisorySafetySystem.NavAgents.SimplePlanners import RandomPlanner, PurePursuit 
-from SupervisorySafetySystem.SupervisorySystem import Supervisor
+from SupervisorySafetySystem.SupervisorySystem import Supervisor, ForestKernel
 
 import yaml
 from argparse import Namespace
@@ -20,8 +20,8 @@ kernel_name = f"kernel_sap_{run_n}"
 def rando_test():
     conf = load_conf("kernel_config")
 
-    construct_obs_kernel(conf)
-    construct_kernel_sides(conf)
+    # construct_obs_kernel(conf)
+    # construct_kernel_sides(conf)
 
     env = ForestSim(conf)
     planner = RandomPlanner()

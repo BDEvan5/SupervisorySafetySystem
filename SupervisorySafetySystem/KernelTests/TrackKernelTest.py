@@ -1,8 +1,7 @@
 from SupervisorySafetySystem.KernelTests.GeneralTestTrain import test_kernel_vehicle, load_conf
 
 from SupervisorySafetySystem.Simulator.TrackSim import TrackSim
-from SupervisorySafetySystem.TrackKernel import TrackKernel
-from SupervisorySafetySystem.SupervisorySystem import Supervisor
+from SupervisorySafetySystem.SupervisorySystem import Supervisor, TrackKernel
 from SupervisorySafetySystem.NavAgents.SimplePlanners import RandomPlanner, PurePursuit, EmptyPlanner
 from SupervisorySafetySystem.NavAgents.TrackPP import PurePursuit as TrackPP
 from SupervisorySafetySystem.StdTrackKernel import build_track_kernel
