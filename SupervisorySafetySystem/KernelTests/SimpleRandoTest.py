@@ -1,9 +1,10 @@
 from SupervisorySafetySystem.KernelTests.GeneralTestTrain import test_kernel_vehicle, load_conf
 
 from SupervisorySafetySystem.Simulator.ForestSim import ForestSim
-from SupervisorySafetySystem.SafetyWrapper import SafetyWrapper
+from SupervisorySafetySystem.SafetyWrapper import SafetyWrapper, ForestKernel
 from SupervisorySafetySystem.NavAgents.SimplePlanners import RandomPlanner, PurePursuit 
 from SupervisorySafetySystem.KernelGenerator import construct_obs_kernel, construct_kernel_sides
+from SupervisorySafetySystem.SupervisorySystem import Supervisor
 
 import yaml
 from argparse import Namespace
@@ -25,7 +26,8 @@ def rando_test():
 
     env = ForestSim(conf)
     planner = RandomPlanner()
-    safety_planner = SafetyWrapper(planner, conf)
+    kernel = ForestKernel(conf)
+    safety_planner = Supervisor(planner, kernel, conf)
 
     test_kernel_vehicle(env, safety_planner, True, 100)
 
@@ -37,7 +39,8 @@ def pp_test():
 
     env = ForestSim(conf)
     planner = PurePursuit(conf)
-    safety_planner = SafetyWrapper(planner, conf)
+    kernel = ForestKernel(conf)
+    safety_planner = Supervisor(planner, kernel, conf)
 
     # run_test_loop(env, safety_planner, True, 10)
     test_kernel_vehicle(env, safety_planner, True, 10)
