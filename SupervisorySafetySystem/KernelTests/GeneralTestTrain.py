@@ -41,11 +41,11 @@ def test_kernel_vehicle(env, vehicle, show=False, laps=100, add_obs=True, wait=F
         if r == -1:
             crashes += 1
             print(f"({i}) Crashed -> time: {env.steps} ")
+            plt.show()
         else:
             completes += 1
             print(f"({i}) Complete -> time: {env.steps}")
             lap_times.append(env.steps)
-        # plt.show()
         state = env.reset(add_obs)
         
         done = False

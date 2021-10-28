@@ -83,7 +83,7 @@ class TrackWrapper:
         self.d_max = 0.4 # radians  
         self.v = 2
         self.kernel = TrackKernel(conf)
-        self.kernel.view_kernel(np.pi/3)
+        # self.kernel.view_kernel(np.pi/3)
         self.planner = planner
 
     def plan(self, obs):
