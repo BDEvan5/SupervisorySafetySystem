@@ -1,10 +1,12 @@
 import numpy as np
+import matplotlib.pyplot as plt
 from numba import njit
-from matplotlib import pyplot as plt
+import yaml
+from PIL import Image
 
 
 
-class ForestKernelGenerator:
+class ViabilityGenerator:
     def __init__(self, track_img, sim_conf):
         self.velocity = 2 #TODO: make this a config param
         self.track_img = track_img
@@ -20,10 +22,10 @@ class ForestKernelGenerator:
         self.max_steer = sim_conf.max_steer 
         self.L = sim_conf.l_f + sim_conf.l_r
 
-        self.n_x = track_img.shape[0]
-        self.n_y = track_img.shape[1]
-        self.xs = np.linspace(0, sim_conf.forest_width, self.n_x)
-        self.ys = np.linspace(0, sim_conf.forest_length, self.n_y)
+        self.n_x = self.track_img.shape[0]
+        self.n_y = self.track_img.shape[1]
+        self.xs = np.linspace(0, self.n_x/self.n_dx, self.n_x) #TODO: magic number what!!!!
+        self.ys = np.linspace(0, self.n_y/self.n_dx, self.n_y)
         self.phis = np.linspace(-self.phi_range/2, self.phi_range/2, self.n_phi)
         
         self.qs = None
@@ -32,8 +34,10 @@ class ForestKernelGenerator:
         self.previous_kernel = np.zeros((self.n_x, self.n_y, self.n_phi))
         self.build_qs()
         self.dynamics = build_dynamics_table(self.phis, self.qs, self.velocity, self.t_step, self.sim_conf)
+        self.o_map = np.copy(self.track_img)    
+        self.view_kernel(0)
+        self.kernel[:, :, :] = self.track_img[:, :, None] * np.ones((self.n_x, self.n_y, self.n_phi))
 
-        self.kernel[:, :, :] = track_img[:, :, None] * np.ones((self.n_x, self.n_y, self.n_phi))
 
     # config functions
     def build_qs(self):
@@ -41,6 +45,7 @@ class ForestKernelGenerator:
         self.qs = self.velocity / self.L * np.tan(ds)
 
     def calculate_kernel(self, n_loops=20):
+        # self.view_kernel(0)
         for z in range(n_loops):
             print(f"Running loop: {z}")
             if np.all(self.previous_kernel == self.kernel):
@@ -49,23 +54,28 @@ class ForestKernelGenerator:
             self.previous_kernel = np.copy(self.kernel)
             self.kernel = kernel_loop(self.kernel, self.xs, self.ys, self.phis, self.n_modes, self.dynamics)
 
-    def save_kernel(self, name="std_kernel"):
-        np.save(f"SupervisorySafetySystem/Kernels/{name}.npy", self.kernel)
-        print(f"Saved kernel to file")
+            self.view_kernel(0, False, 1)
+            self.view_kernel(-np.pi/2, False, 2)
+            self.view_kernel(np.pi/2, False, 3)
 
-    def view_kernel(self, phi, show=True):
+    def save_kernel(self, name):
+        np.save(f"SupervisorySafetySystem/Kernels/{name}.npy", self.kernel)
+        print(f"Saved kernel to file: {name}")
+
+    def view_kernel(self, phi, show=True, fig_n=1):
         phi_ind = np.argmin(np.abs(self.phis - phi))
-        plt.figure(1)
+        plt.figure(fig_n)
+        plt.clf()
         plt.title(f"Kernel phi: {phi} (ind: {phi_ind})")
         # mode = int((self.n_modes-1)/2)
-        img = self.kernel[:, :, phi_ind].T 
+        img = self.kernel[:, :, phi_ind].T + self.o_map.T
         plt.imshow(img, origin='lower')
 
         arrow_len = 0.15
         plt.arrow(0, 0, np.sin(phi)*arrow_len, np.cos(phi)*arrow_len, color='r', width=0.001)
         for m in range(self.n_modes):
             i, j = int(self.n_x/2), 0 
-            di, dj, new_k = self.dynamics[phi_ind, m, 0,-1]
+            di, dj, new_k = self.dynamics[phi_ind, m, -1]
 
 
             plt.arrow(i, j, di, dj, color='b', width=0.001)
@@ -73,6 +83,32 @@ class ForestKernelGenerator:
         plt.pause(0.0001)
         if show:
             plt.show()
+
+
+
+def prepare_track_img(sim_conf, resize=5):
+    file_name = 'maps/' + sim_conf.map_name + '.yaml'
+    with open(file_name) as file:
+        documents = yaml.full_load(file)
+        yaml_file = dict(documents.items())
+    img_resolution = yaml_file['resolution']
+    map_img_path = 'maps/' + yaml_file['image']
+
+    map_img = np.array(Image.open(map_img_path).transpose(Image.FLIP_TOP_BOTTOM))
+    map_img = map_img.astype(np.float64)
+    if len(map_img.shape) == 3:
+        map_img = map_img[:, :, 0]
+    map_img[map_img <= 128.] = 1.
+    map_img[map_img > 128.] = 0.
+
+    img = Image.fromarray(map_img.T)
+    img = img.resize((map_img.shape[0]*scale, map_img.shape[1]*scale))
+    img = np.array(img)
+    map_img2 = img.astype(np.float64)
+    map_img2[map_img2 != 0.] = 1.
+
+    return map_img2
+
 
 
 def update_dynamics(phi, th_dot, velocity, time_step):
@@ -92,49 +128,42 @@ def build_dynamics_table(phis, qs, velocity, time, conf):
     phi_size = phi_range / (conf.n_phi -1)
     ph = conf.discrim_phi * phi_size
 
-    dynamics = np.zeros((len(phis), len(qs), n_pts, 8, 3), dtype=np.int)
+    dynamics = np.zeros((len(phis), len(qs), n_pts, 3), dtype=np.int)
     for i, p in enumerate(phis):
         for j, m in enumerate(qs):
             for t in range(n_pts): 
                 t_step = time * (t+1)  / n_pts
                 dx, dy, phi = update_dynamics(p, m, velocity, t_step)
 
-                new_k_min = int(round((phi - ph + phi_range/2) / phi_range * (len(phis)-1)))
-                dynamics[i, j, t, 0:4, 2] = min(max(0, new_k_min), len(phis)-1)
+                if phi > np.pi:
+                    phi = phi - 2*np.pi
+                elif phi < -np.pi:
+                    phi = phi + 2*np.pi
+                new_k = int(round((phi + phi_range/2) / phi_range * (len(phis)-1))) # TODO: check that i gets around the circle.
+                dynamics[i, j, t, 2] = min(max(0, new_k), len(phis)-1)
                 
-                new_k_max = int(round((phi + ph + phi_range/2) / phi_range * (len(phis)-1)))
-                dynamics[i, j, t, 4:8, 2] = min(max(0, new_k_max), len(phis)-1)
-
-                temp_dynamics = generate_temp_dynamics(dx, dy, h, resolution)
+                dynamics[i, j, t, 0] = int(round(dx * resolution))                  
+                dynamics[i, j, t, 1] = int(round(dy * resolution))                  
                 
-                dynamics[i, j, t, :, 0:2] = np.copy(temp_dynamics)
-
-                pass
 
     return dynamics
 
-@njit(cache=True)
-def generate_temp_dynamics(dx, dy, h, resolution):
-    temp_dynamics = np.zeros((8, 2))
-
-    for i in range(2):
-        temp_dynamics[0 + i*4, 0] = int(round((dx -h) * resolution))
-        temp_dynamics[0 + i*4, 1] = int(round((dy -h) * resolution))
-        temp_dynamics[1 + i*4, 0] = int(round((dx -h) * resolution))
-        temp_dynamics[1 + i*4, 1] = int(round((dy +h) * resolution))
-        temp_dynamics[2 + i*4, 0] = int(round((dx +h) * resolution))
-        temp_dynamics[2 + i*4, 1] = int(round((dy +h )* resolution))
-        temp_dynamics[3 + i*4, 0] = int(round((dx +h) * resolution))
-        temp_dynamics[3 + i*4, 1] = int(round((dy -h) * resolution))
-
-    return temp_dynamics
-
 # @jit(cache=True)
+scale = 4
+# l_xs = 230 * scale # torino
+# l_ys = 460 * scale
+# l_xs = 410 * scale # berlin
+# l_ys = 599 * scale
+l_xs = 325 * scale # porto
+l_ys = 120 * scale
+l_phis = 41
+
+@njit(cache=True)
 def kernel_loop(kernel, xs, ys, phis, n_modes, dynamics):
     previous_kernel = np.copy(kernel)
-    for i in range(len(xs)):
-        for j in range(len(ys)):
-            for k in range(len(phis)):
+    for i in range(l_xs):
+        for j in range(l_ys):
+            for k in range(l_phis):
                     if kernel[i, j, k] == 1:
                         continue 
                     kernel[i, j, k] = check_kernel_state(i, j, k, n_modes, dynamics, previous_kernel, xs, ys)
@@ -148,15 +177,14 @@ def check_kernel_state(i, j, k, n_modes, dynamics, previous_kernel, xs, ys):
         safe = True
         # check all concatanation points and offsets and if none are occupied, then it is safe.
         for t in range(n_pts):
-            for n in range(dynamics.shape[3]):
-                di, dj, new_k = dynamics[k, l, t, n, :]
-                new_i = min(max(0, i + di), len(xs)-1)  
-                new_j = min(max(0, j + dj), len(ys)-1)
+            di, dj, new_k = dynamics[k, l, t, :]
+            new_i = min(max(0, i + di), len(xs)-1)  
+            new_j = min(max(0, j + dj), len(ys)-1)
 
-                if previous_kernel[new_i, new_j, new_k]:
-                    # if you hit a constraint, break
-                    safe = False # breached a limit.
-                    break
+            if previous_kernel[new_i, new_j, new_k]:
+                # if you hit a constraint, break
+                safe = False # breached a limit.
+                break
         if safe:
             return False
 
@@ -168,24 +196,22 @@ def check_kernel_state(i, j, k, n_modes, dynamics, previous_kernel, xs, ys):
 
 """
 
-def construct_obs_kernel(conf):
-    img_size = int(conf.obs_img_size * conf.n_dx)
-    obs_size = int(conf.obs_size * conf.n_dx)
-    obs_offset = int((img_size - obs_size) / 2)
-    img = np.zeros((img_size, img_size))
-    img[obs_offset:obs_size+obs_offset, -obs_size:-1] = 1 
-    kernel = ForestKernelGenerator(img, conf)
-    kernel.calculate_kernel()
-    kernel.save_kernel(f"ObsKernel_{conf.kernel_name}")
 
-def construct_kernel_sides(conf): #TODO: combine to single fcn?
-    img_size = np.array(np.array(conf.side_img_size) * conf.n_dx , dtype=int) 
-    img = np.zeros(img_size) # use res arg and set length
-    img[0, :] = 1
-    img[-1, :] = 1
-    kernel = ForestKernelGenerator(img, conf)
-    kernel.calculate_kernel()
-    kernel.save_kernel(f"SideKernel_{conf.kernel_name}")
 
+from SupervisorySafetySystem.KernelTests.GeneralTestTrain import load_conf
+def build_track_kernel():
+    conf = load_conf("track_kernel")
+
+    img = prepare_track_img(conf)
+    plt.figure(1)
+    plt.imshow(img)
+    plt.pause(0.0001)
+    kernel = ViabilityGenerator(img, conf)
+    kernel.calculate_kernel(30)
+    kernel.save_kernel(f"TrackKernel_{conf.track_kernel_path}_{conf.map_name}")
+
+
+if __name__ == "__main__":
+    build_track_kernel()
 
 
