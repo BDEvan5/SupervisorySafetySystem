@@ -1,9 +1,9 @@
 from SupervisorySafetySystem.KernelTests.GeneralTestTrain import test_kernel_vehicle, load_conf
 
 from SupervisorySafetySystem.Simulator.ForestSim import ForestSim
-from SupervisorySafetySystem.SafetyWrapper import SafetyWrapper
+from SupervisorySafetySystem.ForestKernel import construct_obs_kernel, construct_kernel_sides
 from SupervisorySafetySystem.NavAgents.SimplePlanners import RandomPlanner, PurePursuit 
-from SupervisorySafetySystem.KernelGenerator import construct_obs_kernel, construct_kernel_sides
+from SupervisorySafetySystem.SupervisorySystem import Supervisor, ForestKernel
 
 import yaml
 from argparse import Namespace
@@ -18,29 +18,31 @@ kernel_name = f"kernel_sap_{run_n}"
 
 
 def rando_test():
-    conf = load_conf("kernel_config")
+    conf = load_conf("forest_kernel")
 
     # construct_obs_kernel(conf)
     # construct_kernel_sides(conf)
 
     env = ForestSim(conf)
     planner = RandomPlanner()
-    safety_planner = SafetyWrapper(planner, conf)
+    kernel = ForestKernel(conf)
+    safety_planner = Supervisor(planner, kernel, conf)
 
-    test_kernel_vehicle(env, safety_planner, True, 100)
+    test_kernel_vehicle(env, safety_planner, True, 100, wait=False)
 
 def pp_test():
-    conf = load_conf("kernel_config")
+    conf = load_conf("forest_kernel")
 
     # construct_obs_kernel(conf)
     # construct_kernel_sides(conf)
 
     env = ForestSim(conf)
     planner = PurePursuit(conf)
-    safety_planner = SafetyWrapper(planner, conf)
+    kernel = ForestKernel(conf)
+    safety_planner = Supervisor(planner, kernel, conf)
 
     # run_test_loop(env, safety_planner, True, 10)
-    test_kernel_vehicle(env, safety_planner, True, 10)
+    test_kernel_vehicle(env, safety_planner, True, 10, wait=True)
 
 if __name__ == "__main__":
     rando_test()

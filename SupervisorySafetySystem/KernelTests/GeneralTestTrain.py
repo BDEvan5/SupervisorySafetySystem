@@ -37,6 +37,7 @@ def test_kernel_vehicle(env, vehicle, show=False, laps=100, add_obs=True, wait=F
             # env.history.show_history()
             # vehicle.history.save_nn_output()
             env.render(wait=wait, name=vehicle.planner.name)
+            # plt.pause(1)
 
         if r == -1:
             crashes += 1

@@ -4,7 +4,6 @@ from matplotlib import pyplot as plt
 
 
 
-
 #Dynamics functions
 @njit(cache=True)
 def update_kinematic_state(x, u, dt, whlb, max_steer, max_v):
@@ -79,7 +78,7 @@ def update_complex_state(state, action, dt, plan_steps, whlb, max_steer, max_v):
 
 
 @njit(cache=True)
-def update_simple_state(x, u, dt, whlb, max_steer, max_v):
+def update_simple_state(x, u, dt, whlb=0.33, max_steer=0.4, max_v=7):
     """
     Updates the kinematic state according to bicycle model
 
@@ -95,15 +94,9 @@ def update_simple_state(x, u, dt, whlb, max_steer, max_v):
                 u[1] / whlb * np.tan(u[0]),
                 u[1],
                 u[0]])
-    # dx = np.array([x[3]*np.sin(x[2]), # x
-    #             x[3]*np.cos(x[2]), # y
-    #             x[3]/whlb * np.tan(x[4]), # theta
-    #             u[1], # velocity
-    #             u[0]]) # steering
 
     new_state = x + dx * dt 
 
-    # check limits
     new_state[4] = min(new_state[4], max_steer)
     new_state[4] = max(new_state[4], -max_steer)
     new_state[3] = min(new_state[3], max_v)
@@ -111,7 +104,7 @@ def update_simple_state(x, u, dt, whlb, max_steer, max_v):
     return new_state
 
 @njit(cache=True)
-def update_inter_state(x, u, dt, whlb, max_steer, max_v):
+def update_inter_state(x, u, dt, whlb=0.33, max_steer=0.4, max_v=7):
     """
     Updates the kinematic state according to bicycle model
 
@@ -127,15 +120,9 @@ def update_inter_state(x, u, dt, whlb, max_steer, max_v):
                 u[1] / whlb * np.tan(u[0]),
                 u[1],
                 u[0]])
-    # dx = np.array([x[3]*np.sin(x[2]), # x
-    #             x[3]*np.cos(x[2]), # y
-    #             x[3]/whlb * np.tan(x[4]), # theta
-    #             u[1], # velocity
-    #             u[0]]) # steering
 
     new_state = x + dx * dt 
 
-    # check limits
     new_state[4] = min(new_state[4], max_steer)
     new_state[4] = max(new_state[4], -max_steer)
     new_state[3] = min(new_state[3], max_v)

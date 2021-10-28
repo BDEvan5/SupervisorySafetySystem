@@ -5,19 +5,6 @@ import yaml
 from PIL import Image
 
 
-@njit(cache=True)
-def update_state(state, action, dt):
-    """
-    Updates x, y, th pos accoridng to th_d, v
-    """
-    L = 0.33
-    theta_update = state[2] +  ((action[1] / L) * np.tan(action[0]) * dt)
-    dx = np.array([action[1] * np.sin(theta_update),
-                action[1]*np.cos(theta_update),
-                action[1] / L * np.tan(action[0])])
-
-    return state + dx * dt 
-
 
 class TrackKernel:
     def __init__(self, sim_conf):
