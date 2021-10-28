@@ -162,17 +162,17 @@ def check_kernel_state(i, j, k, n_modes, dynamics, previous_kernel):
 
 """
     External functions
-
 """
 
-
-def prepare_track_img(sim_conf, resize=5):
+def prepare_track_img(sim_conf):
     file_name = 'maps/' + sim_conf.map_name + '.yaml'
     with open(file_name) as file:
         documents = yaml.full_load(file)
         yaml_file = dict(documents.items())
     img_resolution = yaml_file['resolution']
     map_img_path = 'maps/' + yaml_file['image']
+
+    resize = int(sim_conf.n_dx * img_resolution)
 
     map_img = np.array(Image.open(map_img_path).transpose(Image.FLIP_TOP_BOTTOM))
     map_img = map_img.astype(np.float64)
@@ -189,12 +189,10 @@ def prepare_track_img(sim_conf, resize=5):
 
     return map_img2
 
-
-
 def build_track_kernel():
     conf = load_conf("track_kernel")
 
-    img = prepare_track_img(conf, 4) #NB change this param to set the difference between the map resolution and the kernel resolution. 0.05 -> 80 ndx is good for now. 
+    img = prepare_track_img(conf) 
     # plt.figure(1)
     # plt.imshow(img)
     # plt.pause(0.0001)
