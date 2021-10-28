@@ -127,11 +127,9 @@ def build_viability_dynamics(phis, qs, velocity, time, conf):
         for j, m in enumerate(qs):
             for t in range(n_pts): 
                 t_step = time * (t+1)  / n_pts
-                # dx, dy, phi = update_dynamics(p, m, velocity, t_step)
-
                 state = np.array([0, 0, p, velocity, 0])
                 action = np.array([m, velocity])
-                new_state = update_state_dynamics(state, action, t_step)
+                new_state = update_inter_state(state, action, t_step)
                 dx, dy, phi = new_state[0], new_state[1], new_state[2]
 
                 if phi > np.pi:
@@ -239,7 +237,12 @@ def build_discrim_dynamics(phis, qs, velocity, time, conf):
         for j, m in enumerate(qs):
             for t in range(n_pts): 
                 t_step = time * (t+1)  / n_pts
-                dx, dy, phi = update_dynamics(p, m, velocity, t_step)
+
+                state = np.array([0, 0, p, velocity, 0])
+                action = np.array([m, velocity])
+                new_state = update_inter_state(state, action, t_step)
+                dx, dy, phi = new_state[0], new_state[1], new_state[2]
+
 
                 new_k_min = int(round((phi - ph + phi_range/2) / phi_range * (len(phis)-1)))
                 dynamics[i, j, t, 0:4, 2] = min(max(0, new_k_min), len(phis)-1)
@@ -369,9 +372,9 @@ def construct_kernel_sides(conf): #TODO: combine to single fcn?
 
 
 if __name__ == "__main__":
-    conf = load_conf("track_kernel")
-    build_track_kernel(conf)
+    # conf = load_conf("track_kernel")
+    # build_track_kernel(conf)
 
-    # conf = load_conf("forest_kernel")
-    # construct_obs_kernel(conf)
+    conf = load_conf("forest_kernel")
+    construct_obs_kernel(conf)
 

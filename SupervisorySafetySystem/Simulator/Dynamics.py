@@ -4,26 +4,6 @@ from matplotlib import pyplot as plt
 
 
 
-def update_dynamics(phi, delta, velocity, time_step):
-    th_dot = 2 / 0.33 * np.tan(delta)
-    new_phi = phi + th_dot * time_step
-    dx = np.sin(new_phi) * velocity * time_step
-    dy = np.cos(new_phi) * velocity * time_step
-
-    return dx, dy, new_phi
-
-def update_state_dynamics(x, u, dt, whlb=0.33, max_steer=0.4, max_v=7):
-    theta_update = x[2] +  ((u[1] / whlb) * np.tan(u[0]) * dt)
-    dx = np.array([u[1] * np.sin(theta_update),
-                u[1]*np.cos(theta_update),
-                u[1] / whlb * np.tan(u[0]),
-                u[1],
-                u[0]])
-
-    new_state = x + dx * dt 
-
-    return new_state
-
 #Dynamics functions
 @njit(cache=True)
 def update_kinematic_state(x, u, dt, whlb, max_steer, max_v):
