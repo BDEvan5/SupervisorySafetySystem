@@ -1,23 +1,90 @@
 import numpy as np
-import matplotlib.pyplot as plt
 from numba import njit
+from matplotlib import pyplot as plt
 
+
+class ForestKernel:
+    def __init__(self, sim_conf):
+        self.kernel = None
+        self.resolution = sim_conf.n_dx
+        self.side_kernel = np.load(f"{sim_conf.kernel_path}SideKernel_{sim_conf.kernel_name}.npy")
+        self.obs_kernel = np.load(f"{sim_conf.kernel_path}ObsKernel_{sim_conf.kernel_name}.npy")
+        img_size = int(sim_conf.obs_img_size * sim_conf.n_dx)
+        obs_size = int(sim_conf.obs_size * sim_conf.n_dx)
+        self.obs_offset = int((img_size - obs_size) / 2)
+
+    def construct_kernel(self, track_size, obs_locations):
+        self.kernel = construct_forest_kernel(track_size, obs_locations, self.resolution, self.side_kernel, self.obs_kernel, self.obs_offset)
+
+        # self.view_kernel(np.pi/4)
+
+    def view_kernel(self, theta):
+        phi_range = np.pi
+        theta_ind = int(round((theta + phi_range/2) / phi_range * (self.kernel.shape[2]-1)))
+        plt.figure(5)
+        plt.title(f"Kernel phi: {theta} (ind: {theta_ind})")
+        img = self.kernel[:, :, theta_ind].T 
+        plt.imshow(img, origin='lower')
+
+        # plt.show()
+        plt.pause(0.0001)
+
+    def get_indices(self, state):
+        phi_range = np.pi
+        x_ind = min(max(0, int(round((state[0])*self.resolution))), self.kernel.shape[0]-1)
+        y_ind = min(max(0, int(round((state[1])*self.resolution))), self.kernel.shape[1]-1)
+        theta_ind = int(round((state[2] + phi_range/2) / phi_range * (self.kernel.shape[2]-1)))
+        theta_ind = min(max(0, theta_ind), self.kernel.shape[2]-1)
+
+        return x_ind, y_ind, theta_ind
+
+    def check_state(self, state=[0, 0, 0]):
+        i, j, k = self.get_indices(state)
+
+        # print(f"Expected Location: {state} -> Inds: {i}, {j}, {k} -> Value: {self.kernel[i, j, k]}")
+        # self.plot_kernel_point(i, j, k)
+        if self.kernel[i, j, k] == 1:
+            return False # unsfae state
+        return True # safe state
+
+    def plot_kernel_point(self, i, j, k):
+        plt.figure(5)
+        plt.clf()
+        plt.title(f"Kernel inds: {i}, {j}, {k}")
+        img = self.kernel[:, :, k].T 
+        plt.imshow(img, origin='lower')
+        plt.plot(i, j, 'x', markersize=20, color='red')
+        # plt.show()
+        plt.pause(0.0001)
 
 @njit(cache=True)
-def update_state(state, action, dt):
-    """
-    Updates x, y, th pos accoridng to th_d, v
-    """
-    L = 0.33
-    theta_update = state[2] +  ((action[1] / L) * np.tan(action[0]) * dt)
-    dx = np.array([action[1] * np.sin(theta_update),
-                action[1]*np.cos(theta_update),
-                action[1] / L * np.tan(action[0])])
+def construct_forest_kernel(track_size, obs_locations, resolution, side_kernel, obs_kernel, obs_offset):
+    kernel = np.zeros((track_size[0], track_size[1], side_kernel.shape[2]))
+    length = int(track_size[1] / resolution)
+    for i in range(length):
+        kernel[:, i*resolution:(i+1)*resolution] = side_kernel
 
-    return state + dx * dt 
+    for obs in obs_locations:
+        i = int(round(obs[0] * resolution)) - obs_offset
+        j = int(round(obs[1] * resolution)) - obs_offset * 2
+        if i < 0:
+            kernel[0:i+obs_kernel.shape[0], j:j+obs_kernel.shape[1]] += obs_kernel[abs(i):kernel.shape[0], :]
+            continue
+
+        if kernel.shape[0] - i <= (obs_kernel.shape[0]):
+            kernel[i:i+obs_kernel.shape[0], j:j+obs_kernel.shape[1]] += obs_kernel[0:kernel.shape[0]-i, :]
+            continue
 
 
-class DiscriminatingImgKernel:
+        kernel[i:i+obs_kernel.shape[0], j:j+obs_kernel.shape[1]] += obs_kernel
+
+    
+    # kernel[kernel>1] = 1 #TODO: some values greater than 1, check not a problem
+    # kernel = np.clip(kernel, 0, 1)
+    return kernel
+
+
+class ForestKernelGenerator:
     def __init__(self, track_img, sim_conf):
         self.velocity = 2 #TODO: make this a config param
         self.track_img = track_img
@@ -187,7 +254,7 @@ def construct_obs_kernel(conf):
     obs_offset = int((img_size - obs_size) / 2)
     img = np.zeros((img_size, img_size))
     img[obs_offset:obs_size+obs_offset, -obs_size:-1] = 1 
-    kernel = DiscriminatingImgKernel(img, conf)
+    kernel = ForestKernelGenerator(img, conf)
     kernel.calculate_kernel()
     kernel.save_kernel(f"ObsKernel_{conf.kernel_name}")
 
@@ -196,10 +263,9 @@ def construct_kernel_sides(conf): #TODO: combine to single fcn?
     img = np.zeros(img_size) # use res arg and set length
     img[0, :] = 1
     img[-1, :] = 1
-    kernel = DiscriminatingImgKernel(img, conf)
+    kernel = ForestKernelGenerator(img, conf)
     kernel.calculate_kernel()
     kernel.save_kernel(f"SideKernel_{conf.kernel_name}")
-
 
 
 

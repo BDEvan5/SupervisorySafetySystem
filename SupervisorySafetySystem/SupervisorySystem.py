@@ -46,7 +46,7 @@ class Supervisor:
         dw[:, 1] *= self.v
         return dw
 
-
+#TODO jit all of this.
 
 def check_init_action(state, u0, kernel):
     next_state = update_state(state, u0, 0.2)
