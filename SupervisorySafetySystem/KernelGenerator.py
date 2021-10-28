@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from numba import njit
 import yaml
 from PIL import Image
-
+from SupervisorySafetySystem.Simulator.Dynamics import update_dynamics, update_inter_state
 from SupervisorySafetySystem.KernelTests.GeneralTestTrain import load_conf
 
 class BaseKernel:
@@ -33,52 +33,12 @@ class BaseKernel:
 
     # config functions
     def build_qs(self):
-        ds = np.linspace(-self.max_steer, self.max_steer, self.n_modes)
-        self.qs = self.velocity / self.L * np.tan(ds)
-
+        self.qs = np.linspace(-self.max_steer, self.max_steer, self.n_modes)
+        # self.qs = self.velocity / self.L * np.tan(self.qs)
 
     def save_kernel(self, name):
         np.save(f"SupervisorySafetySystem/Kernels/{name}.npy", self.kernel)
         print(f"Saved kernel to file: {name}")
-
-def update_dynamics(phi, th_dot, velocity, time_step):
-    new_phi = phi + th_dot * time_step
-    dx = np.sin(phi) * velocity * time_step
-    dy = np.cos(phi) * velocity * time_step
-
-    return dx, dy, new_phi
-
-# @njit(cache=True)
-def build_viability_dynamics(phis, qs, velocity, time, conf):
-    resolution = conf.n_dx
-    n_pts = conf.dynamics_pts
-    phi_range = conf.phi_range
-    block_size = 1 / (resolution)
-    h = conf.discrim_block * block_size 
-    phi_size = phi_range / (conf.n_phi -1)
-    ph = conf.discrim_phi * phi_size
-
-    dynamics = np.zeros((len(phis), len(qs), n_pts, 3), dtype=np.int)
-    for i, p in enumerate(phis):
-        for j, m in enumerate(qs):
-            for t in range(n_pts): 
-                t_step = time * (t+1)  / n_pts
-                dx, dy, phi = update_dynamics(p, m, velocity, t_step)
-
-                if phi > np.pi:
-                    phi = phi - 2*np.pi
-                elif phi < -np.pi:
-                    phi = phi + 2*np.pi
-                new_k = int(round((phi + phi_range/2) / phi_range * (len(phis)-1))) # TODO: check that i gets around the circle.
-                dynamics[i, j, t, 2] = min(max(0, new_k), len(phis)-1)
-                
-                dynamics[i, j, t, 0] = int(round(dx * resolution))                  
-                dynamics[i, j, t, 1] = int(round(dy * resolution))                  
-                
-
-    return dynamics
-
-
 
 class ViabilityGenerator(BaseKernel):
     def __init__(self, track_img, sim_conf):
@@ -91,8 +51,6 @@ class ViabilityGenerator(BaseKernel):
 
         self.fig, self.axs = plt.subplots(2, 2)
         self.dynamics = build_viability_dynamics(self.phis, self.qs, self.velocity, self.t_step, self.sim_conf)
-
-
 
     def view_kernel(self, phi, show=True, fig_n=1):
         phi_ind = np.argmin(np.abs(self.phis - phi))
@@ -154,7 +112,35 @@ class ViabilityGenerator(BaseKernel):
 
             # self.view_build(False)
 
+# @njit(cache=True)
+def build_viability_dynamics(phis, qs, velocity, time, conf):
+    resolution = conf.n_dx
+    n_pts = conf.dynamics_pts
+    phi_range = conf.phi_range
+    block_size = 1 / (resolution)
+    h = conf.discrim_block * block_size 
+    phi_size = phi_range / (conf.n_phi -1)
+    ph = conf.discrim_phi * phi_size
 
+    dynamics = np.zeros((len(phis), len(qs), n_pts, 3), dtype=np.int)
+    for i, p in enumerate(phis):
+        for j, m in enumerate(qs):
+            for t in range(n_pts): 
+                t_step = time * (t+1)  / n_pts
+                dx, dy, phi = update_dynamics(p, m, velocity, t_step)
+
+                if phi > np.pi:
+                    phi = phi - 2*np.pi
+                elif phi < -np.pi:
+                    phi = phi + 2*np.pi
+                new_k = int(round((phi + phi_range/2) / phi_range * (len(phis)-1))) # TODO: check that i gets around the circle.
+                dynamics[i, j, t, 2] = min(max(0, new_k), len(phis)-1)
+                
+                dynamics[i, j, t, 0] = int(round(dx * resolution))                  
+                dynamics[i, j, t, 1] = int(round(dy * resolution))                  
+                
+
+    return dynamics
 
 @njit(cache=True)
 def viability_loop(kernel, n_modes, dynamics):
@@ -264,7 +250,6 @@ def build_discrim_dynamics(phis, qs, velocity, time, conf):
 
     return dynamics
 
-
 @njit(cache=True)
 def generate_temp_dynamics(dx, dy, h, resolution):
     temp_dynamics = np.zeros((8, 2))
@@ -280,7 +265,6 @@ def generate_temp_dynamics(dx, dy, h, resolution):
         temp_dynamics[3 + i*4, 1] = int(round((dy -h) * resolution))
 
     return temp_dynamics
-
 
 # @jit(cache=True)
 def discrim_loop(kernel, xs, ys, phis, n_modes, dynamics):
@@ -314,8 +298,6 @@ def check_kernel_state(i, j, k, n_modes, dynamics, previous_kernel, xs, ys):
             return False
 
     return True
-
-
 
 
 """
@@ -357,7 +339,7 @@ def build_track_kernel(conf):
     kernel = ViabilityGenerator(img, conf)
     kernel.calculate_kernel(30)
     kernel.save_kernel(f"TrackKernel_{conf.track_kernel_path}_{conf.map_name}")
-
+    kernel.view_build(True)
 
 def construct_obs_kernel(conf):
     img_size = int(conf.obs_img_size * conf.n_dx)
@@ -382,9 +364,9 @@ def construct_kernel_sides(conf): #TODO: combine to single fcn?
 
 
 if __name__ == "__main__":
-    # conf = load_conf("track_kernel")
-    conf = load_conf("forest_kernel")
+    conf = load_conf("track_kernel")
+    build_track_kernel(conf)
 
-    # build_track_kernel(conf)
-    construct_obs_kernel(conf)
+    # conf = load_conf("forest_kernel")
+    # construct_obs_kernel(conf)
 
