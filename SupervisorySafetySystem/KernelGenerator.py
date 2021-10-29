@@ -372,9 +372,9 @@ def construct_kernel_sides(conf): #TODO: combine to single fcn?
 
 
 if __name__ == "__main__":
-    # conf = load_conf("track_kernel")
-    # build_track_kernel(conf)
+    conf = load_conf("track_kernel")
+    build_track_kernel(conf)
 
-    conf = load_conf("forest_kernel")
-    construct_obs_kernel(conf)
+    # conf = load_conf("forest_kernel")
+    # construct_obs_kernel(conf)
 

@@ -76,9 +76,16 @@ def update_complex_state(state, action, dt, plan_steps, whlb, max_steer, max_v):
 
     return state
 
+def update_std_state(x, u, dt):
+    n_steps = 10
+    n_dt = dt/(n_steps-1)
+    for i in range(n_steps):
+        x = update_single_state(x, u, n_dt)
+
+    return x
 
 @njit(cache=True)
-def update_std_state(x, u, dt, whlb=0.33, max_steer=0.4, max_v=7):
+def update_single_state(x, u, dt, whlb=0.33, max_steer=0.4, max_v=7):
     """
     Updates the kinematic state according to bicycle model
 
@@ -88,18 +95,20 @@ def update_std_state(x, u, dt, whlb=0.33, max_steer=0.4, max_v=7):
     Returns
         new_state: updated state of vehicle
     """
+    # dv = (x[3] - u[1])/dt
+    #note: the u velocity is being used in the update and the steering action, not the current value. 
     theta_update = x[2] +  ((u[1] / whlb) * np.tan(u[0]) * dt)
     dx = np.array([u[1] * np.sin(theta_update),
                 u[1]*np.cos(theta_update),
                 u[1] / whlb * np.tan(u[0]),
-                u[1],
-                u[0]])
+                0,
+                0])
 
     new_state = x + dx * dt 
 
-    new_state[4] = min(new_state[4], max_steer)
-    new_state[4] = max(new_state[4], -max_steer)
-    new_state[3] = min(new_state[3], max_v)
+    # new_state[4] = min(new_state[4], max_steer)
+    # new_state[4] = max(new_state[4], -max_steer)
+    # new_state[3] = min(new_state[3], max_v)
 
     return new_state
 
