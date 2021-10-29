@@ -28,7 +28,8 @@ def rando_test():
     kernel = ForestKernel(conf)
     safety_planner = Supervisor(planner, kernel, conf)
 
-    test_kernel_vehicle(env, safety_planner, True, 100, wait=False)
+    test_kernel_vehicle(env, safety_planner, True, 20, wait=False)
+    # test_kernel_vehicle(env, safety_planner, True, 100, wait=False)
 
 def pp_test():
     conf = load_conf("forest_kernel")

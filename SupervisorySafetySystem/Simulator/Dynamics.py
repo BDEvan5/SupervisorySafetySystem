@@ -78,33 +78,7 @@ def update_complex_state(state, action, dt, plan_steps, whlb, max_steer, max_v):
 
 
 @njit(cache=True)
-def update_simple_state(x, u, dt, whlb=0.33, max_steer=0.4, max_v=7):
-    """
-    Updates the kinematic state according to bicycle model
-
-    Args:
-        X: State, x, y, theta, velocity, steering
-        u: control action, d_dot, a
-    Returns
-        new_state: updated state of vehicle
-    """
-    theta_update = x[2] +  ((u[1] / whlb) * np.tan(u[0]) * dt)
-    dx = np.array([u[1] * np.sin(theta_update),
-                u[1]*np.cos(theta_update),
-                u[1] / whlb * np.tan(u[0]),
-                u[1],
-                u[0]])
-
-    new_state = x + dx * dt 
-
-    new_state[4] = min(new_state[4], max_steer)
-    new_state[4] = max(new_state[4], -max_steer)
-    new_state[3] = min(new_state[3], max_v)
-
-    return new_state
-
-@njit(cache=True)
-def update_inter_state(x, u, dt, whlb=0.33, max_steer=0.4, max_v=7):
+def update_std_state(x, u, dt, whlb=0.33, max_steer=0.4, max_v=7):
     """
     Updates the kinematic state according to bicycle model
 
