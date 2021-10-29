@@ -13,7 +13,7 @@ max_a: 8.5
 max_steer: 0.4
 max_d_dot: 3.2
 
-time_step: 0.2
+time_step: 0.1
 update_steps: 1
 max_steps: 5000
 
@@ -36,7 +36,7 @@ obs_size: 0.5
 
 kernel_path: "SupervisorySafetySystem/Kernels/"
 kernel_name: "std"
-obs_img_size: 2 # size in meters 
+obs_img_size: 3 # size in meters 
 side_img_size: [2, 1]
 n_phi: 61
 n_modes: 5

@@ -215,7 +215,7 @@ class DiscrimGenerator(BaseKernel):
         plt.arrow(0, 0, np.sin(phi)*arrow_len, np.cos(phi)*arrow_len, color='r', width=0.001)
         for m in range(self.n_modes):
             i, j = int(self.n_x/2), 0 
-            di, dj, new_k = self.dynamics[phi_ind, m, -1,-1]
+            di, dj, new_k = self.dynamics[phi_ind, m, -1]
             # print(f"KernelDyns: Mode: {m} -> i, j: {di},{dj}")
 
             plt.arrow(i, j, di, dj, color='b', width=0.001)
@@ -235,29 +235,26 @@ def build_discrim_dynamics(phis, qs, velocity, time, conf):
     phi_size = phi_range / (conf.n_phi -1)
     ph = conf.discrim_phi * phi_size
 
-    dynamics = np.zeros((len(phis), len(qs), n_pts, 8, 3), dtype=np.int)
+    dynamics = np.zeros((len(phis), len(qs), 8, 3), dtype=np.int)
     for i, p in enumerate(phis):
         for j, m in enumerate(qs):
-            for t in range(n_pts): 
-                t_step = time * (t+1)  / n_pts
-
                 state = np.array([0, 0, p, velocity, 0])
                 action = np.array([m, velocity])
-                new_state = update_std_state(state, action, t_step)
-                # new_state = update_complex_state(state, action, t_step)
+                # new_state = update_std_state(state, action, t_step)
+                new_state = update_complex_state(state, action, time)
                 # std_new_state = update_std_state(state, action, t_step)
                 # ds = new_state - std_new_state
                 dx, dy, phi = new_state[0], new_state[1], new_state[2]
 
                 new_k_min = int(round((phi - ph + phi_range/2) / phi_range * (len(phis)-1)))
-                dynamics[i, j, t, 0:4, 2] = min(max(0, new_k_min), len(phis)-1)
+                dynamics[i, j, 0:4, 2] = min(max(0, new_k_min), len(phis)-1)
                 
                 new_k_max = int(round((phi + ph + phi_range/2) / phi_range * (len(phis)-1)))
-                dynamics[i, j, t, 4:8, 2] = min(max(0, new_k_max), len(phis)-1)
+                dynamics[i, j, 4:8, 2] = min(max(0, new_k_max), len(phis)-1)
 
                 temp_dynamics = generate_temp_dynamics(dx, dy, h, resolution)
                 
-                dynamics[i, j, t, :, 0:2] = np.copy(temp_dynamics)
+                dynamics[i, j, :, 0:2] = np.copy(temp_dynamics)
 
                 # if t == 4:
                 #     print(f"State: {state}")
@@ -302,21 +299,18 @@ def discrim_loop(kernel, n_modes, dynamics):
 
 @njit(cache=True)
 def check_kernel_state(i, j, k, n_modes, dynamics, previous_kernel):
-    n_pts = dynamics.shape[2]
     l_xs, l_ys, l_phis, = previous_kernel.shape
     for l in range(n_modes):
         safe = True
-        # check all concatanation points and offsets and if none are occupied, then it is safe.
-        for t in range(n_pts):
-            for n in range(dynamics.shape[3]):
-                di, dj, new_k = dynamics[k, l, t, n, :]
-                new_i = min(max(0, i + di), l_xs-1)  
-                new_j = min(max(0, j + dj), l_ys-1)
+        for n in range(dynamics.shape[2]):
+            di, dj, new_k = dynamics[k, l, n, :]
+            new_i = min(max(0, i + di), l_xs-1)  
+            new_j = min(max(0, j + dj), l_ys-1)
 
-                if previous_kernel[new_i, new_j, new_k]:
-                    # if you hit a constraint, break
-                    safe = False # breached a limit.
-                    break
+            if previous_kernel[new_i, new_j, new_k]:
+                # if you hit a constraint, break
+                safe = False # breached a limit.
+                break
         if safe:
             return False
 
