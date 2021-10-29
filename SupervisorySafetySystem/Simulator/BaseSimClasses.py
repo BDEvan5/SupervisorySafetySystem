@@ -5,7 +5,7 @@ from numba import njit
 
 import LearningLocalPlanning.LibFunctions as lib
 from SupervisorySafetySystem.Simulator.LaserScanner import ScanSimulator
-from SupervisorySafetySystem.Simulator.Dynamics import update_std_state
+from SupervisorySafetySystem.Simulator.Dynamics import update_complex_state, update_std_state
 
 
 #TODO: move this to another location
@@ -174,6 +174,7 @@ class BaseSim:
         # for _ in range(self.plan_steps):
         #     self.state = update_simple_state(self.state, action, self.timestep, self.wheelbase, self.max_steer, self.max_v)
         self.state = update_std_state(self.state, action, self.timestep)
+        # self.state = update_complex_state(self.state, action, self.timestep)
         self.steps += 1 
 
         self.done_fcn()
