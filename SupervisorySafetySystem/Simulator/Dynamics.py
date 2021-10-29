@@ -6,7 +6,7 @@ from matplotlib import pyplot as plt
 
 #Dynamics functions
 @njit(cache=True)
-def update_kinematic_state(x, u, dt, whlb, max_steer, max_v):
+def update_kinematic_state(x, u, dt, whlb=0.33, max_steer=0.4, max_v=7):
     """
     Updates the kinematic state according to bicycle model
 
@@ -33,7 +33,7 @@ def update_kinematic_state(x, u, dt, whlb, max_steer, max_v):
 
 
 @njit(cache=True)
-def control_system(state, action, max_v, max_steer, max_a, max_d_dot):
+def control_system(state, action, max_v=7, max_steer=0.4, max_a=6.5, max_d_dot=3.2):
     """
     Generates acceleration and steering velocity commands to follow a reference
     Note: the controller gains are hand tuned in the fcn
@@ -59,26 +59,36 @@ def control_system(state, action, max_v, max_steer, max_a, max_d_dot):
 
     # clip actions
     #TODO: temporary removal of dynamic constraints
-    # a = min(a, max_a)
-    # a = max(a, -max_a)
-    # d_dot = min(d_dot, max_d_dot)
-    # d_dot = max(d_dot, -max_d_dot)
+    a = min(a, max_a)
+    a = max(a, -max_a)
+    d_dot = min(d_dot, max_d_dot)
+    d_dot = max(d_dot, -max_d_dot)
     
     u = np.array([d_dot, a])
 
     return u
 
-@njit(cache=True)
-def update_complex_state(state, action, dt, plan_steps, whlb, max_steer, max_v):
+# @njit(cache=True)
+def update_complex_state(state, action, dt, plan_steps=10, whlb=0.33, max_steer=0.4, max_v=7):
+    n_dt = dt/(plan_steps-1)
+
     for i in range(plan_steps):
-        u = control_system(state, action, max_v, max_steer, max_v, max_steer)
-        state = update_kinematic_state(state, u, dt, whlb, max_steer, max_v)
+        u = control_system(state, action)
+        state = update_kinematic_state(state, u, n_dt, whlb, max_steer, max_v)
+        # print(f"CMPLX:: Action: {u} --. New state: {state}")
 
     return state
 
+def update_std_state(x, u, dt):
+    n_steps = 10
+    n_dt = dt/(n_steps-1)
+    for i in range(n_steps):
+        x = update_single_state(x, u, n_dt)
+
+    return x
 
 @njit(cache=True)
-def update_std_state(x, u, dt, whlb=0.33, max_steer=0.4, max_v=7):
+def update_single_state(x, u, dt, whlb=0.33, max_steer=0.4, max_v=7):
     """
     Updates the kinematic state according to bicycle model
 
@@ -88,19 +98,82 @@ def update_std_state(x, u, dt, whlb=0.33, max_steer=0.4, max_v=7):
     Returns
         new_state: updated state of vehicle
     """
+    # dv = (x[3] - u[1])/dt
+    #note: the u velocity is being used in the update and the steering action, not the current value. 
     theta_update = x[2] +  ((u[1] / whlb) * np.tan(u[0]) * dt)
     dx = np.array([u[1] * np.sin(theta_update),
                 u[1]*np.cos(theta_update),
                 u[1] / whlb * np.tan(u[0]),
-                u[1],
-                u[0]])
+                0,
+                0])
 
     new_state = x + dx * dt 
 
-    new_state[4] = min(new_state[4], max_steer)
-    new_state[4] = max(new_state[4], -max_steer)
-    new_state[3] = min(new_state[3], max_v)
+    # new_state[4] = min(new_state[4], max_steer)
+    # new_state[4] = max(new_state[4], -max_steer)
+    # new_state[3] = min(new_state[3], max_v)
 
     return new_state
 
 
+def simple_updates(x0, u0, t_total, n_steps):
+    x = np.copy(x0)
+    x_list = [x]
+    t_update = np.array(t_total/(n_steps-1))
+    for i in range(n_steps):
+        x = update_single_state(x, u0, t_update)
+        x_list.append(x)
+        print(f"Simple: Action: {u0} --. New state: {x}")
+
+
+    return np.array(x_list)
+
+def complex_updates(x0, u0, t_total, n_steps):
+
+    x = np.copy(x0)
+    x_list = [x]
+    t_update = np.array(t_total/(n_steps-1))
+    for i in range(n_steps):
+        u = control_system(x, u0)
+        x = update_kinematic_state(x, u, t_update)
+        x_list.append(x)
+
+
+    return np.array(x_list)
+
+def compare_simple_complex():
+    t = 0.2
+
+    x0 = np.array([0, 0, 0, 2, 0])
+    u0 = np.array([0.4, 2])
+    
+    x2s = complex_updates(x0, u0, t, 10)
+    x1s = simple_updates(x0, u0, t, 10)
+
+    plt.figure(1)
+    plt.title('Dynamics Comparison')
+    plt.plot(x1s[:,0], x1s[:,1])
+    plt.plot(x2s[:,0], x2s[:,1])
+    plt.legend(['simple', 'complex'])
+    # plt.show()
+
+def compare_simple_complex2():
+    t = 0.2
+
+    x0 = np.array([0, 0, 0, 2, 0])
+    u0 = np.array([0.4, 2])
+    
+    x1s = update_std_state(x0, u0, t)
+    x2s = update_complex_state(x0, u0, t, 10)
+
+    plt.figure(1)
+    plt.title('Dynamics Comparison')
+    plt.plot(x1s[0], x1s[1], 'x', markersize=20)
+    plt.plot(x2s[0], x2s[1], 'x', markersize=20)
+    plt.legend(['simple', 'complex'])
+    plt.show()
+
+if __name__ == "__main__":
+
+    compare_simple_complex()
+    compare_simple_complex2()

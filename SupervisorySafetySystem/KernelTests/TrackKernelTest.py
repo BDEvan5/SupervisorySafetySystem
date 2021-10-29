@@ -32,9 +32,9 @@ def rando_test():
     kernel = TrackKernel(conf)
     safety_planner = Supervisor(planner, kernel, conf)
 
-    test_kernel_vehicle(env, safety_planner, True, 30, add_obs=False)
+    # test_kernel_vehicle(env, safety_planner, True, 30, add_obs=False)
     # test_kernel_vehicle(env, safety_planner, True, 100, add_obs=False)
-    # test_kernel_vehicle(env, safety_planner, False, 100, add_obs=False)
+    test_kernel_vehicle(env, safety_planner, False, 100, add_obs=False)
 
 if __name__ == "__main__":
     rando_test()

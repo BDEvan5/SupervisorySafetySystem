@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from numba import njit
 import yaml
 from PIL import Image
-from SupervisorySafetySystem.Simulator.Dynamics import update_std_state
+from SupervisorySafetySystem.Simulator.Dynamics import update_std_state, update_complex_state
 from SupervisorySafetySystem.KernelTests.GeneralTestTrain import load_conf
 
 class BaseKernel:
@@ -118,18 +118,17 @@ def build_viability_dynamics(phis, qs, velocity, time, conf):
     n_pts = conf.dynamics_pts
     phi_range = conf.phi_range
     block_size = 1 / (resolution)
-    h = conf.discrim_block * block_size 
     phi_size = phi_range / (conf.n_phi -1)
-    ph = conf.discrim_phi * phi_size
 
-    dynamics = np.zeros((len(phis), len(qs), n_pts, 3), dtype=np.int)
+    dynamics = np.zeros((len(phis), len(qs), 3), dtype=np.int)
     for i, p in enumerate(phis):
         for j, m in enumerate(qs):
-            for t in range(n_pts): 
-                t_step = time * (t+1)  / n_pts
                 state = np.array([0, 0, p, velocity, 0])
                 action = np.array([m, velocity])
-                new_state = update_std_state(state, action, t_step)
+                new_state = update_complex_state(state, action, time)
+                # new_state = update_std_state(state, action, t_step)
+                # std_new_state = update_std_state(state, action, t_step)
+                # ds = new_state - std_new_state
                 dx, dy, phi = new_state[0], new_state[1], new_state[2]
 
                 if phi > np.pi:
@@ -137,10 +136,10 @@ def build_viability_dynamics(phis, qs, velocity, time, conf):
                 elif phi < -np.pi:
                     phi = phi + 2*np.pi
                 new_k = int(round((phi + phi_range/2) / phi_range * (len(phis)-1))) # TODO: check that i gets around the circle.
-                dynamics[i, j, t, 2] = min(max(0, new_k), len(phis)-1)
+                dynamics[i, j, 2] = min(max(0, new_k), len(phis)-1)
                 
-                dynamics[i, j, t, 0] = int(round(dx * resolution))                  
-                dynamics[i, j, t, 1] = int(round(dy * resolution))                  
+                dynamics[i, j, 0] = int(round(dx * resolution))                  
+                dynamics[i, j, 1] = int(round(dy * resolution))                  
                 
 
     return dynamics
@@ -160,23 +159,14 @@ def viability_loop(kernel, n_modes, dynamics):
 
 @njit(cache=True)
 def check_viable_state(i, j, k, n_modes, dynamics, previous_kernel):
-    n_pts = dynamics.shape[2]
     l_xs, l_ys, l_phis = previous_kernel.shape
     for l in range(n_modes):
-        safe = True
-        # check all concatanation points and offsets and if none are occupied, then it is safe.
-        for t in range(n_pts):
-            di, dj, new_k = dynamics[k, l, t, :]
-            new_i = min(max(0, i + di), l_xs-1)  
-            new_j = min(max(0, j + dj), l_ys-1)
+        di, dj, new_k = dynamics[k, l, :]
+        new_i = min(max(0, i + di), l_xs-1)  
+        new_j = min(max(0, j + dj), l_ys-1)
 
-            if previous_kernel[new_i, new_j, new_k]:
-                # if you hit a constraint, break
-                safe = False # breached a limit.
-                break
-        if safe:
+        if not previous_kernel[new_i, new_j, new_k]:
             return False
-
     return True
 
 
@@ -198,7 +188,8 @@ class DiscrimGenerator(BaseKernel):
                 print("Kernel has not changed: convergence has been reached")
                 break
             self.previous_kernel = np.copy(self.kernel)
-            self.kernel = discrim_loop(self.kernel, self.xs, self.ys, self.phis, self.n_modes, self.dynamics)
+            self.kernel = discrim_loop(self.kernel, self.n_modes, self.dynamics)
+            self.view_kernel(0, False)
 
     def view_kernel(self, phi, show=True):
         phi_ind = np.argmin(np.abs(self.phis - phi))
@@ -212,8 +203,8 @@ class DiscrimGenerator(BaseKernel):
         plt.arrow(0, 0, np.sin(phi)*arrow_len, np.cos(phi)*arrow_len, color='r', width=0.001)
         for m in range(self.n_modes):
             i, j = int(self.n_x/2), 0 
-            di, dj, new_k = self.dynamics[phi_ind, m, 0,-1]
-
+            di, dj, new_k = self.dynamics[phi_ind, m, -1]
+            # print(f"KernelDyns: Mode: {m} -> i, j: {di},{dj}")
 
             plt.arrow(i, j, di, dj, color='b', width=0.001)
 
@@ -232,29 +223,36 @@ def build_discrim_dynamics(phis, qs, velocity, time, conf):
     phi_size = phi_range / (conf.n_phi -1)
     ph = conf.discrim_phi * phi_size
 
-    dynamics = np.zeros((len(phis), len(qs), n_pts, 8, 3), dtype=np.int)
+    dynamics = np.zeros((len(phis), len(qs), 8, 3), dtype=np.int)
     for i, p in enumerate(phis):
         for j, m in enumerate(qs):
-            for t in range(n_pts): 
-                t_step = time * (t+1)  / n_pts
-
                 state = np.array([0, 0, p, velocity, 0])
                 action = np.array([m, velocity])
-                new_state = update_std_state(state, action, t_step)
+                # new_state = update_std_state(state, action, t_step)
+                new_state = update_complex_state(state, action, time)
+                # std_new_state = update_std_state(state, action, t_step)
+                # ds = new_state - std_new_state
                 dx, dy, phi = new_state[0], new_state[1], new_state[2]
 
-
                 new_k_min = int(round((phi - ph + phi_range/2) / phi_range * (len(phis)-1)))
-                dynamics[i, j, t, 0:4, 2] = min(max(0, new_k_min), len(phis)-1)
+                dynamics[i, j, 0:4, 2] = min(max(0, new_k_min), len(phis)-1)
                 
                 new_k_max = int(round((phi + ph + phi_range/2) / phi_range * (len(phis)-1)))
-                dynamics[i, j, t, 4:8, 2] = min(max(0, new_k_max), len(phis)-1)
+                dynamics[i, j, 4:8, 2] = min(max(0, new_k_max), len(phis)-1)
 
                 temp_dynamics = generate_temp_dynamics(dx, dy, h, resolution)
                 
-                dynamics[i, j, t, :, 0:2] = np.copy(temp_dynamics)
+                dynamics[i, j, :, 0:2] = np.copy(temp_dynamics)
 
-                pass
+                # if t == 4:
+                #     print(f"State: {state}")
+                #     print(f"Action: {action}")
+                #     print(f"New state: {new_state}")
+                #     print(f"Std new state: {std_new_state}")
+                #     print(f"Difference: {ds}")
+                #     print(temp_dynamics)
+                #     print("------------------")
+                #     pass
 
     return dynamics
 
@@ -274,34 +272,33 @@ def generate_temp_dynamics(dx, dy, h, resolution):
 
     return temp_dynamics
 
-# @jit(cache=True)
-def discrim_loop(kernel, xs, ys, phis, n_modes, dynamics):
+@njit(cache=True)
+def discrim_loop(kernel, n_modes, dynamics):
     previous_kernel = np.copy(kernel)
-    for i in range(len(xs)):
-        for j in range(len(ys)):
-            for k in range(len(phis)):
+    l_xs, l_ys, l_phis = kernel.shape
+    for i in range(l_xs):
+        for j in range(l_ys):
+            for k in range(l_phis):
                     if kernel[i, j, k] == 1:
                         continue 
-                    kernel[i, j, k] = check_kernel_state(i, j, k, n_modes, dynamics, previous_kernel, xs, ys)
+                    kernel[i, j, k] = check_kernel_state(i, j, k, n_modes, dynamics, previous_kernel)
 
     return kernel
 
 @njit(cache=True)
-def check_kernel_state(i, j, k, n_modes, dynamics, previous_kernel, xs, ys):
-    n_pts = dynamics.shape[2]
+def check_kernel_state(i, j, k, n_modes, dynamics, previous_kernel):
+    l_xs, l_ys, l_phis, = previous_kernel.shape
     for l in range(n_modes):
         safe = True
-        # check all concatanation points and offsets and if none are occupied, then it is safe.
-        for t in range(n_pts):
-            for n in range(dynamics.shape[3]):
-                di, dj, new_k = dynamics[k, l, t, n, :]
-                new_i = min(max(0, i + di), len(xs)-1)  
-                new_j = min(max(0, j + dj), len(ys)-1)
+        for n in range(dynamics.shape[2]):
+            di, dj, new_k = dynamics[k, l, n, :]
+            new_i = min(max(0, i + di), l_xs-1)  
+            new_j = min(max(0, j + dj), l_ys-1)
 
-                if previous_kernel[new_i, new_j, new_k]:
-                    # if you hit a constraint, break
-                    safe = False # breached a limit.
-                    break
+            if previous_kernel[new_i, new_j, new_k]:
+                # if you hit a constraint, break
+                safe = False # breached a limit.
+                break
         if safe:
             return False
 
@@ -372,9 +369,10 @@ def construct_kernel_sides(conf): #TODO: combine to single fcn?
 
 
 if __name__ == "__main__":
-    # conf = load_conf("track_kernel")
-    # build_track_kernel(conf)
+    conf = load_conf("track_kernel")
+    build_track_kernel(conf)
 
-    conf = load_conf("forest_kernel")
-    construct_obs_kernel(conf)
+    # conf = load_conf("forest_kernel")
+    # construct_obs_kernel(conf)
+    # construct_kernel_sides(conf)
 
