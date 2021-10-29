@@ -3,6 +3,7 @@ import numpy as np
 from numba import njit
 from matplotlib import pyplot as plt
 import yaml
+from SupervisorySafetySystem.Simulator.Dynamics import update_std_state
 
 class Supervisor:
     def __init__(self, planner, kernel, conf):
@@ -22,7 +23,7 @@ class Supervisor:
 
     def plan(self, obs):
         init_action = self.planner.plan_act(obs)
-        state = np.array(obs['state'])[0:3]
+        state = np.array(obs['state'])
 
         safe, next_state = check_init_action(state, init_action, self.kernel)
         if safe:
@@ -35,7 +36,7 @@ class Supervisor:
             print(f"State: {obs['state']}")
             return init_action
         
-        action = modify_action(init_action, valids, dw)
+        action = modify_action(valids, dw)
         # print(f"Valids: {valids} -> new action: {action}")
 
 
@@ -51,7 +52,7 @@ class Supervisor:
 #TODO jit all of this.
 
 def check_init_action(state, u0, kernel):
-    next_state = update_state(state, u0, 0.2)
+    next_state = update_std_state(state, u0, 0.2)
     safe = kernel.check_state(next_state)
     
     return safe, next_state
@@ -59,7 +60,7 @@ def check_init_action(state, u0, kernel):
 def simulate_and_classify(state, dw, kernel):
     valid_ds = np.ones(len(dw))
     for i in range(len(dw)):
-        next_state = update_state(state, dw[i], 0.2)
+        next_state = update_std_state(state, dw[i], 0.2)
         safe = kernel.check_state(next_state)
         valid_ds[i] = safe 
 
@@ -69,42 +70,22 @@ def simulate_and_classify(state, dw, kernel):
 
 
 
-# no change required
-def modify_action(pp_action, valid_window, dw):
+@njit(cache=True)
+def modify_action(valid_window, dw):
     """ 
     By the time that I get here, I have already established that pp action is not ok so I cannot select it, I must modify the action. 
     """
-    d_idx_search = np.argmin(np.abs(dw[:, 0]))
-    d_idx = int(find_new_action(valid_window, d_idx_search))
-    return dw[d_idx]
-    
-# no change required
-def find_new_action(valid_window, idx_search):
+    idx_search = int((len(dw)-1)/2)
     d_size = len(valid_window)
-    for i in range(len(valid_window)):
-        p_d = min(d_size-1, idx_search+i)
+    for i in range(d_size):
+        p_d = int(min(d_size-1, idx_search+i))
         if valid_window[p_d]:
-            return p_d
-        n_d = max(0, idx_search-i)
+            return dw[p_d]
+        n_d = int(max(0, idx_search-i))
         if valid_window[n_d]:
-            return n_d
-    print("No new action: returning only valid via count_nonzero")
-    return np.count_nonzero(valid_window)
+            return dw[n_d]
+
     
-
-@njit(cache=True)
-def update_state(state, action, dt):
-    """
-    Updates x, y, th pos accoridng to th_d, v
-    """
-    L = 0.33
-    theta_update = state[2] +  ((action[1] / L) * np.tan(action[0]) * dt)
-    dx = np.array([action[1] * np.sin(theta_update),
-                action[1]*np.cos(theta_update),
-                action[1] / L * np.tan(action[0])])
-
-    return state + dx * dt 
-
 
 class BaseKernel:
     def __init__(self, sim_conf):
