@@ -3,7 +3,7 @@ import numpy as np
 from numba import njit
 from matplotlib import pyplot as plt
 import yaml
-from SupervisorySafetySystem.Simulator.Dynamics import update_std_state
+from SupervisorySafetySystem.Simulator.Dynamics import update_complex_state, update_std_state
 
 class Supervisor:
     def __init__(self, planner, kernel, conf):
@@ -52,7 +52,8 @@ class Supervisor:
 #TODO jit all of this.
 
 def check_init_action(state, u0, kernel):
-    next_state = update_std_state(state, u0, 0.2)
+    next_state = update_complex_state(state, u0, 0.2)
+    # next_state = update_std_state(state, u0, 0.2)
     safe = kernel.check_state(next_state)
     
     return safe, next_state
@@ -60,7 +61,8 @@ def check_init_action(state, u0, kernel):
 def simulate_and_classify(state, dw, kernel):
     valid_ds = np.ones(len(dw))
     for i in range(len(dw)):
-        next_state = update_std_state(state, dw[i], 0.2)
+        next_state = update_complex_state(state, dw[i], 0.2)
+        # next_state = update_std_state(state, dw[i], 0.2)
         safe = kernel.check_state(next_state)
         valid_ds[i] = safe 
 

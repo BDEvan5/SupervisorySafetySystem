@@ -13,7 +13,7 @@ max_a: 8.5
 max_steer: 0.4
 max_d_dot: 3.2
 
-time_step: 0.2
+time_step: 0.1
 update_steps: 1
 max_steps: 5000
 end_distance: 1.5

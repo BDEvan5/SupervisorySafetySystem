@@ -118,18 +118,15 @@ def build_viability_dynamics(phis, qs, velocity, time, conf):
     n_pts = conf.dynamics_pts
     phi_range = conf.phi_range
     block_size = 1 / (resolution)
-    h = conf.discrim_block * block_size 
     phi_size = phi_range / (conf.n_phi -1)
-    ph = conf.discrim_phi * phi_size
 
-    dynamics = np.zeros((len(phis), len(qs), n_pts, 3), dtype=np.int)
+    dynamics = np.zeros((len(phis), len(qs), 3), dtype=np.int)
     for i, p in enumerate(phis):
         for j, m in enumerate(qs):
-            for t in range(n_pts): 
-                t_step = time * (t+1)  / n_pts
                 state = np.array([0, 0, p, velocity, 0])
                 action = np.array([m, velocity])
-                new_state = update_std_state(state, action, t_step)
+                new_state = update_complex_state(state, action, time)
+                # new_state = update_std_state(state, action, t_step)
                 # std_new_state = update_std_state(state, action, t_step)
                 # ds = new_state - std_new_state
                 dx, dy, phi = new_state[0], new_state[1], new_state[2]
@@ -139,10 +136,10 @@ def build_viability_dynamics(phis, qs, velocity, time, conf):
                 elif phi < -np.pi:
                     phi = phi + 2*np.pi
                 new_k = int(round((phi + phi_range/2) / phi_range * (len(phis)-1))) # TODO: check that i gets around the circle.
-                dynamics[i, j, t, 2] = min(max(0, new_k), len(phis)-1)
+                dynamics[i, j, 2] = min(max(0, new_k), len(phis)-1)
                 
-                dynamics[i, j, t, 0] = int(round(dx * resolution))                  
-                dynamics[i, j, t, 1] = int(round(dy * resolution))                  
+                dynamics[i, j, 0] = int(round(dx * resolution))                  
+                dynamics[i, j, 1] = int(round(dy * resolution))                  
                 
 
     return dynamics
@@ -162,23 +159,14 @@ def viability_loop(kernel, n_modes, dynamics):
 
 @njit(cache=True)
 def check_viable_state(i, j, k, n_modes, dynamics, previous_kernel):
-    n_pts = dynamics.shape[2]
     l_xs, l_ys, l_phis = previous_kernel.shape
     for l in range(n_modes):
-        safe = True
-        # check all concatanation points and offsets and if none are occupied, then it is safe.
-        for t in range(n_pts):
-            di, dj, new_k = dynamics[k, l, t, :]
-            new_i = min(max(0, i + di), l_xs-1)  
-            new_j = min(max(0, j + dj), l_ys-1)
+        di, dj, new_k = dynamics[k, l, :]
+        new_i = min(max(0, i + di), l_xs-1)  
+        new_j = min(max(0, j + dj), l_ys-1)
 
-            if previous_kernel[new_i, new_j, new_k]:
-                # if you hit a constraint, break
-                safe = False # breached a limit.
-                break
-        if safe:
+        if not previous_kernel[new_i, new_j, new_k]:
             return False
-
     return True
 
 
@@ -381,9 +369,10 @@ def construct_kernel_sides(conf): #TODO: combine to single fcn?
 
 
 if __name__ == "__main__":
-    # conf = load_conf("track_kernel")
-    # build_track_kernel(conf)
+    conf = load_conf("track_kernel")
+    build_track_kernel(conf)
 
-    conf = load_conf("forest_kernel")
-    construct_obs_kernel(conf)
+    # conf = load_conf("forest_kernel")
+    # construct_obs_kernel(conf)
+    # construct_kernel_sides(conf)
 
