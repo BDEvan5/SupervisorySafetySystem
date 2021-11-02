@@ -174,7 +174,13 @@ class TrackKernel(BaseKernel):
     def __init__(self, sim_conf):
         super().__init__(sim_conf)
         kernel_name = f"{sim_conf.kernel_path}TrackKernel_{sim_conf.track_kernel_path}_{sim_conf.map_name}.npy"
-        self.kernel = np.load(kernel_name)
+        self.clean_kernel = np.load(kernel_name)
+        self.kernel = None
+
+        self.obs_kernel = np.load(f"{sim_conf.kernel_path}ObsKernelTrack_{sim_conf.track_kernel_path}.npy")
+        img_size = int(sim_conf.obs_img_size * sim_conf.n_dx)
+        obs_size = int(sim_conf.obs_size * sim_conf.n_dx)
+        self.obs_offset = int((img_size - obs_size) / 2)
 
         file_name = 'maps/' + sim_conf.map_name + '.yaml'
         with open(file_name) as file:
@@ -182,8 +188,20 @@ class TrackKernel(BaseKernel):
             yaml_file = dict(documents.items())
         self.origin = yaml_file['origin']
 
-    def construct_kernel(self, a, b):
-        pass
+    def construct_kernel(self, a, obs_locations):
+        resize = self.clean_kernel.shape[0] / a[1]
+        obs_locations *= resize
+        self.kernel = construct_track_kernel(self.clean_kernel, obs_locations, self.resolution, self.obs_kernel, self.obs_offset)
+
+        phi_range = np.pi
+        theta_ind = int(round((0 + phi_range/2) / phi_range * (self.kernel.shape[2]-1)))
+        plt.figure(5)
+        plt.title(f"Kernel phi: {0} (ind: {theta_ind})")
+        img = self.kernel[:, :, theta_ind].T + self.clean_kernel[:, :, theta_ind].T
+        plt.imshow(img, origin='lower')
+
+        plt.show()
+        # plt.pause(0.0001)
 
     def get_indices(self, state):
         phi_range = np.pi * 2
@@ -203,6 +221,38 @@ class TrackKernel(BaseKernel):
 
         return x_ind, y_ind, theta_ind
 
+
+@njit(cache=True)
+def construct_track_kernel(clean_kernel, obs_locations, resolution, obs_kernel, obs_offset):
+    kernel = np.copy(clean_kernel)
+
+    for obs in obs_locations:
+        i = int(round(obs[0] )) - obs_offset
+        j = int(round(obs[1] )) - obs_offset * 2
+        if i < 0:
+            kernel[0:i+obs_kernel.shape[0], j:j+obs_kernel.shape[1]] += obs_kernel[abs(i):kernel.shape[0], :]
+            continue
+
+        if kernel.shape[0] - i <= (obs_kernel.shape[0]):
+            kernel[i:i+obs_kernel.shape[0], j:j+obs_kernel.shape[1]] += obs_kernel[0:kernel.shape[0]-i, :]
+            continue
+
+        # if j < 0:
+        #     kernel[0:i+obs_kernel.shape[0], j:j+obs_kernel.shape[1]] += obs_kernel[abs(i):kernel.shape[0], :]
+        #     continue
+
+        # if kernel.shape[0] - i <= (obs_kernel.shape[0]):
+        #     kernel[i:i+obs_kernel.shape[0], j:j+obs_kernel.shape[1]] += obs_kernel[0:kernel.shape[0]-i, :]
+        #     continue
+
+        #TODO: get the right, i, j indicies to start and then copy in accordingly. Otherwise it copies intot the wrong place
+
+        # theoretically, all obstacles should be on the track?
+        # but not all kernels are.
+
+        kernel[i:i+obs_kernel.shape[0], j:j+obs_kernel.shape[1]] += obs_kernel
+    
+    return kernel
 
 
 

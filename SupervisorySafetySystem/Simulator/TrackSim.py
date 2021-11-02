@@ -159,6 +159,12 @@ class TrackMap:
 
         self.obs_img = obs_img
 
+        obs_pts2 = np.copy(obs_locations) 
+        obs_pts2 = obs_pts2.astype(np.float64)
+        obs_pts2[:, 0] += np.ones_like(obs_pts2[:, 0]) * self.obs_size
+        self.obs_pts = np.hstack((obs_locations, obs_pts2))
+        
+
     def set_dt(self):
         dt = ndimage.distance_transform_edt(self.map_img - self.obs_img) 
         self.dt_img = np.array(dt *self.resolution)

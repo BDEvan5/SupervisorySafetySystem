@@ -21,9 +21,9 @@ end_distance: 2.5
 dis_scale: 1 # I don't know if this is the right place for this???
 
 # map info
-map_name: "torino"
+# map_name: "torino"
 # map_name: "berlin"
-# map_name: "porto"
+map_name: "porto"
 # map_name: "berlin"
 n_dx: 80
 
