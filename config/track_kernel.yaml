@@ -16,14 +16,14 @@ max_d_dot: 3.2
 time_step: 0.1
 update_steps: 1
 max_steps: 5000
-end_distance: 1.5
+end_distance: 2.5
 
 dis_scale: 1 # I don't know if this is the right place for this???
 
 # map info
-# map_name: "torino"
+map_name: "torino"
 # map_name: "berlin"
-map_name: "porto"
+# map_name: "porto"
 # map_name: "berlin"
 n_dx: 80
 
@@ -33,7 +33,7 @@ obs_size: 0.5
 
 kernel_path: "SupervisorySafetySystem/Kernels/"
 track_kernel_path: "std"
-obs_img_size: 1.3 # size in meters 
+obs_img_size: 3 # size in meters 
 side_img_size: [2, 1]
 n_phi: 41
 n_modes: 5
