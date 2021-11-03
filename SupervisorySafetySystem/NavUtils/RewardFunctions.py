@@ -37,12 +37,14 @@ class CthReward:
         self.b_ct = b_ct 
         self.b_h = b_h
         self.name = f"Velocity({b_ct})({b_h})"
+        self.max_v = 7
 
     def __call__(self, state, s_prime):        
         # on assumuption of forest with middle @1 and heading =straight 
         pos_x = s_prime['state'][0] 
         reward_ct = abs(1 - pos_x) * self.b_ct 
-        reward_h = np.cos(s_prime['state'][2]) * self.b_h
+        scaled_v = s_prime['state'][3] / self.max_v
+        reward_h = np.cos(s_prime['state'][2]) * self.b_h * scaled_v
 
         reward = reward_h - reward_ct
         reward += s_prime['reward']

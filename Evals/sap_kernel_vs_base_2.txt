@@ -1,0 +1,17 @@
+
+Testing Complete 
+Map name:  
+-----------------------------------------------------
+-----------------------------------------------------
+Vehicle: std_sap_baseline_2
+Crashes: 1.0 --> Completes 99.0
+% Finished = 99.00
+Avg lap times: 168.2020202020202
+No Obs Time: 179.0
+-----------------------------------------------------
+Vehicle: kernel_sap_2
+Crashes: 0.0 --> Completes 100.0
+% Finished = 100.00
+Avg lap times: 117.45
+No Obs Time: 71.0
+-----------------------------------------------------

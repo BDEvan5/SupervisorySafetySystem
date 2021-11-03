@@ -326,8 +326,8 @@ class TestVehicles(TestData):
         state = env.reset(add_obs)
 
         try:
-            vehicle.plan_forest(env.env_map)
-        except AttributeError as e:
+            vehicle.kernel.construct_kernel(env.env_map.map_img.shape, env.env_map.obs_pts)
+        except:
             pass
 
         done = False
@@ -379,7 +379,7 @@ def train_kernel_vehicle(env, vehicle, sim_conf):
         vehicle.planner.agent.train(2)
         
         if done:
-            vehicle.planner.done_entry(s_prime)
+            vehicle.done_entry(s_prime)
             env.render(wait=False)
             vehicle.safe_history.plot_safe_history()
 
@@ -388,7 +388,7 @@ def train_kernel_vehicle(env, vehicle, sim_conf):
 
     vehicle.planner.t_his.print_update(True)
     vehicle.planner.t_his.save_csv_data()
-    vehicle.planner.agent.save(vehicle.path)
+    vehicle.planner.agent.save(vehicle.planner.path)
 
     train_time = time.time() - start_time
     print(f"Finished Training: {vehicle.planner.name} in {train_time} seconds")
@@ -404,5 +404,51 @@ def load_conf(fname):
     conf = Namespace(**conf_dict)
 
     return conf
+
+
+
+def train_vehicle(env, vehicle, sim_conf):
+    start_time = time.time()
+
+    done = False
+    state = env.reset(True)
+
+    print(f"Building Buffer: {sim_conf.buffer_n}")
+    for n in range(sim_conf.buffer_n):
+        a = vehicle.plan_act(state)
+        s_prime, r, done, _ = env.step_plan(a)
+        state = s_prime
+        
+        if done:
+            vehicle.done_entry(s_prime)
+
+            vehicle.reset_lap()
+            state = env.reset(True)
+        
+        vehicle.reset_lap()
+        state = env.reset(True)
+
+    print(f"Starting Training: {vehicle.name}")
+    for n in range(sim_conf.train_n):
+        a = vehicle.plan_act(state)
+        s_prime, r, done, _ = env.step_plan(a)
+
+        state = s_prime
+        vehicle.agent.train(2)
+        
+        if done:
+            vehicle.done_entry(s_prime)
+
+            vehicle.reset_lap()
+            state = env.reset(True)
+
+    vehicle.t_his.print_update(True)
+    vehicle.t_his.save_csv_data()
+    vehicle.agent.save(vehicle.path)
+
+    train_time = time.time() - start_time
+    print(f"Finished Training: {vehicle.name} in {train_time} seconds")
+
+    return train_time 
 
 
