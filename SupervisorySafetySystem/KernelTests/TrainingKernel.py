@@ -1,6 +1,6 @@
 from SupervisorySafetySystem.KernelTests.GeneralTestTrain import *
 from SupervisorySafetySystem.NavAgents.SerialAgentPlanner import SerialVehicleTest, SerialVehicleTrain
-from SupervisorySafetySystem.LearningSupervisor import LearningSupervisor
+from SupervisorySafetySystem.SupervisorySystem import LearningSupervisor
 from SupervisorySafetySystem.SupervisorySystem import ForestKernel
 
 from SupervisorySafetySystem.Simulator.ForestSim import ForestSim
@@ -59,10 +59,10 @@ def test_planner(VehicleClass, vehicle_name):
 
 if __name__ == "__main__":
     # train_baseline(SerialVehicleTrain, baseline_name)
-    test_baseline(SerialVehicleTest, baseline_name)
+    # test_baseline(SerialVehicleTest, baseline_name)
 
 
-    # train_planner(SerialVehicleTrain, kernel_name)
+    train_planner(SerialVehicleTrain, kernel_name)
     # test_planner(SerialVehicleTest, kernel_name)
 
 

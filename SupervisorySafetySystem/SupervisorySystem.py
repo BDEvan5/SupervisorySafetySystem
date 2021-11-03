@@ -24,6 +24,7 @@ class SafetyHistory:
         plt.title("Safe History")
         plt.plot(self.planned_actions, color='blue')
         plt.plot(self.safe_actions, '-x', color='red')
+        plt.legend(['Planned Actions', 'Safe Actions'])
         plt.ylim([-0.5, 0.5])
         # plt.show()
         plt.pause(0.0001)
@@ -47,6 +48,7 @@ class Supervisor:
         self.kernel = kernel
         self.planner = planner
         self.safe_history = SafetyHistory()
+        self.intervene = False
 
 
     def plan(self, obs):
@@ -79,6 +81,50 @@ class Supervisor:
         dw[:, 0] = np.linspace(-self.d_max, self.d_max, n_segments)
         dw[:, 1] *= self.v
         return dw
+
+
+class LearningSupervisor(Supervisor):
+    def __init__(self, planner, kernel, conf):
+        Supervisor.__init__(self, planner, kernel, conf)
+
+
+    def calculate_reward(self):
+        if self.intervene:
+            self.intervene = False
+            return -1
+        return 0
+
+    def done_entry(self, s_prime):
+        s_prime['reward'] = self.calculate_reward()
+        self.planner.done_entry(s_prime)
+
+    def plan(self, obs):
+        obs['reward'] = self.calculate_reward()
+        init_action = self.planner.plan_act(obs)
+        state = np.array(obs['state'])
+
+        safe, next_state = check_init_action(state, init_action, self.kernel)
+        if safe:
+            self.safe_history.add_locations(init_action[0], init_action[0])
+            return init_action
+
+        self.intervene = True
+
+        dw = self.generate_dw()
+        valids = simulate_and_classify(state, dw, self.kernel)
+        if not valids.any():
+            print('No Valid options')
+            print(f"State: {obs['state']}")
+            # plt.show()
+            return init_action
+        
+        action = modify_action(valids, dw)
+        # print(f"Valids: {valids} -> new action: {action}")
+        self.safe_history.add_locations(init_action[0], action[0])
+
+
+        return action
+
 
 #TODO jit all of this.
 

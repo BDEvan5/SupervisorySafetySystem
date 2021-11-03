@@ -379,7 +379,7 @@ def train_kernel_vehicle(env, vehicle, sim_conf):
         vehicle.planner.agent.train(2)
         
         if done:
-            vehicle.planner.done_entry(s_prime)
+            vehicle.done_entry(s_prime)
             env.render(wait=False)
             vehicle.safe_history.plot_safe_history()
 
