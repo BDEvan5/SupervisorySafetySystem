@@ -50,6 +50,9 @@ class Supervisor:
         self.safe_history = SafetyHistory()
         self.intervene = False
 
+        self.n_beams = planner.n_beams
+        self.plan_act = self.plan
+        self.name = planner.name
 
     def plan(self, obs):
         init_action = self.planner.plan_act(obs)
@@ -231,6 +234,9 @@ def construct_forest_kernel(track_size, obs_locations, resolution, side_kernel, 
     length = int(track_size[1] / resolution)
     for i in range(length):
         kernel[:, i*resolution:(i+1)*resolution] = side_kernel
+
+    if obs_locations is None:
+        return kernel
 
     for obs in obs_locations:
         i = int(round(obs[0] * resolution)) - obs_offset

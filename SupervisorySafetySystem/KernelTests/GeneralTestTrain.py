@@ -326,8 +326,8 @@ class TestVehicles(TestData):
         state = env.reset(add_obs)
 
         try:
-            vehicle.plan_forest(env.env_map)
-        except AttributeError as e:
+            vehicle.kernel.construct_kernel(env.env_map.map_img.shape, env.env_map.obs_pts)
+        except:
             pass
 
         done = False
@@ -388,7 +388,7 @@ def train_kernel_vehicle(env, vehicle, sim_conf):
 
     vehicle.planner.t_his.print_update(True)
     vehicle.planner.t_his.save_csv_data()
-    vehicle.planner.agent.save(vehicle.path)
+    vehicle.planner.agent.save(vehicle.planner.path)
 
     train_time = time.time() - start_time
     print(f"Finished Training: {vehicle.planner.name} in {train_time} seconds")

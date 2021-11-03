@@ -214,7 +214,7 @@ class SerialVehicleTrain(SerialBase):
         self.t_his = TrainHistory(agent_name, load)
 
         # self.calculate_reward = DistReward() 
-        self.calculate_reward = CthReward(0.004, 0.04) 
+        self.calculate_reward = CthReward(0.004, 0.004) 
 
 
     def plan_act(self, obs):
