@@ -28,7 +28,7 @@ def rando_test():
 
     env = TrackSim(conf)
     planner = RandomPlanner()
-    kernel = TrackKernel(conf)
+    kernel = TrackKernel(conf, True)
     safety_planner = Supervisor(planner, kernel, conf)
 
     test_kernel_vehicle(env, safety_planner, True, 30, add_obs=False)

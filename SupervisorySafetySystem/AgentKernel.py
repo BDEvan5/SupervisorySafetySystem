@@ -76,7 +76,6 @@ class Kernel:
         # plt.show()
         plt.pause(0.0001)
 
-
 class SafetyHistory:
     def __init__(self):
         self.planned_actions = []

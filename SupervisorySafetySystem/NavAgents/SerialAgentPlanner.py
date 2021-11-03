@@ -8,7 +8,7 @@ from SupervisorySafetySystem import LibFunctions as lib
 from SupervisorySafetySystem.NavUtils.HistoryStructs import TrainHistory
 from SupervisorySafetySystem.NavUtils.speed_utils import calculate_speed
 from SupervisorySafetySystem.NavUtils import pure_pursuit_utils
-from SupervisorySafetySystem.NavUtils.RewardFunctions import DistReward
+from SupervisorySafetySystem.NavUtils.RewardFunctions import DistReward, CthReward
 
 class SerialPP:
     def __init__(self, sim_conf) -> None:
@@ -213,7 +213,9 @@ class SerialVehicleTrain(SerialBase):
 
         self.t_his = TrainHistory(agent_name, load)
 
-        self.calculate_reward = DistReward() 
+        # self.calculate_reward = DistReward() 
+        self.calculate_reward = CthReward(0.004, 0.04) 
+
 
     def plan_act(self, obs):
         pp_action = super().act_pp(obs['state'])

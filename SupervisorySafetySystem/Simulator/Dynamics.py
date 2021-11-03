@@ -68,7 +68,7 @@ def control_system(state, action, max_v=7, max_steer=0.4, max_a=6.5, max_d_dot=3
 
     return u
 
-# @njit(cache=True)
+@njit(cache=True)
 def update_complex_state(state, action, dt, plan_steps=10, whlb=0.33, max_steer=0.4, max_v=7):
     n_dt = dt/(plan_steps-1)
 
@@ -115,7 +115,9 @@ def update_single_state(x, u, dt, whlb=0.33, max_steer=0.4, max_v=7):
 
     return new_state
 
-
+"""
+    Just for testing. not needed or used anywhere else
+"""
 def simple_updates(x0, u0, t_total, n_steps):
     x = np.copy(x0)
     x_list = [x]

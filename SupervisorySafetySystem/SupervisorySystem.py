@@ -5,6 +5,33 @@ from matplotlib import pyplot as plt
 import yaml
 from SupervisorySafetySystem.Simulator.Dynamics import update_complex_state, update_std_state
 
+
+class SafetyHistory:
+    def __init__(self):
+        self.planned_actions = []
+        self.safe_actions = []
+
+    def add_locations(self, planned_action, safe_action=None):
+        self.planned_actions.append(planned_action)
+        if safe_action is None:
+            self.safe_actions.append(planned_action)
+        else:
+            self.safe_actions.append(safe_action)
+
+    def plot_safe_history(self):
+        plt.figure(5)
+        plt.clf()
+        plt.title("Safe History")
+        plt.plot(self.planned_actions, color='blue')
+        plt.plot(self.safe_actions, '-x', color='red')
+        plt.ylim([-0.5, 0.5])
+        # plt.show()
+        plt.pause(0.0001)
+
+        self.planned_actions = []
+        self.safe_actions = []
+
+
 class Supervisor:
     def __init__(self, planner, kernel, conf):
         """
@@ -14,12 +41,13 @@ class Supervisor:
 
         """
         
-        #TODO: make sure these parameters are defined in the planner an then remove them here. This is constructor dependency injection
         self.d_max = conf.max_steer
         self.v = 2
         # self.kernel = ForestKernel(conf)
         self.kernel = kernel
         self.planner = planner
+        self.safe_history = SafetyHistory()
+
 
     def plan(self, obs):
         init_action = self.planner.plan_act(obs)
@@ -27,6 +55,7 @@ class Supervisor:
 
         safe, next_state = check_init_action(state, init_action, self.kernel)
         if safe:
+            self.safe_history.add_locations(init_action[0], init_action[0])
             return init_action
 
         dw = self.generate_dw()
@@ -34,11 +63,12 @@ class Supervisor:
         if not valids.any():
             print('No Valid options')
             print(f"State: {obs['state']}")
-            plt.show()
+            # plt.show()
             return init_action
         
         action = modify_action(valids, dw)
         # print(f"Valids: {valids} -> new action: {action}")
+        self.safe_history.add_locations(init_action[0], action[0])
 
 
         return action
@@ -91,8 +121,9 @@ def modify_action(valid_window, dw):
     
 
 class BaseKernel:
-    def __init__(self, sim_conf):
+    def __init__(self, sim_conf, plotting):
         self.resolution = sim_conf.n_dx
+        self.plotting = plotting
 
     def view_kernel(self, theta):
         phi_range = np.pi
@@ -109,7 +140,8 @@ class BaseKernel:
         i, j, k = self.get_indices(state)
 
         # print(f"Expected Location: {state} -> Inds: {i}, {j}, {k} -> Value: {self.kernel[i, j, k]}")
-        self.plot_kernel_point(i, j, k)
+        if self.plotting:
+            self.plot_kernel_point(i, j, k)
         if self.kernel[i, j, k] != 0:
             return False # unsfae state
         return True # safe state
@@ -125,8 +157,8 @@ class BaseKernel:
         plt.pause(0.0001)
 
 class ForestKernel(BaseKernel):
-    def __init__(self, sim_conf):
-        super().__init__(sim_conf)
+    def __init__(self, sim_conf, plotting=False):
+        super().__init__(sim_conf, plotting)
         self.kernel = None
         self.side_kernel = np.load(f"{sim_conf.kernel_path}SideKernel_{sim_conf.kernel_name}.npy")
         self.obs_kernel = np.load(f"{sim_conf.kernel_path}ObsKernel_{sim_conf.kernel_name}.npy")
@@ -158,11 +190,11 @@ def construct_forest_kernel(track_size, obs_locations, resolution, side_kernel, 
         i = int(round(obs[0] * resolution)) - obs_offset
         j = int(round(obs[1] * resolution)) - obs_offset * 2
         if i < 0:
-            kernel[0:i+obs_kernel.shape[0], j:j+obs_kernel.shape[1]] += obs_kernel[abs(i):kernel.shape[0], :]
+            kernel[0:i+obs_kernel.shape[0], j:j+obs_kernel.shape[1]] += obs_kernel[abs(i):obs_kernel.shape[0], :]
             continue
 
         if kernel.shape[0] - i <= (obs_kernel.shape[0]):
-            kernel[i:i+obs_kernel.shape[0], j:j+obs_kernel.shape[1]] += obs_kernel[0:kernel.shape[0]-i, :]
+            kernel[i:i+obs_kernel.shape[0], j:j+obs_kernel.shape[1]] += obs_kernel[0:obs_kernel.shape[0]-i, :]
             continue
 
 
@@ -172,8 +204,8 @@ def construct_forest_kernel(track_size, obs_locations, resolution, side_kernel, 
 
 
 class TrackKernel(BaseKernel):
-    def __init__(self, sim_conf):
-        super().__init__(sim_conf)
+    def __init__(self, sim_conf, plotting=False):
+        super().__init__(sim_conf, plotting)
         kernel_name = f"{sim_conf.kernel_path}TrackKernel_{sim_conf.track_kernel_path}_{sim_conf.map_name}.npy"
         self.clean_kernel = np.load(kernel_name)
         self.kernel = None
