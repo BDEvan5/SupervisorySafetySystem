@@ -34,6 +34,7 @@ class Supervisor:
         if not valids.any():
             print('No Valid options')
             print(f"State: {obs['state']}")
+            plt.show()
             return init_action
         
         action = modify_action(valids, dw)
@@ -108,8 +109,8 @@ class BaseKernel:
         i, j, k = self.get_indices(state)
 
         # print(f"Expected Location: {state} -> Inds: {i}, {j}, {k} -> Value: {self.kernel[i, j, k]}")
-        # self.plot_kernel_point(i, j, k)
-        if self.kernel[i, j, k] == 1:
+        self.plot_kernel_point(i, j, k)
+        if self.kernel[i, j, k] != 0:
             return False # unsfae state
         return True # safe state
 
@@ -174,7 +175,14 @@ class TrackKernel(BaseKernel):
     def __init__(self, sim_conf):
         super().__init__(sim_conf)
         kernel_name = f"{sim_conf.kernel_path}TrackKernel_{sim_conf.track_kernel_path}_{sim_conf.map_name}.npy"
-        self.kernel = np.load(kernel_name)
+        self.clean_kernel = np.load(kernel_name)
+        self.kernel = None
+        self.phi_range = sim_conf.phi_range
+
+        self.obs_kernel = np.load(f"{sim_conf.kernel_path}ObsKernelTrack_{sim_conf.track_kernel_path}.npy")
+        img_size = int(sim_conf.obs_img_size * sim_conf.n_dx)
+        obs_size = int(sim_conf.obs_size * sim_conf.n_dx)
+        self.obs_offset = int((img_size - obs_size) / 2)
 
         file_name = 'maps/' + sim_conf.map_name + '.yaml'
         with open(file_name) as file:
@@ -182,8 +190,23 @@ class TrackKernel(BaseKernel):
             yaml_file = dict(documents.items())
         self.origin = yaml_file['origin']
 
-    def construct_kernel(self, a, b):
-        pass
+    def construct_kernel(self, a, obs_locations):
+        if len(obs_locations) == 0:
+            self.kernel = self.clean_kernel
+            return
+
+        resize = self.clean_kernel.shape[0] / a[1]
+        obs_locations *= resize
+        self.kernel = construct_track_kernel(self.clean_kernel, obs_locations, self.obs_kernel, self.obs_offset)
+
+        theta_ind = int(round((0 + self.phi_range/2) / self.phi_range * (self.kernel.shape[2]-1)))
+        plt.figure(5)
+        plt.title(f"Kernel phi: {0} (ind: {theta_ind}) combined")
+        img = self.kernel[:, :, theta_ind].T + self.clean_kernel[:, :, theta_ind].T
+        plt.imshow(img, origin='lower')
+
+        # plt.show()
+        plt.pause(0.0001)
 
     def get_indices(self, state):
         phi_range = np.pi * 2
@@ -203,6 +226,42 @@ class TrackKernel(BaseKernel):
 
         return x_ind, y_ind, theta_ind
 
+
+@njit(cache=True)
+def construct_track_kernel(clean_kernel, obs_locations, obs_kernel, obs_offset):
+    kernel = np.copy(clean_kernel)
+
+    for obs in obs_locations:
+        i = int(round(obs[0] )) - obs_offset
+        j = int(round(obs[1] )) - obs_offset
+
+        i_start = i 
+        i_kernel = 0 
+        i_len = obs_kernel.shape[0]
+        j_start = j
+        j_kernel = 0
+        j_len = obs_kernel.shape[1]
+        
+        if i < 0:
+            i_start = 0
+            i_kernel = abs(i)
+            i_len = obs_kernel.shape[0] - i_kernel
+
+        elif kernel.shape[0] - i <= (obs_kernel.shape[0]):
+            i_len = kernel.shape[0] - i
+
+        if j < 0:
+            j_start = 0
+            j_kernel = abs(j)
+            j_len = obs_kernel.shape[1] - j_kernel
+
+        elif kernel.shape[1] - j <= (obs_kernel.shape[1]):
+            j_len = kernel.shape[1] - j
+
+        additive = obs_kernel[i_kernel:i_kernel + i_len, j_kernel:j_kernel + j_len, :]
+        kernel[i_start:i_start + i_len, j_start:j_start + j_len, :] += additive
+
+    return kernel
 
 
 

@@ -30,6 +30,8 @@ class BaseKernel:
         
         self.build_qs()
         self.o_map = np.copy(self.track_img)    
+        self.fig, self.axs = plt.subplots(2, 2)
+
 
     # config functions
     def build_qs(self):
@@ -49,7 +51,6 @@ class ViabilityGenerator(BaseKernel):
         
         self.kernel[:, :, :] = self.track_img[:, :, None] * np.ones((self.n_x, self.n_y, self.n_phi))
 
-        self.fig, self.axs = plt.subplots(2, 2)
         self.dynamics = build_viability_dynamics(self.phis, self.qs, self.velocity, self.t_step, self.sim_conf)
 
     def view_kernel(self, phi, show=True, fig_n=1):
@@ -212,6 +213,32 @@ class DiscrimGenerator(BaseKernel):
         if show:
             plt.show()
 
+    def view_build(self, show=True):
+        self.axs[0, 0].cla()
+        self.axs[1, 0].cla()
+        self.axs[0, 1].cla()
+        self.axs[1, 1].cla()
+
+        half_phi = int(len(self.phis)/2)
+        quarter_phi = int(len(self.phis)/4)
+
+        self.axs[0, 0].imshow(self.kernel[:, :, 0].T + self.o_map.T, origin='lower')
+        self.axs[0, 0].set_title(f"Kernel phi: {self.phis[0]}")
+        # axs[0, 0].clear()
+        self.axs[1, 0].imshow(self.kernel[:, :, half_phi].T + self.o_map.T, origin='lower')
+        self.axs[1, 0].set_title(f"Kernel phi: {self.phis[half_phi]}")
+        self.axs[0, 1].imshow(self.kernel[:, :, -quarter_phi].T + self.o_map.T, origin='lower')
+        self.axs[0, 1].set_title(f"Kernel phi: {self.phis[-quarter_phi]}")
+        self.axs[1, 1].imshow(self.kernel[:, :, quarter_phi].T + self.o_map.T, origin='lower')
+        self.axs[1, 1].set_title(f"Kernel phi: {self.phis[quarter_phi]}")
+
+        # plt.title(f"Building Kernel")
+
+        plt.pause(0.0001)
+        plt.pause(1)
+
+        if show:
+            plt.show()
 
 # @njit(cache=True)
 def build_discrim_dynamics(phis, qs, velocity, time, conf):
@@ -335,14 +362,12 @@ def prepare_track_img(sim_conf):
     return map_img2
 
 def build_track_kernel(conf):
-
-
     img = prepare_track_img(conf) 
     # plt.figure(1)
     # plt.imshow(img)
     # plt.pause(0.0001)
     kernel = ViabilityGenerator(img, conf)
-    kernel.calculate_kernel(30)
+    kernel.calculate_kernel(50)
     kernel.save_kernel(f"TrackKernel_{conf.track_kernel_path}_{conf.map_name}")
     kernel.view_build(True)
 
@@ -366,13 +391,28 @@ def construct_kernel_sides(conf): #TODO: combine to single fcn?
     kernel.save_kernel(f"SideKernel_{conf.kernel_name}")
 
 
+def construct_obs_track(conf):
+    img_size = int(conf.obs_img_size * conf.n_dx)
+    obs_size = int(conf.obs_size * conf.n_dx* 1.2) 
+    obs_offset = int((img_size - obs_size) / 2)
+    img = np.zeros((img_size, img_size))
+    img[obs_offset:obs_size+obs_offset, obs_offset:obs_size+obs_offset] = 1 
+    # kernel = ViabilityGenerator(img, conf)
+    kernel = DiscrimGenerator(img, conf)
+    kernel.calculate_kernel()
+    kernel.view_build(True)
+
+    kernel.save_kernel(f"ObsKernelTrack_{conf.track_kernel_path}")
+
 
 
 if __name__ == "__main__":
     conf = load_conf("track_kernel")
-    build_track_kernel(conf)
+    # build_track_kernel(conf)
+    construct_obs_track(conf)
 
     # conf = load_conf("forest_kernel")
     # construct_obs_kernel(conf)
     # construct_kernel_sides(conf)
+
 
