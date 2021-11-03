@@ -34,6 +34,7 @@ class Supervisor:
         if not valids.any():
             print('No Valid options')
             print(f"State: {obs['state']}")
+            plt.show()
             return init_action
         
         action = modify_action(valids, dw)
@@ -108,8 +109,8 @@ class BaseKernel:
         i, j, k = self.get_indices(state)
 
         # print(f"Expected Location: {state} -> Inds: {i}, {j}, {k} -> Value: {self.kernel[i, j, k]}")
-        # self.plot_kernel_point(i, j, k)
-        if self.kernel[i, j, k] == 1:
+        self.plot_kernel_point(i, j, k)
+        if self.kernel[i, j, k] != 0:
             return False # unsfae state
         return True # safe state
 
@@ -176,6 +177,7 @@ class TrackKernel(BaseKernel):
         kernel_name = f"{sim_conf.kernel_path}TrackKernel_{sim_conf.track_kernel_path}_{sim_conf.map_name}.npy"
         self.clean_kernel = np.load(kernel_name)
         self.kernel = None
+        self.phi_range = sim_conf.phi_range
 
         self.obs_kernel = np.load(f"{sim_conf.kernel_path}ObsKernelTrack_{sim_conf.track_kernel_path}.npy")
         img_size = int(sim_conf.obs_img_size * sim_conf.n_dx)
@@ -189,19 +191,35 @@ class TrackKernel(BaseKernel):
         self.origin = yaml_file['origin']
 
     def construct_kernel(self, a, obs_locations):
+        # plt.figure(1)
+        # plt.imshow(self.obs_kernel[:, :, 20], origin='lower')
+        # plt.title(f"Obs kernel ")
+
         resize = self.clean_kernel.shape[0] / a[1]
         obs_locations *= resize
-        self.kernel = construct_track_kernel(self.clean_kernel, obs_locations, self.resolution, self.obs_kernel, self.obs_offset)
+        self.kernel = construct_track_kernel(self.clean_kernel, obs_locations, self.obs_kernel, self.obs_offset)
 
-        phi_range = np.pi
-        theta_ind = int(round((0 + phi_range/2) / phi_range * (self.kernel.shape[2]-1)))
+        theta_ind = int(round((0 + self.phi_range/2) / self.phi_range * (self.kernel.shape[2]-1)))
         plt.figure(5)
-        plt.title(f"Kernel phi: {0} (ind: {theta_ind})")
+        plt.title(f"Kernel phi: {0} (ind: {theta_ind}) combined")
         img = self.kernel[:, :, theta_ind].T + self.clean_kernel[:, :, theta_ind].T
         plt.imshow(img, origin='lower')
 
-        plt.show()
-        # plt.pause(0.0001)
+        # plt.figure(2)
+        # plt.imshow(self.kernel[:, :, theta_ind].T, origin='lower')
+        # plt.title(f"New kernel")
+
+        # plt.figure(3)
+        # plt.imshow(self.clean_kernel[:, :, theta_ind].T, origin='lower')
+        # plt.title(f"Old clean kernel")
+
+        # plt.figure(4)
+        # img = self.kernel[:, :, theta_ind].T - self.clean_kernel[:, :, theta_ind].T
+        # plt.imshow(img, origin='lower')
+        # plt.title(f"Difference")
+
+        # plt.show()
+        plt.pause(0.0001)
 
     def get_indices(self, state):
         phi_range = np.pi * 2
@@ -222,36 +240,40 @@ class TrackKernel(BaseKernel):
         return x_ind, y_ind, theta_ind
 
 
-@njit(cache=True)
-def construct_track_kernel(clean_kernel, obs_locations, resolution, obs_kernel, obs_offset):
+# @njit(cache=True)
+def construct_track_kernel(clean_kernel, obs_locations, obs_kernel, obs_offset):
     kernel = np.copy(clean_kernel)
 
     for obs in obs_locations:
         i = int(round(obs[0] )) - obs_offset
-        j = int(round(obs[1] )) - obs_offset * 2
+        j = int(round(obs[1] )) - obs_offset
+
+        i_start = i 
+        i_kernel = 0 
+        i_len = obs_kernel.shape[0]
+        j_start = j
+        j_kernel = 0
+        j_len = obs_kernel.shape[1]
+        
         if i < 0:
-            kernel[0:i+obs_kernel.shape[0], j:j+obs_kernel.shape[1]] += obs_kernel[abs(i):kernel.shape[0], :]
-            continue
+            i_start = 0
+            i_kernel = abs(i)
+            i_len = obs_kernel.shape[0] - i_kernel
 
-        if kernel.shape[0] - i <= (obs_kernel.shape[0]):
-            kernel[i:i+obs_kernel.shape[0], j:j+obs_kernel.shape[1]] += obs_kernel[0:kernel.shape[0]-i, :]
-            continue
+        elif kernel.shape[0] - i <= (obs_kernel.shape[0]):
+            i_len = kernel.shape[0] - i
 
-        # if j < 0:
-        #     kernel[0:i+obs_kernel.shape[0], j:j+obs_kernel.shape[1]] += obs_kernel[abs(i):kernel.shape[0], :]
-        #     continue
+        if j < 0:
+            j_start = 0
+            j_kernel = abs(j)
+            j_len = obs_kernel.shape[1] - j_kernel
 
-        # if kernel.shape[0] - i <= (obs_kernel.shape[0]):
-        #     kernel[i:i+obs_kernel.shape[0], j:j+obs_kernel.shape[1]] += obs_kernel[0:kernel.shape[0]-i, :]
-        #     continue
+        elif kernel.shape[1] - j <= (obs_kernel.shape[1]):
+            j_len = kernel.shape[1] - j
 
-        #TODO: get the right, i, j indicies to start and then copy in accordingly. Otherwise it copies intot the wrong place
+        additive = obs_kernel[i_kernel:i_kernel + i_len, j_kernel:j_kernel + j_len, :]
+        kernel[i_start:i_start + i_len, j_start:j_start + j_len, :] += additive
 
-        # theoretically, all obstacles should be on the track?
-        # but not all kernels are.
-
-        kernel[i:i+obs_kernel.shape[0], j:j+obs_kernel.shape[1]] += obs_kernel
-    
     return kernel
 
 

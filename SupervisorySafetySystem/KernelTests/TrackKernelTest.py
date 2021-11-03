@@ -19,7 +19,7 @@ def pp_kernel_test():
     kernel = TrackKernel(conf)
     safety_planner = Supervisor(planner, kernel, conf)
 
-    test_kernel_vehicle(env, safety_planner, True, 10, add_obs=False)
+    test_kernel_vehicle(env, safety_planner, True, 10, add_obs=True)
 
 def rando_test():
     conf = load_conf("track_kernel")
@@ -36,6 +36,6 @@ def rando_test():
     # test_kernel_vehicle(env, safety_planner, False, 100, add_obs=False)
 
 if __name__ == "__main__":
-    rando_test()
-    # pp_kernel_test()
+    # rando_test()
+    pp_kernel_test()
 

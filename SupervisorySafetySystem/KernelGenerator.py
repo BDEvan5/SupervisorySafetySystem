@@ -393,7 +393,7 @@ def construct_kernel_sides(conf): #TODO: combine to single fcn?
 
 def construct_obs_track(conf):
     img_size = int(conf.obs_img_size * conf.n_dx)
-    obs_size = int(conf.obs_size * conf.n_dx)
+    obs_size = int(conf.obs_size * conf.n_dx* 1.2) 
     obs_offset = int((img_size - obs_size) / 2)
     img = np.zeros((img_size, img_size))
     img[obs_offset:obs_size+obs_offset, obs_offset:obs_size+obs_offset] = 1 
