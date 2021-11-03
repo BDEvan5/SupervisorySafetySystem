@@ -191,9 +191,9 @@ class TrackKernel(BaseKernel):
         self.origin = yaml_file['origin']
 
     def construct_kernel(self, a, obs_locations):
-        # plt.figure(1)
-        # plt.imshow(self.obs_kernel[:, :, 20], origin='lower')
-        # plt.title(f"Obs kernel ")
+        if len(obs_locations) == 0:
+            self.kernel = self.clean_kernel
+            return
 
         resize = self.clean_kernel.shape[0] / a[1]
         obs_locations *= resize
@@ -204,19 +204,6 @@ class TrackKernel(BaseKernel):
         plt.title(f"Kernel phi: {0} (ind: {theta_ind}) combined")
         img = self.kernel[:, :, theta_ind].T + self.clean_kernel[:, :, theta_ind].T
         plt.imshow(img, origin='lower')
-
-        # plt.figure(2)
-        # plt.imshow(self.kernel[:, :, theta_ind].T, origin='lower')
-        # plt.title(f"New kernel")
-
-        # plt.figure(3)
-        # plt.imshow(self.clean_kernel[:, :, theta_ind].T, origin='lower')
-        # plt.title(f"Old clean kernel")
-
-        # plt.figure(4)
-        # img = self.kernel[:, :, theta_ind].T - self.clean_kernel[:, :, theta_ind].T
-        # plt.imshow(img, origin='lower')
-        # plt.title(f"Difference")
 
         # plt.show()
         plt.pause(0.0001)
@@ -240,7 +227,7 @@ class TrackKernel(BaseKernel):
         return x_ind, y_ind, theta_ind
 
 
-# @njit(cache=True)
+@njit(cache=True)
 def construct_track_kernel(clean_kernel, obs_locations, obs_kernel, obs_offset):
     kernel = np.copy(clean_kernel)
 

@@ -16,7 +16,7 @@ max_d_dot: 3.2
 time_step: 0.1
 update_steps: 1
 max_steps: 5000
-end_distance: 2.5
+end_distance: 1.5
 
 dis_scale: 1 # I don't know if this is the right place for this???
 
