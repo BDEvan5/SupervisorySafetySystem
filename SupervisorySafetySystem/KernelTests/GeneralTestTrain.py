@@ -65,22 +65,18 @@ def eval_vehicle(env, vehicle, sim_conf, show=False):
     state = env.reset(False)
     done, score = False, 0.0
 
-    while not done:
-        a = vehicle.plan_act(state)
-        s_p, r, done, _ = env.step_plan(a)
-        state = s_p
-    if show:
-        env.render(wait=False, name=vehicle.name)
-    no_obs_time = np.copy(env.steps) 
-    print(f"Complete no obs -> time: {env.steps}")
+    # while not done:
+    #     a = vehicle.plan_act(state)
+    #     s_p, r, done, _ = env.step_plan(a)
+    #     state = s_p
+    # if show:
+    #     env.render(wait=False, name=vehicle.name)
+    # no_obs_time = np.copy(env.steps) 
+    # print(f"Complete no obs -> time: {env.steps}")
 
-    state = env.reset(True)
+    state = env.reset(False)
     done, score = False, 0.0
     for i in range(sim_conf.test_n):
-        try:
-            vehicle.plan_forest(env.env_map)
-        except AttributeError as e:
-            pass
         while not done:
             a = vehicle.plan_act(state)
             s_p, r, done, _ = env.step_plan(a)
@@ -95,9 +91,8 @@ def eval_vehicle(env, vehicle, sim_conf, show=False):
             completes += 1
             print(f"({i}) Complete -> time: {env.steps}")
             lap_times.append(env.steps)
-        state = env.reset(True)
+        state = env.reset(False)
         
-        vehicle.reset_lap()
         done = False
 
     success_rate = (completes / (completes + crashes) * 100)
@@ -131,7 +126,7 @@ def eval_vehicle(env, vehicle, sim_conf, show=False):
     eval_dict['success_rate'] = float(success_rate)
     eval_dict['avg_times'] = float(avg_times)
     eval_dict['std_dev'] = float(std_dev)
-    eval_dict['no_obs_time'] = float(no_obs_time)
+    # eval_dict['no_obs_time'] = float(no_obs_time)
 
     print(f"Finished running test and saving file with results.")
 
@@ -277,12 +272,11 @@ class TestData:
 
 
 class TestVehicles(TestData):
-    def __init__(self, config, eval_name, env_kwarg='forest') -> None:
+    def __init__(self, config, eval_name) -> None:
         self.config = config
         self.eval_name = eval_name
         self.vehicle_list = []
         self.N = None
-        self.env_kwarg = env_kwarg
 
         TestData.__init__(self)
 
@@ -304,6 +298,28 @@ class TestVehicles(TestData):
 
         for i in range(laps):
             env.env_map.add_obstacles()
+            for j in range(N):
+                vehicle = self.vehicle_list[j]
+
+                r, steps = self.run_lap(vehicle, env, show, False, wait)
+
+                print(f"#{i}: Lap time for ({vehicle.name}): {env.steps} --> Reward: {r}")
+                self.endings[i, j] = r
+                if r == -1 or r == 0:
+                    self.crashes[j] += 1
+                else:
+                    self.completes[j] += 1
+                    self.lap_times[j].append(steps)
+
+        self.print_results()
+        self.save_txt_results()
+        self.save_csv_results()
+
+    def run_free_eval(self, env, laps=100, show=False, wait=False):
+        N = self.N = len(self.vehicle_list)
+        self.init_arrays(N, laps)
+
+        for i in range(laps):
             for j in range(N):
                 vehicle = self.vehicle_list[j]
 
@@ -349,28 +365,14 @@ class TestVehicles(TestData):
 
 
 
-def train_kernel_vehicle(env, vehicle, sim_conf, add_obs=False):
+def train_kernel_vehicle(env, vehicle, sim_conf, add_obs=False, show=False):
     start_time = time.time()
 
     done = False
     state = env.reset(add_obs)
 
-    print(f"Building Buffer: {sim_conf.buffer_n}")
-    vehicle.kernel.construct_kernel(env.env_map.map_img.shape, env.env_map.obs_pts)
-    for n in range(sim_conf.buffer_n):
-        a = vehicle.plan(state)
-        s_prime, r, done, _ = env.step_plan(a)
-        state = s_prime
-        
-        if done:
-            vehicle.planner.done_entry(s_prime)
-            
-            state = env.reset(True)
-            vehicle.kernel.construct_kernel(env.env_map.map_img.shape, env.env_map.obs_pts)
-
-        state = env.reset(add_obs)
-
     print(f"Starting Training: {vehicle.planner.name}")
+    vehicle.kernel.construct_kernel(env.env_map.map_img.shape, env.env_map.obs_pts)
     for n in range(sim_conf.train_n):
         a = vehicle.plan(state)
         s_prime, r, done, _ = env.step_plan(a)
@@ -380,8 +382,9 @@ def train_kernel_vehicle(env, vehicle, sim_conf, add_obs=False):
         
         if done:
             vehicle.done_entry(s_prime)
-            env.render(wait=False)
-            vehicle.safe_history.plot_safe_history()
+            if show:
+                env.render(wait=False)
+                vehicle.safe_history.plot_safe_history()
 
             state = env.reset(add_obs)
             vehicle.kernel.construct_kernel(env.env_map.map_img.shape, env.env_map.obs_pts)
@@ -407,27 +410,11 @@ def load_conf(fname):
 
 
 
-def train_vehicle(env, vehicle, sim_conf, add_obs=False):
+def train_vehicle(env, vehicle, sim_conf, add_obs=False, show=False):
     start_time = time.time()
 
     done = False
     state = env.reset(add_obs)
-
-    print(f"Building Buffer: {sim_conf.buffer_n}")
-    for n in range(sim_conf.buffer_n):
-        a = vehicle.plan_act(state)
-        s_prime, r, done, _ = env.step_plan(a)
-        state = s_prime
-        
-        if done:
-            vehicle.done_entry(s_prime)
-            env.render(wait=False)
-
-            vehicle.reset_lap()
-            state = env.reset(add_obs)
-        
-        # vehicle.reset_lap()
-        state = env.reset(True)
 
     print(f"Starting Training: {vehicle.name}")
     for n in range(sim_conf.train_n):
@@ -439,7 +426,8 @@ def train_vehicle(env, vehicle, sim_conf, add_obs=False):
         
         if done:
             vehicle.done_entry(s_prime)
-            env.render(wait=False)
+            if show:
+                env.render(wait=False)
 
             # vehicle.reset_lap()
             state = env.reset(add_obs)

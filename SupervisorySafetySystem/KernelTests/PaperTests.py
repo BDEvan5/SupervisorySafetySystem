@@ -46,21 +46,31 @@ def test_baseline(agent_name):
 
     eval_vehicle(env, planner, sim_conf, True)
 
-def train_planner(agent_name):
+def train_kenel(agent_name):
     env = TrackSim(sim_conf)
     planner = EndVehicleTrain(agent_name, sim_conf)
     kernel = TrackKernel(sim_conf)
     safety_planner = LearningSupervisor(planner, kernel, sim_conf)
 
-    train_kernel_vehicle(env, safety_planner, sim_conf)
+    train_kernel_vehicle(env, safety_planner, sim_conf, show=True)
 
-def test_planner(vehicle_name):
+def test_kernel_sss(vehicle_name):
     env = TrackSim(sim_conf)
     planner = EndVehicleTest(vehicle_name, sim_conf)
     kernel = TrackKernel(sim_conf)
     safety_planner = Supervisor(planner, kernel, sim_conf)
 
     test_kernel_vehicle(env, safety_planner, True, test_n, wait=False)
+
+def test_kernel_pure(vehicle_name):
+    env = TrackSim(sim_conf)
+    planner = EndVehicleTest(vehicle_name, sim_conf)
+    # kernel = TrackKernel(sim_conf)
+    # safety_planner = Supervisor(planner, kernel, sim_conf)
+
+    # eval_vehicle(env, planner, sim_conf, True)
+    eval_vehicle(env, planner, sim_conf, False)
+    # test_kernel_vehicle(env, planner, True, test_n, wait=False)
 
 def baseline_vs_kernel(baseline_name, kernel_name):
     test = TestVehicles(sim_conf, eval_name)
@@ -74,16 +84,17 @@ def baseline_vs_kernel(baseline_name, kernel_name):
     safety_planner = Supervisor(planner, kernel, sim_conf)
     test.add_vehicle(safety_planner)
 
-    test.run_eval(env, test_n, wait=False)
+    test.run_free_eval(env, test_n, wait=False)
 
 
 if __name__ == "__main__":
-    train_baseline(baseline_name)
-    # test_baseline(baseline_name)
+    # train_baseline(baseline_name)
+    test_baseline(baseline_name)
 
 
-    # train_planner(kernel_name)
-    # test_planner(kernel_name)
+    # train_kenel(kernel_name)
+    # test_planner_sss(kernel_name)
+    # test_kernel_pure(kernel_name)
 
     # baseline_vs_kernel(baseline_name, kernel_name)
 

@@ -1,0 +1,17 @@
+
+Testing Complete 
+Map name:  
+-----------------------------------------------------
+-----------------------------------------------------
+Vehicle: std_end_baseline_1
+Crashes: 0.0 --> Completes 100.0
+% Finished = 100.00
+Avg lap times: 84.44
+No Obs Time: 0.0
+-----------------------------------------------------
+Vehicle: kernel_end_1
+Crashes: 0.0 --> Completes 100.0
+% Finished = 100.00
+Avg lap times: 158.39
+No Obs Time: 0.0
+-----------------------------------------------------
