@@ -341,10 +341,14 @@ class TestVehicles(TestData):
         env.scan_sim.reset_n_beams(vehicle.n_beams)
         state = env.reset(add_obs)
 
+
+        try:
+            vehicle.plan_track(env.env_map)
+        except AttributeError as e: pass
+
         try:
             vehicle.kernel.construct_kernel(env.env_map.map_img.shape, env.env_map.obs_pts)
-        except:
-            pass
+        except: pass
 
         done = False
         while not done:

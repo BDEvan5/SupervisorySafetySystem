@@ -1,3 +1,5 @@
 #,Name,%Complete,AvgTime,Std,NoObs
-0,std_end_baseline_1,100.0,84.44,6.179514544039847,0.0
-1,kernel_end_1,100.0,158.39,3.765355228925951,0.0
+0,std_end_baseline_1,100.0,83.69,7.331705122275444,0.0
+1,kernel_end_RewardMag_1,100.0,115.79,4.023170391619028,0.0
+2,Follow the Forest Gap,100.0,51.0,0.0,0.0
+3,Oracle Path Follower,100.0,88.0,0.0,0.0

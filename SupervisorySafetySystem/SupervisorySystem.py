@@ -97,7 +97,7 @@ class LearningSupervisor(Supervisor):
     def intervene_reward(self):
         if self.intervene:
             self.intervene = False
-            return -1
+            return -0.5
         return 0
 
     def magnitude_reward(self): #TODO: Implement this
@@ -110,8 +110,8 @@ class LearningSupervisor(Supervisor):
         return 0
 
     def calculate_reward(self):
-        # return self.zero_reward()
-        return self.magnitude_reward()
+        return self.zero_reward()
+        # return self.magnitude_reward()
         # return self.intervene_reward()
 
     def done_entry(self, s_prime):
