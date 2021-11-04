@@ -28,7 +28,7 @@ map_name: "porto"
 n_dx: 80
 
 
-n_obs: 4
+n_obs: 0
 obs_size: 0.5
 
 kernel_path: "SupervisorySafetySystem/Kernels/"
@@ -58,7 +58,7 @@ layers: 2
 reward: 'progress'
 s_mul: 1
 
-train_n: 40000
+train_n: 20000
 # train_n: 100000
 buffer_n: 0
 

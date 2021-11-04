@@ -1,0 +1,29 @@
+
+Testing Complete 
+Map name:  
+-----------------------------------------------------
+-----------------------------------------------------
+Vehicle: std_end_baseline_1
+Crashes: 0.0 --> Completes 100.0
+% Finished = 100.00
+Avg lap times: 83.69
+No Obs Time: 0.0
+-----------------------------------------------------
+Vehicle: kernel_end_RewardMag_1
+Crashes: 0.0 --> Completes 100.0
+% Finished = 100.00
+Avg lap times: 115.79
+No Obs Time: 0.0
+-----------------------------------------------------
+Vehicle: Follow the Forest Gap
+Crashes: 0.0 --> Completes 100.0
+% Finished = 100.00
+Avg lap times: 51.0
+No Obs Time: 0.0
+-----------------------------------------------------
+Vehicle: Oracle Path Follower
+Crashes: 0.0 --> Completes 100.0
+% Finished = 100.00
+Avg lap times: 88.0
+No Obs Time: 0.0
+-----------------------------------------------------

@@ -42,7 +42,7 @@ class ScanSimulator:
         scan = get_scan(pose, n_beams, dth, self.dt, self.fov, self.orig_x, self.orig_y, self.resoltuion, self.map_height, self.map_width, self.eps, self.max_range)
 
         noise = self.rng.normal(0., self.std_noise, size=n_beams)
-        final_scan = scan #+ noise
+        final_scan = scan + noise
         return final_scan
 
 @njit(cache=True)

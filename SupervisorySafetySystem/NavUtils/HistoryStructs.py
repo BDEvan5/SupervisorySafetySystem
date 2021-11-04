@@ -57,20 +57,21 @@ class TrainHistory():
         self.ep_reward = 0
         # self.ep_rewards = []
 
-
     def print_update(self, plot_reward=True):
-        if self.ptr < 5:
+        if self.ptr < 100:
             return
-        mean = np.mean(self.rewards[0:self.ptr])
-        score = self.rewards[-1]
-        print(f"Run: {self.t_counter} --> Score: {score:.2f} --> Mean: {mean:.2f}  ")
+        
+        mean10 = np.mean(self.rewards[self.ptr-10:self.ptr])
+        mean100 = np.mean(self.rewards[self.ptr-100:self.ptr])
+        # score = moving_average(self.rewards[self.ptr-100:self.ptr], 10)
+        print(f"Run: {self.t_counter} --> Moving10: {mean10:.2f} --> Moving100: {mean100:.2f}  ")
         
         if plot_reward:
             lib.plot(self.rewards[0:self.ptr], figure_n=2)
 
     def save_csv_data(self):
         data = []
-        for i in range(len(self.rewards)):
+        for i in range(self.ptr):
             data.append([i, self.rewards[i], self.lengths[i]])
         full_name = 'EvalVehicles/' + self.agent_name + '/training_data.csv'
         with open(full_name, 'w') as csvfile:
@@ -79,6 +80,9 @@ class TrainHistory():
 
         plt.figure(2)
         plt.savefig('EvalVehicles/' + self.agent_name + "/training_rewards.png")
+        
+def moving_average(data, period):
+    return np.convolve(data, np.ones(period), 'same') / period
 
 
 class RewardAnalyser:

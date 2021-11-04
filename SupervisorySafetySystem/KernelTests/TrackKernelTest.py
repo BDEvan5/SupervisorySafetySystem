@@ -2,7 +2,7 @@ from SupervisorySafetySystem.KernelTests.GeneralTestTrain import test_kernel_veh
 
 from SupervisorySafetySystem.Simulator.TrackSim import TrackSim
 from SupervisorySafetySystem.SupervisorySystem import Supervisor, TrackKernel
-from SupervisorySafetySystem.NavAgents.SimplePlanners import RandomPlanner, PurePursuit, EmptyPlanner
+from SupervisorySafetySystem.NavAgents.SimplePlanners import RandomPlanner, PurePursuit, StraightPlanner
 from SupervisorySafetySystem.NavAgents.TrackPP import PurePursuit as TrackPP
 
 import numpy as np
@@ -35,7 +35,22 @@ def rando_test():
     # test_kernel_vehicle(env, safety_planner, True, 100, add_obs=False)
     # test_kernel_vehicle(env, safety_planner, False, 100, add_obs=False)
 
+
+def straight_test():
+    conf = load_conf("track_kernel")
+
+    # build_track_kernel()
+
+    env = TrackSim(conf)
+    planner = StraightPlanner()
+    kernel = TrackKernel(conf, False)
+    safety_planner = Supervisor(planner, kernel, conf)
+
+    test_kernel_vehicle(env, safety_planner, True, 30, add_obs=False)
+  
+
 if __name__ == "__main__":
-    rando_test()
+    # rando_test()
     # pp_kernel_test()
+    straight_test()
 
