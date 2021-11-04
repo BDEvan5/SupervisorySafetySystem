@@ -118,6 +118,8 @@ class TrackMap:
         self.dt_img = np.array(dt *self.resolution)
     
     def add_obstacles(self):
+        if self.n_obs == 0: 
+            return
         obs_img = np.zeros_like(self.obs_img) 
         obs_size_m = np.array([self.obs_size, self.obs_size]) 
         obs_size_px = obs_size_m / self.resolution

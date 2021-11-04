@@ -21,6 +21,17 @@ class RandomPlanner:
         return np.array([steering, self.v])
 
 
+class StraightPlanner:
+    def __init__(self):
+        self.d_max = 0.4 # radians  
+        self.v = 2        
+        self.name = "StraightPlanner"
+
+    def plan_act(self, obs):
+        steering = 0
+        return np.array([steering, self.v])
+
+
 
 class PurePursuit:
     def __init__(self, sim_conf):

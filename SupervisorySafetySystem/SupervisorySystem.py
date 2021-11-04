@@ -50,7 +50,10 @@ class Supervisor:
         self.safe_history = SafetyHistory()
         self.intervene = False
 
-        self.n_beams = planner.n_beams
+        # aliases for the test functions
+        try:
+            self.n_beams = planner.n_beams
+        except: pass
         self.plan_act = self.plan
         self.name = planner.name
 

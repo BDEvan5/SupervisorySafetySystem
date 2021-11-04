@@ -70,7 +70,7 @@ class TrainHistory():
 
     def save_csv_data(self):
         data = []
-        for i in range(len(self.rewards)):
+        for i in range(self.ptr):
             data.append([i, self.rewards[i], self.lengths[i]])
         full_name = 'EvalVehicles/' + self.agent_name + '/training_data.csv'
         with open(full_name, 'w') as csvfile:

@@ -18,7 +18,7 @@ def load_conf(path, fname):
 
 
 """General test function"""
-def test_kernel_vehicle(env, vehicle, show=False, laps=100, add_obs=True, wait=False):
+def test_kernel_vehicle(env, vehicle, show=False, laps=100, add_obs=False, wait=False):
     crashes = 0
     completes = 0
     lap_times = [] 
@@ -349,11 +349,11 @@ class TestVehicles(TestData):
 
 
 
-def train_kernel_vehicle(env, vehicle, sim_conf):
+def train_kernel_vehicle(env, vehicle, sim_conf, add_obs=False):
     start_time = time.time()
 
     done = False
-    state = env.reset(True)
+    state = env.reset(add_obs)
 
     print(f"Building Buffer: {sim_conf.buffer_n}")
     vehicle.kernel.construct_kernel(env.env_map.map_img.shape, env.env_map.obs_pts)
@@ -368,7 +368,7 @@ def train_kernel_vehicle(env, vehicle, sim_conf):
             state = env.reset(True)
             vehicle.kernel.construct_kernel(env.env_map.map_img.shape, env.env_map.obs_pts)
 
-        state = env.reset(True)
+        state = env.reset(add_obs)
 
     print(f"Starting Training: {vehicle.planner.name}")
     for n in range(sim_conf.train_n):
@@ -383,7 +383,7 @@ def train_kernel_vehicle(env, vehicle, sim_conf):
             env.render(wait=False)
             vehicle.safe_history.plot_safe_history()
 
-            state = env.reset(True)
+            state = env.reset(add_obs)
             vehicle.kernel.construct_kernel(env.env_map.map_img.shape, env.env_map.obs_pts)
 
     vehicle.planner.t_his.print_update(True)
@@ -407,11 +407,11 @@ def load_conf(fname):
 
 
 
-def train_vehicle(env, vehicle, sim_conf):
+def train_vehicle(env, vehicle, sim_conf, add_obs=False):
     start_time = time.time()
 
     done = False
-    state = env.reset(True)
+    state = env.reset(add_obs)
 
     print(f"Building Buffer: {sim_conf.buffer_n}")
     for n in range(sim_conf.buffer_n):
@@ -421,11 +421,12 @@ def train_vehicle(env, vehicle, sim_conf):
         
         if done:
             vehicle.done_entry(s_prime)
+            env.render(wait=False)
 
             vehicle.reset_lap()
-            state = env.reset(True)
+            state = env.reset(add_obs)
         
-        vehicle.reset_lap()
+        # vehicle.reset_lap()
         state = env.reset(True)
 
     print(f"Starting Training: {vehicle.name}")
@@ -438,9 +439,10 @@ def train_vehicle(env, vehicle, sim_conf):
         
         if done:
             vehicle.done_entry(s_prime)
+            env.render(wait=False)
 
-            vehicle.reset_lap()
-            state = env.reset(True)
+            # vehicle.reset_lap()
+            state = env.reset(add_obs)
 
     vehicle.t_his.print_update(True)
     vehicle.t_his.save_csv_data()

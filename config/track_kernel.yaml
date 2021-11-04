@@ -28,7 +28,7 @@ map_name: "porto"
 n_dx: 80
 
 
-n_obs: 4
+n_obs: 0
 obs_size: 0.5
 
 kernel_path: "SupervisorySafetySystem/Kernels/"
