@@ -58,7 +58,8 @@ class SteeringReward:
         self.name = f"Steering({b_s})"
         
     def __call__(self, state, s_prime):
-        reward = - abs(s_prime['state'][4])**0.5 * self.b_s
+        scaled_steering = abs(s_prime['state'][4] / 0.4)
+        reward = (0.5 - scaled_steering) * self.b_s
         reward += s_prime['reward']
 
         return reward

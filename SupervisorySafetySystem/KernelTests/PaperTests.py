@@ -78,12 +78,12 @@ def baseline_vs_kernel(baseline_name, kernel_name):
 
 
 if __name__ == "__main__":
-    # train_baseline(baseline_name)
+    train_baseline(baseline_name)
     # test_baseline(baseline_name)
 
 
     # train_planner(kernel_name)
-    test_planner(kernel_name)
+    # test_planner(kernel_name)
 
     # baseline_vs_kernel(baseline_name, kernel_name)
 

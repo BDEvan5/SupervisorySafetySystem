@@ -2,7 +2,7 @@ import numpy as np
 from SupervisorySafetySystem.NavUtils.TD3 import TD3
 from SupervisorySafetySystem.NavUtils.HistoryStructs import TrainHistory
 from SupervisorySafetySystem.NavUtils.speed_utils import calculate_speed
-from SupervisorySafetySystem.NavUtils.RewardFunctions import DistReward, CthReward
+from SupervisorySafetySystem.NavUtils.RewardFunctions import *
 import torch
 
 
@@ -51,7 +51,8 @@ class EndVehicleTrain(EndBase):
         self.t_his = TrainHistory(agent_name, load)
 
         # self.calculate_reward = DistReward() 
-        self.calculate_reward = CthReward(0.004, 0.004) 
+        # self.calculate_reward = CthReward(0.004, 0.004) 
+        self.calculate_reward = SteeringReward(0.01) 
 
 
     def plan_act(self, obs):
