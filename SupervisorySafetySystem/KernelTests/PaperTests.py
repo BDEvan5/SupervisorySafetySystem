@@ -28,7 +28,7 @@ def rando_test():
 test_n = 100
 run_n = 1
 baseline_name = f"std_end_baseline_{run_n}"
-kernel_name = f"kernel_end_{run_n}"
+kernel_name = f"kernel_end_RewardMag_{run_n}"
 
 eval_name = f"end_kernel_vs_base_{run_n}"
 sim_conf = load_conf("track_kernel")
@@ -52,7 +52,7 @@ def train_kenel(agent_name):
     kernel = TrackKernel(sim_conf)
     safety_planner = LearningSupervisor(planner, kernel, sim_conf)
 
-    train_kernel_vehicle(env, safety_planner, sim_conf, show=True)
+    train_kernel_vehicle(env, safety_planner, sim_conf, show=False)
 
 def test_kernel_sss(vehicle_name):
     env = TrackSim(sim_conf)
@@ -89,11 +89,11 @@ def baseline_vs_kernel(baseline_name, kernel_name):
 
 if __name__ == "__main__":
     # train_baseline(baseline_name)
-    test_baseline(baseline_name)
+    # test_baseline(baseline_name)
 
 
-    # train_kenel(kernel_name)
-    # test_planner_sss(kernel_name)
+    train_kenel(kernel_name)
+    test_kernel_sss(kernel_name)
     # test_kernel_pure(kernel_name)
 
     # baseline_vs_kernel(baseline_name, kernel_name)

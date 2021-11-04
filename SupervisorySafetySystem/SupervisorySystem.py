@@ -92,13 +92,27 @@ class Supervisor:
 class LearningSupervisor(Supervisor):
     def __init__(self, planner, kernel, conf):
         Supervisor.__init__(self, planner, kernel, conf)
+        self.intervention_mag = 0
 
-
-    def calculate_reward(self):
+    def intervene_reward(self):
         if self.intervene:
             self.intervene = False
             return -1
         return 0
+
+    def magnitude_reward(self): #TODO: Implement this
+        if self.intervene:
+            self.intervene = False
+            return - abs(self.intervention_mag)
+        return 0
+
+    def zero_reward(self):
+        return 0
+
+    def calculate_reward(self):
+        # return self.zero_reward()
+        return self.magnitude_reward()
+        # return self.intervene_reward()
 
     def done_entry(self, s_prime):
         s_prime['reward'] = self.calculate_reward()
@@ -128,6 +142,7 @@ class LearningSupervisor(Supervisor):
         # print(f"Valids: {valids} -> new action: {action}")
         self.safe_history.add_locations(init_action[0], action[0])
 
+        self.intervention_mag = action[0] - init_action[0]
 
         return action
 
