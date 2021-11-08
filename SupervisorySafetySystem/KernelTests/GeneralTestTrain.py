@@ -6,15 +6,6 @@ from matplotlib import pyplot as plt
 import numpy as np
 import csv, time
 
-def load_conf(path, fname):
-    full_path = path + 'config/' + fname + '.yaml'
-    with open(full_path) as file:
-        conf_dict = yaml.load(file, Loader=yaml.FullLoader)
-
-    conf = Namespace(**conf_dict)
-
-    return conf
-
 
 
 """General test function"""
@@ -64,6 +55,11 @@ def eval_vehicle(env, vehicle, sim_conf, show=False):
 
     state = env.reset(False)
     done, score = False, 0.0
+
+
+    try:
+        vehicle.plan_track(env.env_map)
+    except AttributeError as e: pass
 
     # while not done:
     #     a = vehicle.plan_act(state)
