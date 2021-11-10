@@ -93,38 +93,20 @@ class LearningSupervisor(Supervisor):
     def __init__(self, planner, kernel, conf):
         Supervisor.__init__(self, planner, kernel, conf)
         self.intervention_mag = 0
-
-    def intervene_reward(self):
-        if self.intervene:
-            self.intervene = False
-            return -0.5
-        return 0
-
-    def magnitude_reward(self): #TODO: Implement this
-        if self.intervene:
-            self.intervene = False
-            return - abs(self.intervention_mag)
-        return 0
-
-    def zero_reward(self):
-        return 0
-
-    def calculate_reward(self):
-        return self.zero_reward()
-        # return self.magnitude_reward()
-        # return self.intervene_reward()
+        self.calculate_reward = None # to be replaced by a function
 
     def done_entry(self, s_prime):
-        s_prime['reward'] = self.calculate_reward()
+        s_prime['reward'] = self.calculate_reward(self.intervention_mag)
         self.planner.done_entry(s_prime)
 
     def plan(self, obs):
-        obs['reward'] = self.calculate_reward()
+        obs['reward'] = self.calculate_reward(self.intervention_mag)
         init_action = self.planner.plan_act(obs)
         state = np.array(obs['state'])
 
         safe, next_state = check_init_action(state, init_action, self.kernel)
         if safe:
+            self.intervention_mag = 0
             self.safe_history.add_locations(init_action[0], init_action[0])
             return init_action
 
@@ -136,6 +118,7 @@ class LearningSupervisor(Supervisor):
             print('No Valid options')
             print(f"State: {obs['state']}")
             # plt.show()
+            self.intervention_mag = 1
             return init_action
         
         action = modify_action(valids, dw)

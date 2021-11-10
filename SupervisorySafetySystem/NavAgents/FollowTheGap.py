@@ -65,7 +65,7 @@ class ForestFGM:
         return steering_angle
 
     def plan_act(self, obs):
-        scan = obs['scan']
+        scan = obs['full_scan']
         ranges = np.array(scan, dtype=np.float)
 
         steering_angle = self.process_lidar(ranges)

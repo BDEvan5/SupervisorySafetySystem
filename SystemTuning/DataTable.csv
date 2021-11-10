@@ -1,0 +1,10 @@
+EvalName,reward,kernel_reward,sss_reward_scale,kernel_time_step,name,avg_times,std_dev,success_rate,test_number,train_time
+k_learn1,Steer_05,Constant_1,1,,bTuning_k_learn1_Constant_1_1,147.15,2.6958301133417146,100.0,1,113.50575661659241
+k_learn1,Steer_05,Zero,0,,bTuning_k_learn1_Zero_1,127.01,2.451509738916001,100.0,1,110.66570973396301
+k_learn1,Steer_05,Magnitude_1,,,bTuning_k_learn1_Magnitude_1_1,132.0,5.280151512977634,100.0,1,112.64422965049744
+k_learn1,Steer_05,Magnitude_05,0.5,,bTuning_k_learn1_Magnitude_05_1,123.94,2.4446676665755613,100.0,1,115.21869230270386
+reward_1,Steer_01,,,,bTuning_reward_1_Steer_01_1,112.24,5.549990990983679,100.0,1,110.58706831932068
+reward_1,DistRef_1,,,,bTuning_reward_1_DistRef_1_1,123.86,3.671566423204134,100.0,1,0
+reward_1,Steer_1,,,,bTuning_reward_1_Steer_1_1,122.25,4.846390409366542,100.0,1,111.48246550559998
+reward_1,Steer_005,,,,bTuning_reward_1_Steer_005_1,139.85858585858585,5.354145191109108,99.0,1,113.83743071556091
+reward_1,Steer_05,,,,bTuning_reward_1_Steer_05_1,128.85714285714286,6.956017915684813,91.0,1,112.2887692451477

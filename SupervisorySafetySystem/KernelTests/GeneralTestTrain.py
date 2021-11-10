@@ -6,15 +6,6 @@ from matplotlib import pyplot as plt
 import numpy as np
 import csv, time
 
-def load_conf(path, fname):
-    full_path = path + 'config/' + fname + '.yaml'
-    with open(full_path) as file:
-        conf_dict = yaml.load(file, Loader=yaml.FullLoader)
-
-    conf = Namespace(**conf_dict)
-
-    return conf
-
 
 
 """General test function"""
@@ -65,15 +56,6 @@ def eval_vehicle(env, vehicle, sim_conf, show=False):
     state = env.reset(False)
     done, score = False, 0.0
 
-    # while not done:
-    #     a = vehicle.plan_act(state)
-    #     s_p, r, done, _ = env.step_plan(a)
-    #     state = s_p
-    # if show:
-    #     env.render(wait=False, name=vehicle.name)
-    # no_obs_time = np.copy(env.steps) 
-    # print(f"Complete no obs -> time: {env.steps}")
-
     state = env.reset(False)
     done, score = False, 0.0
     for i in range(sim_conf.test_n):
@@ -106,27 +88,11 @@ def eval_vehicle(env, vehicle, sim_conf, show=False):
     print(f"Completes: {completes} --> {success_rate:.2f} %")
     print(f"Lap times Avg: {avg_times} --> Std: {std_dev}")
 
-    test_name = 'EvalVehicles/'  + vehicle.name + f"/{vehicle.name}_eval" + '.csv'
-
-    # data = [["#", "Name", "%Complete", "AvgTime", "Std", "NoObs"]]
-    # v_data = [0]
-    # v_data.append(vehicle.name)
-    # v_data.append(success_rate * 100)
-    # v_data.append(avg_times)
-    # v_data.append(avg_times)
-    # v_data.append(no_obs_time)
-    # data.append(v_data)
-
-    # with open(test_name, 'w') as csvfile:
-    #     csvwriter = csv.writer(csvfile)
-    #     csvwriter.writerows(data)
-
     eval_dict = {}
     eval_dict['name'] = vehicle.name
     eval_dict['success_rate'] = float(success_rate)
     eval_dict['avg_times'] = float(avg_times)
     eval_dict['std_dev'] = float(std_dev)
-    # eval_dict['no_obs_time'] = float(no_obs_time)
 
     print(f"Finished running test and saving file with results.")
 
@@ -444,5 +410,12 @@ def train_vehicle(env, vehicle, sim_conf, add_obs=False, show=False):
     print(f"Finished Training: {vehicle.name} in {train_time} seconds")
 
     return train_time 
+
+
+def save_conf_dict(dictionary):
+    name = dictionary["name"]
+    path = dictionary["vehicle_path"] + name + f"/{name}_record.yaml"
+    with open(path, 'w') as file:
+        yaml.dump(dictionary, file)
 
 

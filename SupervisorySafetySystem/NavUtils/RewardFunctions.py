@@ -10,28 +10,6 @@ class DistReward:
 
         return reward
 
-class DistRewardSquare:
-    def __init__(self):
-        self.name = f"DistSquare"
-    # @staticmethod
-    def __call__(self, state, s_prime):        
-        distance = s_prime['target'][1] - state['target'][1]
-        reward = (1+distance)**2 - 1
-        reward += s_prime['reward']
-
-        return reward
-
-class DistRewardSqrt:
-    def __init__(self):
-        self.name = f"DistSqrt"
-    # @staticmethod
-    def __call__(self, state, s_prime):        
-        distance = s_prime['target'][1] - state['target'][1]
-        reward = (max(distance, 0))**0.5
-        reward += s_prime['reward']
-
-        return reward
-
 class CthReward:
     def __init__(self, b_ct, b_h):
         self.b_ct = b_ct 

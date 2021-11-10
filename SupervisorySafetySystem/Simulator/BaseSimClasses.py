@@ -306,7 +306,7 @@ class BaseSim:
         observation = {}
         observation['state'] = car_obs
         observation['scan'] = scan 
-        # observation['full_scan'] = self.scan_sim.scan(pose, 1000)
+        observation['full_scan'] = self.scan_sim.scan(pose, 1000)
         observation['target'] = target
         observation['reward'] = self.reward
 

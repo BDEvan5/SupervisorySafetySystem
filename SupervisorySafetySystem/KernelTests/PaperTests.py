@@ -50,6 +50,13 @@ def test_baseline(agent_name):
 
     eval_vehicle(env, planner, sim_conf, True)
 
+def test_FGM():
+    env = TrackSim(sim_conf)
+    planner = ForestFGM()
+    # planner = Oracle(sim_conf)
+
+    eval_vehicle(env, planner, sim_conf, True)
+
 def train_kenel(agent_name):
     env = TrackSim(sim_conf)
     planner = EndVehicleTrain(agent_name, sim_conf)
@@ -118,7 +125,7 @@ def full_comparison(baseline_name, kernel_name):
 if __name__ == "__main__":
     # train_baseline(baseline_name)
     # test_baseline(baseline_name)
-
+    test_FGM()
 
     # train_kenel(kernel_name)
     # test_kernel_sss(kernel_name)
@@ -126,7 +133,7 @@ if __name__ == "__main__":
     # test_kernel_pure(kernel_name)
 
     # baseline_vs_kernel(baseline_name, kernel_name)
-    full_comparison(baseline_name, kernel_name)
+    # full_comparison(baseline_name, kernel_name)
 
 
 
