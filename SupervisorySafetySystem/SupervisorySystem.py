@@ -2,7 +2,7 @@
 import numpy as np
 from numba import njit
 from matplotlib import pyplot as plt
-import yaml
+import yaml, csv
 from SupervisorySafetySystem.Simulator.Dynamics import update_complex_state, update_std_state
 
 
@@ -32,6 +32,28 @@ class SafetyHistory:
         self.planned_actions = []
         self.safe_actions = []
 
+    def save_safe_history(self, path, name):
+        plt.figure(5)
+        plt.clf()
+        plt.title(f"Safe History: {name}")
+        plt.plot(self.planned_actions, color='blue')
+        plt.plot(self.safe_actions, color='red')
+        plt.legend(['Planned Actions', 'Safe Actions'])
+        plt.ylim([-0.5, 0.5])
+        plt.savefig(f"{path}/{name}_actions.png")
+
+        data = []
+        for i in range(len(self.planned_actions)):
+            data.append([i, self.planned_actions[i], self.safe_actions[i]])
+        full_name = path + f'/{name}_training_data.csv'
+        with open(full_name, 'w') as csvfile:
+            csvwriter = csv.writer(csvfile)
+            csvwriter.writerows(data)
+
+
+        self.planned_actions = []
+        self.safe_actions = []
+
 
 class Supervisor:
     def __init__(self, planner, kernel, conf):
@@ -56,6 +78,7 @@ class Supervisor:
         except: pass
         self.plan_act = self.plan
         self.name = planner.name
+
 
     def plan(self, obs):
         init_action = self.planner.plan_act(obs)
@@ -94,10 +117,29 @@ class LearningSupervisor(Supervisor):
         Supervisor.__init__(self, planner, kernel, conf)
         self.intervention_mag = 0
         self.calculate_reward = None # to be replaced by a function
+        self.ep_interventions = 0
+        self.intervention_list = []
 
     def done_entry(self, s_prime):
         s_prime['reward'] = self.calculate_reward(self.intervention_mag)
         self.planner.done_entry(s_prime)
+        self.intervention_list.append(self.ep_interventions)
+        self.ep_interventions = 0
+
+    def save_intervention_list(self):
+        full_name = self.planner.path + f'/{self.planner.name}_intervention_list.csv'
+        data = []
+        for i in range(len(self.intervention_list)):
+            data.append([i, self.intervention_list[i]])
+        with open(full_name, 'w') as csvfile:
+            csvwriter = csv.writer(csvfile)
+            csvwriter.writerows(data)
+
+        plt.figure(6)
+        plt.clf()
+        plt.plot(self.intervention_list)
+        plt.savefig(f"{self.planner.path}/{self.planner.name}_interventions.png")
+        plt.savefig(f"{self.planner.path}/{self.planner.name}_interventions.svg")
 
     def plan(self, obs):
         obs['reward'] = self.calculate_reward(self.intervention_mag)
@@ -110,6 +152,7 @@ class LearningSupervisor(Supervisor):
             self.safe_history.add_locations(init_action[0], init_action[0])
             return init_action
 
+        self.ep_interventions += 1
         self.intervene = True
 
         dw = self.generate_dw()
@@ -261,7 +304,7 @@ class TrackKernel(BaseKernel):
         super().__init__(sim_conf, plotting)
         kernel_name = f"{sim_conf.kernel_path}TrackKernel_{sim_conf.track_kernel_path}_{sim_conf.map_name}.npy"
         self.clean_kernel = np.load(kernel_name)
-        self.kernel = None
+        self.kernel = self.clean_kernel.copy()
         self.phi_range = sim_conf.phi_range
 
         self.obs_kernel = np.load(f"{sim_conf.kernel_path}ObsKernelTrack_{sim_conf.track_kernel_path}.npy")

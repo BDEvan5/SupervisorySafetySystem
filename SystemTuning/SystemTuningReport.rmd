@@ -7,24 +7,76 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+
+test_data = read.csv("DataTable.csv")
+# knitr::opts_chunk$set(include = FALSE)
+knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(warning = FALSE)
+
+library(reshape2)
+library(ggplot2)
+library(dplyr)
+
+
 ```
 
-## R Markdown
+# Introduction
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+We need to tune the supervisory safety system.
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+# Reward Functions
 
-```{r cars}
-summary(cars)
+We evaluate different reward functions for pure racing speed.
+
+## Steering
+
+```{r}
+test_data %>%
+  filter(reward=='Steer')%>%
+  select(avg_times, success_rate, test_number, r1) %>%
+  ggplot(aes(x=r1, y=(avg_times)))+
+  geom_point()+
+  ylim(50, 180)
 ```
 
-## Including Plots
 
-You can also embed plots, for example:
+## CTH
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+The cross-track signals are measured.
+
+```{r}
+test_data %>%
+  filter(reward=="CthCenter"|reward=='CthRef')%>%
+  select(avg_times, success_rate, test_number, r1, reward) %>%
+  ggplot(aes(x=r1, y=(avg_times), color=reward, size=success_rate))+
+  geom_point()
+#  ylim(50, 180)
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+## Reward Comparision
+
+```{r}
+test_data %>%
+  filter(EvalName=="reward_1"|EvalName=="reward")%>%
+  select(avg_times, success_rate, test_number, reward) %>%
+  ggplot(aes(x=reward, y=(avg_times)))+
+  geom_point()
+ # ylim(380, 720)
+```
+
+
+
+# Learning Reformulation
+
+Due to the addition of the supervisor, we need to reformulate the learning to manage the lack of terminal rewards.
+
+```{r}
+test_data %>%
+  filter(EvalName=="k_learn1")%>%
+  select(avg_times, success_rate, test_number, kernel_reward) %>%
+  ggplot(aes(x=kernel_reward, y=(avg_times)))+
+  geom_point()
+ # ylim(380, 720)
+```
+

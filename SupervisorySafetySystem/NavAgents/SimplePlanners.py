@@ -7,29 +7,48 @@ from SupervisorySafetySystem import LibFunctions as lib
 from SupervisorySafetySystem.NavAgents.TrackPP import PurePursuit as TrackPP
 
 from matplotlib import pyplot as plt
+import os, shutil
 
 class RandomPlanner:
-    def __init__(self):
+    def __init__(self, name="RandoPlanner"):
         self.d_max = 0.4 # radians  
         self.v = 2        
-        self.name = "RandoPlanner"
+        self.name = name
+        
+        path = os.getcwd() + "/EvalVehicles/" + self.name 
+        if os.path.exists(path):
+            try:
+                os.rmdir(path)
+            except:
+                shutil.rmtree(path)
+        os.mkdir(path)
+        self.path = path
+        np.random.seed(1)
+
 
     def plan_act(self, obs):
-        np.random.seed()
         steering = np.random.normal(0, 0.1)
         steering = np.clip(steering, -self.d_max, self.d_max)
         return np.array([steering, self.v])
 
-
-class StraightPlanner:
-    def __init__(self):
-        self.d_max = 0.4 # radians  
+class ConstantPlanner:
+    def __init__(self, name="StraightPlanner", value=0):
+        self.steering_value = value
         self.v = 2        
-        self.name = "StraightPlanner"
+        self.name = name
+
+        path = os.getcwd() + "/EvalVehicles/" + self.name 
+        if os.path.exists(path):
+            try:
+                os.rmdir(path)
+            except:
+                shutil.rmtree(path)
+        os.mkdir(path)
+        self.path = path
+
 
     def plan_act(self, obs):
-        steering = 0
-        return np.array([steering, self.v])
+        return np.array([self.steering_value, self.v])
 
 
 

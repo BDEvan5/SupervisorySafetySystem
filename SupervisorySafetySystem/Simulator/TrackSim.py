@@ -166,7 +166,6 @@ class TrackMap:
         obs_pts2[:, 0] += np.ones_like(obs_pts2[:, 0]) * self.obs_size
         self.obs_pts = np.hstack((obs_locations, obs_pts2))
         
-
     def set_dt(self):
         dt = ndimage.distance_transform_edt(self.map_img - self.obs_img) 
         self.dt_img = np.array(dt *self.resolution)
@@ -223,13 +222,35 @@ class TrackMap:
 
         plt.gca().set_aspect('equal', 'datalim')
 
-        if self.wpts is not None:
-            xs, ys = self.convert_positions(self.wpts)
-            plt.plot(xs, ys, '--')
+        # if self.wpts is not None:
+        #     xs, ys = self.convert_positions(self.wpts)
+        #     plt.plot(xs, ys, '--')
 
         plt.pause(0.0001)
         if wait:
             plt.show()
+    
+    # def render_trajectory_map(self, figure_n=4, wait=False):
+    #     f = plt.figure(figure_n)
+    #     plt.clf()
+
+    #     plt.xlim([0, self.map_width])
+    #     # plt.ylim([self.map_height, 0])
+
+    #     if self.obs_img is None:
+    #         plt.imshow(self.map_img, origin='lower')
+    #     else:
+    #         plt.imshow(self.obs_img + self.map_img, origin='lower')
+
+    #     plt.gca().set_aspect('equal', 'datalim')
+
+    #     if self.wpts is not None:
+    #         xs, ys = self.convert_positions(self.wpts)
+    #         plt.plot(xs, ys, '--')
+
+    #     plt.pause(0.0001)
+    #     if wait:
+    #         plt.show()
 
     def _load_csv_track(self):
         track = []
