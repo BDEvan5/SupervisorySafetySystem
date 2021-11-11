@@ -40,7 +40,8 @@ def tune_kernel_learn(k_learn_name, LearnReward, sss_reward_scale):
     config_dict['EvalName'] = test_name 
     config_dict['train_time'] = train_time
     config_dict['test_number'] = run_n
-    config_dict['reward'] = "Steer_05"
+    config_dict['reward'] = "Steer"
+    config_dict['r1'] = 0.05
     config_dict['kernel_reward'] = k_learn_name
     config_dict['sss_reward_scale'] = sss_reward_scale
     config_dict.update(eval_dict)
@@ -76,16 +77,16 @@ def magnitude_reward():
 
 def zero_reward():
     k_learn_name = f"Zero"
-    reward = MagnitudeReward(1)
+    reward = ZeroReward()
 
     tune_kernel_learn(k_learn_name, reward, 0)
 
 
 def constant_reward():
-    k_learn_name = f"Constant_1"
-    reward = MagnitudeReward(1)
+    k_learn_name = f"Constant_05"
+    reward = ConstantReward(0.5)
 
-    tune_kernel_learn(k_learn_name, reward, 1)
+    tune_kernel_learn(k_learn_name, reward, 0.5)
 
 
 

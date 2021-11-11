@@ -388,6 +388,7 @@ def train_kernel_vehicle(env, vehicle, sim_conf, add_obs=False, show=False):
         vehicle.planner.agent.train(2)
         
         if done:
+            
             vehicle.done_entry(s_prime)
             if show:
                 env.render(wait=False)
@@ -399,6 +400,7 @@ def train_kernel_vehicle(env, vehicle, sim_conf, add_obs=False, show=False):
     vehicle.planner.t_his.print_update(True)
     vehicle.planner.t_his.save_csv_data()
     vehicle.planner.agent.save(vehicle.planner.path)
+    vehicle.save_intervention_list()
 
     train_time = time.time() - start_time
     print(f"Finished Training: {vehicle.planner.name} in {train_time} seconds")

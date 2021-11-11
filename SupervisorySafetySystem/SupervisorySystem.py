@@ -79,6 +79,7 @@ class Supervisor:
         self.plan_act = self.plan
         self.name = planner.name
 
+
     def plan(self, obs):
         init_action = self.planner.plan_act(obs)
         state = np.array(obs['state'])
@@ -116,10 +117,29 @@ class LearningSupervisor(Supervisor):
         Supervisor.__init__(self, planner, kernel, conf)
         self.intervention_mag = 0
         self.calculate_reward = None # to be replaced by a function
+        self.ep_interventions = 0
+        self.intervention_list = []
 
     def done_entry(self, s_prime):
         s_prime['reward'] = self.calculate_reward(self.intervention_mag)
         self.planner.done_entry(s_prime)
+        self.intervention_list.append(self.ep_interventions)
+        self.ep_interventions = 0
+
+    def save_intervention_list(self):
+        full_name = self.planner.path + f'/{self.planner.name}_intervention_list.csv'
+        data = []
+        for i in range(len(self.intervention_list)):
+            data.append([i, self.intervention_list[i]])
+        with open(full_name, 'w') as csvfile:
+            csvwriter = csv.writer(csvfile)
+            csvwriter.writerows(data)
+
+        plt.figure(6)
+        plt.clf()
+        plt.plot(self.intervention_list)
+        plt.savefig(f"{self.planner.path}/{self.planner.name}_interventions.png")
+        plt.savefig(f"{self.planner.path}/{self.planner.name}_interventions.svg")
 
     def plan(self, obs):
         obs['reward'] = self.calculate_reward(self.intervention_mag)
@@ -132,6 +152,7 @@ class LearningSupervisor(Supervisor):
             self.safe_history.add_locations(init_action[0], init_action[0])
             return init_action
 
+        self.ep_interventions += 1
         self.intervene = True
 
         dw = self.generate_dw()

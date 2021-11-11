@@ -300,7 +300,7 @@ class BaseSim:
             plt.plot(xs, ys, 'r', linewidth=3)
             # plt.plot(xs, ys, '+', markersize=12)
         else:
-            N = len(xs)
+            N = len(safety_history.planned_actions)
             for i in range(N-1):
                 x_pts = [xs[i], xs[i+1]]
                 y_pts = [ys[i], ys[i+1]]
