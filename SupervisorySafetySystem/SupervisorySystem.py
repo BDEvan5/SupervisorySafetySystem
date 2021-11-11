@@ -2,7 +2,7 @@
 import numpy as np
 from numba import njit
 from matplotlib import pyplot as plt
-import yaml
+import yaml, csv
 from SupervisorySafetySystem.Simulator.Dynamics import update_complex_state, update_std_state
 
 
@@ -28,6 +28,28 @@ class SafetyHistory:
         plt.ylim([-0.5, 0.5])
         # plt.show()
         plt.pause(0.0001)
+
+        self.planned_actions = []
+        self.safe_actions = []
+
+    def save_safe_history(self, path, name):
+        plt.figure(5)
+        plt.clf()
+        plt.title(f"Safe History: {name}")
+        plt.plot(self.planned_actions, color='blue')
+        plt.plot(self.safe_actions, color='red')
+        plt.legend(['Planned Actions', 'Safe Actions'])
+        plt.ylim([-0.5, 0.5])
+        plt.savefig(f"{path}/{name}.png")
+
+        data = []
+        for i in range(len(self.planned_actions)):
+            data.append([i, self.planned_actions[i], self.safe_actions[i]])
+        full_name = path + f'/{name}_training_data.csv'
+        with open(full_name, 'w') as csvfile:
+            csvwriter = csv.writer(csvfile)
+            csvwriter.writerows(data)
+
 
         self.planned_actions = []
         self.safe_actions = []
@@ -261,7 +283,7 @@ class TrackKernel(BaseKernel):
         super().__init__(sim_conf, plotting)
         kernel_name = f"{sim_conf.kernel_path}TrackKernel_{sim_conf.track_kernel_path}_{sim_conf.map_name}.npy"
         self.clean_kernel = np.load(kernel_name)
-        self.kernel = None
+        self.kernel = self.clean_kernel.copy()
         self.phi_range = sim_conf.phi_range
 
         self.obs_kernel = np.load(f"{sim_conf.kernel_path}ObsKernelTrack_{sim_conf.track_kernel_path}.npy")

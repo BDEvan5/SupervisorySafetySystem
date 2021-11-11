@@ -2,7 +2,7 @@ from SupervisorySafetySystem.KernelTests.GeneralTestTrain import *
 
 from SupervisorySafetySystem.Simulator.TrackSim import TrackSim
 from SupervisorySafetySystem.SupervisorySystem import Supervisor, TrackKernel, LearningSupervisor
-from SupervisorySafetySystem.NavAgents.SimplePlanners import RandomPlanner, StraightPlanner
+from SupervisorySafetySystem.NavAgents.SimplePlanners import RandomPlanner, ConstantPlanner
 from SupervisorySafetySystem.NavAgents.EndAgent import EndVehicleTrain, EndVehicleTest
 from SupervisorySafetySystem.NavAgents.FollowTheGap import ForestFGM
 from SupervisorySafetySystem.NavAgents.Oracle import Oracle
@@ -11,20 +11,64 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 
-def rando_test():
+def rando_pictures():
     conf = load_conf("track_kernel")
-
-    # build_track_kernel()
-    planner = RandomPlanner()
-    # planner = StraightPlanner()
+    planner = RandomPlanner("RandoPictures")
 
     env = TrackSim(conf)
     kernel = TrackKernel(conf, False)
     safety_planner = Supervisor(planner, kernel, conf)
 
-    test_kernel_vehicle(env, safety_planner, True, 30, add_obs=False)
-    # test_kernel_vehicle(env, safety_planner, True, 100, add_obs=False)
-    # test_kernel_vehicle(env, safety_planner, False, 100, add_obs=False)
+    conf.test_n = 5
+    eval_dict = eval_kernel(env, safety_planner, conf, True)
+    
+    config_dict = vars(sim_conf)
+    config_dict['EvalName'] = "PaperTest" 
+    config_dict['test_number'] = 0
+    config_dict.update(eval_dict)
+
+    save_conf_dict(config_dict)
+
+
+def rando_results():
+    conf = load_conf("track_kernel")
+    planner = RandomPlanner("RandoResult")
+
+    env = TrackSim(conf)
+    kernel = TrackKernel(conf, False)
+    safety_planner = Supervisor(planner, kernel, conf)
+
+    eval_dict = eval_vehicle(env, safety_planner, conf, False)
+    
+    config_dict = vars(sim_conf)
+    config_dict['EvalName'] = "PaperTest" 
+    config_dict['test_number'] = 0
+    config_dict.update(eval_dict)
+
+    save_conf_dict(config_dict)
+
+
+
+def straight_test():
+    conf = load_conf("track_kernel")
+    # planner = ConstantPlanner("StraightPlanner", 0)
+    # planner = ConstantPlanner("MaxSteerPlanner", 0.4)
+    planner = ConstantPlanner("MinSteerPlanner", -0.4)
+
+    env = TrackSim(conf)
+    kernel = TrackKernel(conf, False)
+    safety_planner = Supervisor(planner, kernel, conf)
+
+    conf.test_n = 1
+    eval_dict = eval_kernel(env, safety_planner, conf, True)
+    
+    config_dict = vars(sim_conf)
+    config_dict['EvalName'] = "PaperTest" 
+    config_dict['test_number'] = 0
+    config_dict.update(eval_dict)
+
+    save_conf_dict(config_dict)
+
 
 
 test_n = 100
@@ -125,7 +169,7 @@ def full_comparison(baseline_name, kernel_name):
 if __name__ == "__main__":
     # train_baseline(baseline_name)
     # test_baseline(baseline_name)
-    test_FGM()
+    # test_FGM()
 
     # train_kenel(kernel_name)
     # test_kernel_sss(kernel_name)
@@ -137,7 +181,6 @@ if __name__ == "__main__":
 
 
 
-    # rando_test()
-    # pp_kernel_test()
-    # straight_test()
-
+    # rando_results()
+    # rando_pictures()
+    straight_test()

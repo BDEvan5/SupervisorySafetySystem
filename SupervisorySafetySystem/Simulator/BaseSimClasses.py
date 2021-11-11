@@ -283,6 +283,26 @@ class BaseSim:
         if wait:
             plt.show()
 
+    def render_trajectory(self, path, save_name="VehicleName"):
+        """
+        Renders the map using the plt library
+
+        Args:
+            wait: plt.show() should be called or not
+        """
+        self.env_map.render_map(4)
+        # plt.show()
+        fig = plt.figure(4)
+        plt.title(save_name)
+
+        xs, ys = self.env_map.convert_positions(self.history.positions)
+        plt.plot(xs, ys, 'r', linewidth=3)
+        # plt.plot(xs, ys, '+', markersize=12)
+
+        plt.savefig(f"{path}/{save_name}.svg")
+        plt.savefig(f"{path}/{save_name}.png") # for easy viewing
+
+
     def get_target_obs(self):
         target = self.env_map.end_goal
         pos = self.state[0:2]
