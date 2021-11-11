@@ -40,7 +40,7 @@ class SafetyHistory:
         plt.plot(self.safe_actions, color='red')
         plt.legend(['Planned Actions', 'Safe Actions'])
         plt.ylim([-0.5, 0.5])
-        plt.savefig(f"{path}/{name}.png")
+        plt.savefig(f"{path}/{name}_actions.png")
 
         data = []
         for i in range(len(self.planned_actions)):

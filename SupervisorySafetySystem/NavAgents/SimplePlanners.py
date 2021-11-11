@@ -23,10 +23,10 @@ class RandomPlanner:
                 shutil.rmtree(path)
         os.mkdir(path)
         self.path = path
+        np.random.seed(1)
 
 
     def plan_act(self, obs):
-        np.random.seed()
         steering = np.random.normal(0, 0.1)
         steering = np.clip(steering, -self.d_max, self.d_max)
         return np.array([steering, self.v])

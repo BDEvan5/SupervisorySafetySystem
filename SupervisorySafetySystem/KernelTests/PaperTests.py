@@ -182,5 +182,5 @@ if __name__ == "__main__":
 
 
     # rando_results()
-    # rando_pictures()
-    straight_test()
+    rando_pictures()
+    # straight_test()

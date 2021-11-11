@@ -283,7 +283,7 @@ class BaseSim:
         if wait:
             plt.show()
 
-    def render_trajectory(self, path, save_name="VehicleName"):
+    def render_trajectory(self, path, save_name="VehicleName", safety_history=None):
         """
         Renders the map using the plt library
 
@@ -296,11 +296,22 @@ class BaseSim:
         plt.title(save_name)
 
         xs, ys = self.env_map.convert_positions(self.history.positions)
-        plt.plot(xs, ys, 'r', linewidth=3)
-        # plt.plot(xs, ys, '+', markersize=12)
+        if safety_history is None:
+            plt.plot(xs, ys, 'r', linewidth=3)
+            # plt.plot(xs, ys, '+', markersize=12)
+        else:
+            N = len(xs)
+            for i in range(N-1):
+                x_pts = [xs[i], xs[i+1]]
+                y_pts = [ys[i], ys[i+1]]
+                if safety_history.planned_actions[i] == safety_history.safe_actions[i]:
+                    plt.plot(x_pts, y_pts, 'r', linewidth=3)
+                else:
+                    plt.plot(x_pts, y_pts, 'b', linewidth=3)
+                
 
-        plt.savefig(f"{path}/{save_name}.svg")
-        plt.savefig(f"{path}/{save_name}.png") # for easy viewing
+        plt.savefig(f"{path}/{save_name}_track.svg")
+        plt.savefig(f"{path}/{save_name}_track.png") # for easy viewing
 
 
     def get_target_obs(self):

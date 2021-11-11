@@ -117,7 +117,7 @@ def eval_kernel(env, vehicle, sim_conf, show=False):
 
         print(f"({i}) Complete -> time: {env.steps}")
         lap_times.append(env.steps)
-        env.render_trajectory(vehicle.planner.path, f"Traj_{i}")
+        env.render_trajectory(vehicle.planner.path, f"Traj_{i}", vehicle.safe_history)
         vehicle.safe_history.save_safe_history(vehicle.planner.path, f"Traj_{i}")
         state = env.reset(False)
         
