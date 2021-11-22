@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from numba import njit
 import yaml
 from PIL import Image
-from SupervisorySafetySystem.Simulator.Dynamics import update_std_state, update_complex_state
+from SupervisorySafetySystem.Simulator.Dynamics import update_std_state, update_complex_state, update_complex_state_const
 from SupervisorySafetySystem.KernelTests.GeneralTestTrain import load_conf
 
 class BaseKernel:
@@ -11,7 +11,7 @@ class BaseKernel:
         self.velocity = 2 #TODO: make this a config param
         self.track_img = track_img
         self.n_dx = int(sim_conf.n_dx)
-        self.t_step = sim_conf.time_step
+        self.t_step = sim_conf.kernel_time_step
         self.n_phi = sim_conf.n_phi
         self.phi_range = sim_conf.phi_range
         self.half_block = 1 / (2*self.n_dx)
@@ -116,10 +116,7 @@ class ViabilityGenerator(BaseKernel):
 # @njit(cache=True)
 def build_viability_dynamics(phis, qs, velocity, time, conf):
     resolution = conf.n_dx
-    n_pts = conf.dynamics_pts
     phi_range = conf.phi_range
-    block_size = 1 / (resolution)
-    phi_size = phi_range / (conf.n_phi -1)
 
     dynamics = np.zeros((len(phis), len(qs), 3), dtype=np.int)
     for i, p in enumerate(phis):
@@ -127,16 +124,14 @@ def build_viability_dynamics(phis, qs, velocity, time, conf):
                 state = np.array([0, 0, p, velocity, 0])
                 action = np.array([m, velocity])
                 new_state = update_complex_state(state, action, time)
-                # new_state = update_std_state(state, action, t_step)
-                # std_new_state = update_std_state(state, action, t_step)
-                # ds = new_state - std_new_state
+                # new_state = update_complex_state_const(state, action, time)
                 dx, dy, phi = new_state[0], new_state[1], new_state[2]
 
                 if phi > np.pi:
                     phi = phi - 2*np.pi
                 elif phi < -np.pi:
                     phi = phi + 2*np.pi
-                new_k = int(round((phi + phi_range/2) / phi_range * (len(phis)-1))) # TODO: check that i gets around the circle.
+                new_k = int(round((phi + phi_range/2) / phi_range * (len(phis)-1)))
                 dynamics[i, j, 2] = min(max(0, new_k), len(phis)-1)
                 
                 dynamics[i, j, 0] = int(round(dx * resolution))                  

@@ -18,8 +18,6 @@ update_steps: 1
 max_steps: 5000
 end_distance: 1.5
 
-dis_scale: 1 # I don't know if this is the right place for this???
-
 # map info
 # map_name: "torino"
 # map_name: "berlin"
@@ -42,6 +40,8 @@ phi_range: 6.28
 dynamics_pts: 5
 discrim_block: 1 
 discrim_phi: 0.1
+kernel_time_step: 0.1
+lookahead_time_step: 0.2
 
 # PP parametes
 v_gain: 0.5
