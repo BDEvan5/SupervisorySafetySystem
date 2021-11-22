@@ -30,7 +30,7 @@ class BaseKernel:
         
         self.build_qs()
         self.o_map = np.copy(self.track_img)    
-        self.fig, self.axs = plt.subplots(2, 2)
+        # self.fig, self.axs = plt.subplots(2, 2)
 
 
     # config functions
@@ -216,14 +216,14 @@ class DiscrimGenerator(BaseKernel):
                 break
             self.previous_kernel = np.copy(self.kernel)
             self.kernel = discrim_loop(self.kernel, self.n_modes, self.dynamics)
-            self.view_kernel(0, False)
+            self.view_kernel(0, False, z)
 
-    def view_kernel(self, phi, show=True):
+    def view_kernel(self, phi, show=True, n=0):
         phi_ind = np.argmin(np.abs(self.phis - phi))
         plt.figure(1)
         plt.title(f"Kernel phi: {phi} (ind: {phi_ind})")
         # mode = int((self.n_modes-1)/2)
-        img = self.kernel[:, :, phi_ind].T 
+        img = self.kernel[:, :, phi_ind].T + self.o_map.T
         plt.imshow(img, origin='lower')
 
         arrow_len = 0.15
@@ -236,6 +236,22 @@ class DiscrimGenerator(BaseKernel):
             plt.arrow(i, j, di, dj, color='b', width=0.001)
 
         plt.pause(0.0001)
+
+        if show:
+            plt.show()
+
+    def make_kernel_img(self, phi, show=True, n=0):
+        phi_ind = np.argmin(np.abs(self.phis - phi))
+        plt.figure(1)
+        img = self.kernel[:, :, phi_ind].T + self.o_map.T
+        plt.imshow(img, origin='lower')
+
+        plt.pause(0.0001)
+
+        plt.savefig(f"SupervisorySafetySystem/Kernels/Obs_build_{n}.svg")
+        plt.xticks([])
+        plt.yticks([])
+        
         if show:
             plt.show()
 
@@ -433,12 +449,12 @@ def construct_obs_track(conf):
 
 
 if __name__ == "__main__":
-    conf = load_conf("track_kernel")
+    # conf = load_conf("track_kernel")
     # build_track_kernel(conf)
-    construct_obs_track(conf)
+    # construct_obs_track(conf)
 
-    # conf = load_conf("forest_kernel")
-    # construct_obs_kernel(conf)
+    conf = load_conf("forest_kernel")
+    construct_obs_kernel(conf)
     # construct_kernel_sides(conf)
 
 

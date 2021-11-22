@@ -45,6 +45,8 @@ phi_range: 3.141
 dynamics_pts: 5
 discrim_block: 1 
 discrim_phi: 0.1
+kernel_time_step: 0.1
+lookahead_time_step: 0.2
 
 # PP parametes
 v_gain: 0.5
