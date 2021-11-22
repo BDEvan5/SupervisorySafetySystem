@@ -11,18 +11,10 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 
-def generate_kernels():
+def generate_single_kernel():
     conf = load_conf("track_kernel")
 
-    # for value in [50, 80, 120, 160]:
-    #     conf.n_dx = value
-    #     generate_kernel(conf, value)
-
-    # value = 200
-    # conf.n_dx = value
-
-    value = 0.1
-    conf.kernel_time_step
+    value = 0
 
     generate_kernel(conf, value)
 
@@ -34,15 +26,20 @@ def generate_kernel(conf, val):
     kernel.save_kernel(f"TestKernel_{conf.track_kernel_path}_{val}_{conf.map_name}")
     time_taken = time.time() - start_time
     print(f"Time taken: {time_taken}")
-    kernel.view_build(False)
+    # kernel.view_build(False)
+    kernel.make_picture(True)
 
     return time_taken
     
-def rand_kernel_safety():
+def rand_kernel_safety_discretization():
     conf = load_conf("track_kernel")
     env = TrackSim(conf)
 
-    for value in [50, 80, 100, 150, 200]:
+    # discretes = [60, 70, 80, 90, 100, 120]
+    # discretes = [70, 90]
+    discretes = [60, 70, 85, 90]
+    success_rates = []
+    for value in discretes:
         conf.n_dx = value
         kernel_time = generate_kernel(conf, value)
 
@@ -53,6 +50,7 @@ def rand_kernel_safety():
         safety_planner = Supervisor(planner, kernel, conf)
 
         eval_dict = eval_vehicle(env, safety_planner, conf, False)
+        success_rates.append(eval_dict['success_rate'])
         
         config_dict = vars(conf)
         config_dict['EvalName'] = "PaperTest" 
@@ -62,15 +60,20 @@ def rand_kernel_safety():
 
         save_conf_dict(config_dict)
 
+        print(f"Discretizations: {discretes}")
+        print(f"Success rates: {success_rates}")
+
+
 def run_single_timestep():
     conf = load_conf("track_kernel")
     env = TrackSim(conf)
 
-    value = 0.1
+    value = 0.15
     conf.n_dx = 80
 
-    conf.time_step = value
+    # conf.time_step = value
     conf.kernel_time_step = value
+    conf.lookahead_time_step = value * 2
     kernel_time = generate_kernel(conf, value)
 
     kernel_name = f"TestKernel_{conf.track_kernel_path}_{value}_{conf.map_name}.npy"    
@@ -90,12 +93,20 @@ def run_single_timestep():
     save_conf_dict(config_dict)
 
 
+
+
+
 def rand_kernel_safety_timestep():
     conf = load_conf("track_kernel")
     env = TrackSim(conf)
 
-    for value in [0.09, 0.1, 0.11]:
+    times = [0.09, 0.1, 0.12, 0.15]
+    success_rates = []
+
+    for value in times:
         conf.kernel_time_step = value
+        conf.kernel_time_step = value
+        conf.lookahead_time_step = value * 2    
         kernel_time = generate_kernel(conf, value)
 
         kernel_name = f"TestKernel_{conf.track_kernel_path}_{value}_{conf.map_name}.npy"    
@@ -105,6 +116,7 @@ def rand_kernel_safety_timestep():
         safety_planner = Supervisor(planner, kernel, conf)
 
         eval_dict = eval_vehicle(env, safety_planner, conf, False)
+        success_rates.append(eval_dict['success_rate'])
         
         config_dict = vars(conf)
         config_dict['EvalName'] = "PaperTest" 
@@ -114,9 +126,14 @@ def rand_kernel_safety_timestep():
 
         save_conf_dict(config_dict)
 
+
+        print(f"Times: {times}")
+        print(f"Success rates: {success_rates}")
+
 if __name__ == "__main__":
-    # generate_kernels()
+    generate_single_kernel()
+    # rand_kernel_safety_discretization()
     # rand_kernel_safety()
     # rand_kernel_safety_timestep()
-    run_single_timestep()
+    # run_single_timestep()
 

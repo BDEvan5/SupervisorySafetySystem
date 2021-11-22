@@ -101,6 +101,37 @@ class ViabilityGenerator(BaseKernel):
 
         if show:
             plt.show()
+    
+    def make_picture(self, show=True):
+        self.axs[0, 0].cla()
+        self.axs[1, 0].cla()
+        self.axs[0, 1].cla()
+        self.axs[1, 1].cla()
+
+        half_phi = int(len(self.phis)/2)
+        quarter_phi = int(len(self.phis)/4)
+
+
+        self.axs[0, 0].set(xticks=[])
+        self.axs[0, 0].set(yticks=[])
+        self.axs[1, 0].set(xticks=[])
+        self.axs[1, 0].set(yticks=[])
+        self.axs[0, 1].set(xticks=[])
+        self.axs[0, 1].set(yticks=[])
+        self.axs[1, 1].set(xticks=[])
+        self.axs[1, 1].set(yticks=[])
+
+        self.axs[0, 0].imshow(self.kernel[:, :, 0].T + self.o_map.T, origin='lower')
+        self.axs[1, 0].imshow(self.kernel[:, :, half_phi].T + self.o_map.T, origin='lower')
+        self.axs[0, 1].imshow(self.kernel[:, :, -quarter_phi].T + self.o_map.T, origin='lower')
+        self.axs[1, 1].imshow(self.kernel[:, :, quarter_phi].T + self.o_map.T, origin='lower')
+        
+        plt.pause(0.0001)
+        plt.pause(1)
+        plt.savefig("SupervisorySafetySystem/Kernels/Kernel_build.svg")
+
+        if show:
+            plt.show()
 
     def calculate_kernel(self, n_loops=20):
         for z in range(n_loops):
