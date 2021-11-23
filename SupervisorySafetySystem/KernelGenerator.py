@@ -451,7 +451,7 @@ def construct_obs_track(conf):
 
 if __name__ == "__main__":
     conf = load_conf("track_kernel")
-    conf.map_name = "race_track"
+    # conf.map_name = "race_track"
     build_track_kernel(conf)
     # construct_obs_track(conf)
 
