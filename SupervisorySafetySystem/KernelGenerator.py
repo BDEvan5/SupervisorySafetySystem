@@ -30,7 +30,7 @@ class BaseKernel:
         
         self.build_qs()
         self.o_map = np.copy(self.track_img)    
-        # self.fig, self.axs = plt.subplots(2, 2)
+        self.fig, self.axs = plt.subplots(2, 2)
 
 
     # config functions
@@ -142,7 +142,7 @@ class ViabilityGenerator(BaseKernel):
             self.previous_kernel = np.copy(self.kernel)
             self.kernel = viability_loop(self.kernel, self.n_modes, self.dynamics)
 
-            # self.view_build(False)
+            self.view_build(False)
 
 # @njit(cache=True)
 def build_viability_dynamics(phis, qs, velocity, time, conf):
@@ -413,6 +413,7 @@ def build_track_kernel(conf):
     kernel.save_kernel(f"TrackKernel_{conf.track_kernel_path}_{conf.map_name}")
     kernel.view_build(True)
 
+
 def construct_obs_kernel(conf):
     img_size = int(conf.obs_img_size * conf.n_dx)
     obs_size = int(conf.obs_size * conf.n_dx)
@@ -449,12 +450,13 @@ def construct_obs_track(conf):
 
 
 if __name__ == "__main__":
-    # conf = load_conf("track_kernel")
-    # build_track_kernel(conf)
+    conf = load_conf("track_kernel")
+    conf.map_name = "race_track"
+    build_track_kernel(conf)
     # construct_obs_track(conf)
 
-    conf = load_conf("forest_kernel")
-    construct_obs_kernel(conf)
+    # conf = load_conf("forest_kernel")
+    # construct_obs_kernel(conf)
     # construct_kernel_sides(conf)
 
 
