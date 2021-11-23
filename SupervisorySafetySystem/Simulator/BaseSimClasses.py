@@ -175,12 +175,12 @@ class BaseSim:
         self.record_history(action)
 
         obs = self.get_observation()
-        angle_diff = lib.sub_angles_complex(obs['target'][2], self.state[2]) 
-        if abs(angle_diff) > 0.95*np.pi:
-            self.reward = 0
-            self.done = True 
-            self.done_reason = f"Wrong direction: {self.state[2]},track direction: {obs['target'][2]} -> diff: {angle_diff}"
-            print(f"{self.done_reason}")
+        # angle_diff = lib.sub_angles_complex(obs['target'][2], self.state[2]) 
+        # if abs(angle_diff) > 0.95*np.pi:
+        #     self.reward = 0
+        #     self.done = True 
+        #     self.done_reason = f"Wrong direction: {self.state[2]},track direction: {obs['target'][2]} -> diff: {angle_diff}"
+        #     print(f"{self.done_reason}")
         done = self.done
         reward = self.reward
 

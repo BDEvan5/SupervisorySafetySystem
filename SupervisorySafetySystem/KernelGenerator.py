@@ -142,7 +142,7 @@ class ViabilityGenerator(BaseKernel):
             self.previous_kernel = np.copy(self.kernel)
             self.kernel = viability_loop(self.kernel, self.n_modes, self.dynamics)
 
-            self.view_build(False)
+            # self.view_build(False)
 
 # @njit(cache=True)
 def build_viability_dynamics(phis, qs, velocity, time, conf):
@@ -409,7 +409,7 @@ def build_track_kernel(conf):
     # plt.imshow(img)
     # plt.pause(0.0001)
     kernel = ViabilityGenerator(img, conf)
-    kernel.calculate_kernel(50)
+    kernel.calculate_kernel(100)
     kernel.save_kernel(f"TrackKernel_{conf.track_kernel_path}_{conf.map_name}")
     kernel.view_build(True)
 

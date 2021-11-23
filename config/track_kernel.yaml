@@ -16,14 +16,14 @@ max_d_dot: 3.2
 time_step: 0.1
 update_steps: 1
 max_steps: 5000
-# end_distance: 1.5
-end_distance: 3
+end_distance: 1.5
+# end_distance: 3
 
 # map info
-# map_name: "torino"
+map_name: "torino"
 # map_name: "berlin"
 # map_name: "porto"
-map_name: "race_track"
+# map_name: "race_track"
 # map_name: "berlin"
 n_dx: 80
 
