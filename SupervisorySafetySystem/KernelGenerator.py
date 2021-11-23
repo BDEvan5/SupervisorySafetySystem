@@ -28,6 +28,8 @@ class BaseKernel:
         self.phis = np.linspace(-self.phi_range/2, self.phi_range/2, self.n_phi)
         
         self.qs = np.linspace(-self.max_steer, self.max_steer, self.n_modes)
+        # self.mode_window = int(round(self.t_step * sim_conf.max_d_dot / (self.max_steer*2/(self.n_modes-1)))) # should probably be floor not round
+        self.mode_window = 5
 
         self.o_map = np.copy(self.track_img)    
         self.fig, self.axs = plt.subplots(2, 2)
@@ -135,7 +137,7 @@ class ViabilityGenerator(BaseKernel):
                 print("Kernel has not changed: convergence has been reached")
                 break
             self.previous_kernel = np.copy(self.kernel)
-            self.kernel = viability_loop(self.kernel, self.dynamics)
+            self.kernel = viability_loop(self.kernel, self.dynamics, self.mode_window)
 
             self.view_build(False)
 
@@ -166,7 +168,7 @@ def build_viability_dynamics(phis, qs, velocity, time, conf):
     return dynamics
 
 @njit(cache=True)
-def viability_loop(kernel, dynamics):
+def viability_loop(kernel, dynamics, mode_window):
     previous_kernel = np.copy(kernel)
     l_xs, l_ys, l_phis, n_modes = kernel.shape
     for i in range(l_xs):
@@ -175,14 +177,16 @@ def viability_loop(kernel, dynamics):
                 for m in range(n_modes):
                     if kernel[i, j, k, m] == 1:
                         continue 
-                    kernel[i, j, k, m] = check_viable_state(i, j, k, m, dynamics, previous_kernel)
+                    kernel[i, j, k, m] = check_viable_state(i, j, k, m, dynamics, previous_kernel, mode_window)
 
     return kernel
 
 @njit(cache=True)
-def check_viable_state(i, j, k, m, dynamics, previous_kernel):
+def check_viable_state(i, j, k, m, dynamics, previous_kernel, mode_window):
     l_xs, l_ys, l_phis, n_modes = previous_kernel.shape
-    for l in range(n_modes): #TODO: change this to only be permitted search modes.
+    lower_ind = max(0, m-mode_window)
+    upper_ind = min(n_modes, m+mode_window)
+    for l in range(lower_ind, upper_ind+1):
         di, dj, new_k = dynamics[k, l, :]
         new_i = min(max(0, i + di), l_xs-1)  
         new_j = min(max(0, j + dj), l_ys-1)

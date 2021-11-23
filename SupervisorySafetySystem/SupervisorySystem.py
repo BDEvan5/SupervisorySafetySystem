@@ -230,12 +230,12 @@ class BaseKernel:
         plt.pause(0.0001)
 
     def check_state(self, state=[0, 0, 0]):
-        i, j, k = self.get_indices(state)
+        i, j, k, m = self.get_indices(state)
 
         # print(f"Expected Location: {state} -> Inds: {i}, {j}, {k} -> Value: {self.kernel[i, j, k]}")
         if self.plotting:
             self.plot_kernel_point(i, j, k)
-        if self.kernel[i, j, k] != 0:
+        if self.kernel[i, j, k, m] != 0:
             return False # unsfae state
         return True # safe state
 
@@ -309,6 +309,8 @@ class TrackKernel(BaseKernel):
         self.clean_kernel = np.load(kernel_name)
         self.kernel = self.clean_kernel.copy()
         self.phi_range = sim_conf.phi_range
+        self.n_modes = sim_conf.n_modes
+        self.max_steer = sim_conf.max_steer
 
         self.obs_kernel = np.load(f"{sim_conf.kernel_path}ObsKernelTrack_{sim_conf.track_kernel_path}.npy")
         img_size = int(sim_conf.obs_img_size * sim_conf.n_dx)
@@ -351,11 +353,9 @@ class TrackKernel(BaseKernel):
             phi = phi + phi_range
         theta_ind = int(round((phi + phi_range/2) / phi_range * (self.kernel.shape[2]-1)))
 
-        # if theta_ind > 40 or theta_ind < -40:
-        #     print(f"Theta ind: {theta_ind}")
+        mode_ind = min(max(0, int(round((state[4]+self.max_steer)*self.n_modes ))), self.kernel.shape[3]-1)
 
-
-        return x_ind, y_ind, theta_ind
+        return x_ind, y_ind, theta_ind, mode_ind
 
 
 @njit(cache=True)
