@@ -216,7 +216,8 @@ class DiscrimGenerator(BaseKernel):
                 break
             self.previous_kernel = np.copy(self.kernel)
             self.kernel = discrim_loop(self.kernel, self.n_modes, self.dynamics)
-            self.view_kernel(0, False, z)
+            self.view_build(False)
+            # self.view_kernel(0, False, z)
 
     def view_kernel(self, phi, show=True, n=0):
         phi_ind = np.argmin(np.abs(self.phis - phi))
@@ -285,7 +286,6 @@ class DiscrimGenerator(BaseKernel):
 # @njit(cache=True)
 def build_discrim_dynamics(phis, qs, velocity, time, conf):
     resolution = conf.n_dx
-    n_pts = conf.dynamics_pts
     phi_range = conf.phi_range
     block_size = 1 / (resolution)
     h = conf.discrim_block * block_size 
@@ -297,12 +297,13 @@ def build_discrim_dynamics(phis, qs, velocity, time, conf):
         for j, m in enumerate(qs):
                 state = np.array([0, 0, p, velocity, 0])
                 action = np.array([m, velocity])
-                # new_state = update_std_state(state, action, t_step)
                 new_state = update_complex_state(state, action, time)
-                # std_new_state = update_std_state(state, action, t_step)
-                # ds = new_state - std_new_state
                 dx, dy, phi = new_state[0], new_state[1], new_state[2]
-
+                
+                if phi > np.pi:
+                    phi = phi - 2*np.pi
+                elif phi < -np.pi:
+                    phi = phi + 2*np.pi
                 new_k_min = int(round((phi - ph + phi_range/2) / phi_range * (len(phis)-1)))
                 dynamics[i, j, 0:4, 2] = min(max(0, new_k_min), len(phis)-1)
                 
@@ -414,6 +415,17 @@ def build_track_kernel(conf):
     kernel.view_build(True)
 
 
+def build_track_discrim(conf):
+    img = prepare_track_img(conf) 
+    # plt.figure(1)
+    # plt.imshow(img)
+    # plt.pause(0.0001)
+    kernel = DiscrimGenerator(img, conf)
+    kernel.calculate_kernel(100)
+    kernel.save_kernel(f"TrackKernel_{conf.track_kernel_path}_{conf.map_name}")
+    kernel.view_build(True)
+
+
 def construct_obs_kernel(conf):
     img_size = int(conf.obs_img_size * conf.n_dx)
     obs_size = int(conf.obs_size * conf.n_dx)
@@ -452,7 +464,8 @@ def construct_obs_track(conf):
 if __name__ == "__main__":
     conf = load_conf("track_kernel")
     # conf.map_name = "race_track"
-    build_track_kernel(conf)
+    # build_track_kernel(conf)
+    build_track_discrim(conf)
     # construct_obs_track(conf)
 
     # conf = load_conf("forest_kernel")

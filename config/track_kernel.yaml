@@ -20,9 +20,9 @@ end_distance: 1.5
 # end_distance: 3
 
 # map info
-map_name: "torino"
+# map_name: "torino"
 # map_name: "berlin"
-# map_name: "porto"
+map_name: "porto"
 # map_name: "race_track"
 # map_name: "berlin"
 n_dx: 80
@@ -40,8 +40,8 @@ n_phi: 41
 n_modes: 5
 phi_range: 6.28
 dynamics_pts: 5
-discrim_block: 1 
-discrim_phi: 0.1
+discrim_block: 0
+discrim_phi: 0
 kernel_time_step: 0.1
 lookahead_time_step: 0.2
 
