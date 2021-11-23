@@ -29,7 +29,7 @@ class BaseKernel:
         
         self.qs = np.linspace(-self.max_steer, self.max_steer, self.n_modes)
         # self.mode_window = int(round(self.t_step * sim_conf.max_d_dot / (self.max_steer*2/(self.n_modes-1)))) # should probably be floor not round
-        self.mode_window = 5
+        self.mode_window = 4
 
         self.o_map = np.copy(self.track_img)    
         self.fig, self.axs = plt.subplots(2, 2)
@@ -184,9 +184,8 @@ def viability_loop(kernel, dynamics, mode_window):
 @njit(cache=True)
 def check_viable_state(i, j, k, m, dynamics, previous_kernel, mode_window):
     l_xs, l_ys, l_phis, n_modes = previous_kernel.shape
-    lower_ind = max(0, m-mode_window)
-    upper_ind = min(n_modes, m+mode_window)
-    for l in range(lower_ind, upper_ind+1):
+    for l in get_mode_list(m, mode_window, n_modes):
+    # for l in range(n_modes):
         di, dj, new_k = dynamics[k, l, :]
         new_i = min(max(0, i + di), l_xs-1)  
         new_j = min(max(0, j + dj), l_ys-1)
@@ -195,6 +194,11 @@ def check_viable_state(i, j, k, m, dynamics, previous_kernel, mode_window):
             return False
     return True
 
+@njit(cache=True)
+def get_mode_list(m, mode_window, n_modes):
+    lower_ind = max(0, m-mode_window)
+    upper_ind = min(n_modes, m+mode_window)
+    return range(lower_ind, upper_ind)
 
 
 """
@@ -226,8 +230,31 @@ def prepare_track_img(sim_conf):
 
     return map_img2
 
+# local trace function which returns itself
+from sys import settrace
+import sys
+def my_tracer(frame, event, arg = None):
+    # extracts frame code
+    code = frame.f_code
+  
+    # extracts calling function name
+    func_name = code.co_name
+  
+    # extracts the line number
+    line_no = frame.f_lineno
+  
+    print(f"A {event} encountered in \
+    {func_name}() at line number {line_no} ")
+  
+    return my_tracer
+
 def build_track_kernel(conf):
+  
+  
+
     img = prepare_track_img(conf) 
+    sys.setrecursionlimit(10000)
+    # settrace(my_tracer)
     kernel = ViabilityGenerator(img, conf)
     kernel.calculate_kernel(100)
     kernel.save_kernel(f"TrackKernel_{conf.track_kernel_path}_{conf.map_name}")
