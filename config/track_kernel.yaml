@@ -40,8 +40,8 @@ n_phi: 41
 n_modes: 5
 phi_range: 6.28
 dynamics_pts: 5
-discrim_block: 0.5
-discrim_phi: 0.1
+discrim_block: 1
+discrim_phi: 0
 kernel_time_step: 0.1
 lookahead_time_step: 0.2
 

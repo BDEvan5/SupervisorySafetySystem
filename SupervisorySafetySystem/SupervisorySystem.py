@@ -351,8 +351,8 @@ class TrackKernel(BaseKernel):
             phi = phi + phi_range
         theta_ind = int(round((phi + phi_range/2) / phi_range * (self.kernel.shape[2]-1)))
 
-        if theta_ind > 40 or theta_ind < -40:
-            print(f"Theta ind: {theta_ind}")
+        # if theta_ind > 40 or theta_ind < -40:
+        #     print(f"Theta ind: {theta_ind}")
 
 
         return x_ind, y_ind, theta_ind

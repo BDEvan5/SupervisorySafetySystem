@@ -304,6 +304,7 @@ def build_discrim_dynamics(phis, qs, velocity, time, conf):
                     phi = phi - 2*np.pi
                 elif phi < -np.pi:
                     phi = phi + 2*np.pi
+
                 new_k_min = int(round((phi - ph + phi_range/2) / phi_range * (len(phis)-1)))
                 dynamics[i, j, 0:4, 2] = min(max(0, new_k_min), len(phis)-1)
                 
