@@ -407,9 +407,6 @@ def prepare_track_img(sim_conf):
 
 def build_track_kernel(conf):
     img = prepare_track_img(conf) 
-    # plt.figure(1)
-    # plt.imshow(img)
-    # plt.pause(0.0001)
     kernel = ViabilityGenerator(img, conf)
     kernel.calculate_kernel(100)
     kernel.save_kernel(f"TrackKernel_{conf.track_kernel_path}_{conf.map_name}")
@@ -465,8 +462,8 @@ def construct_obs_track(conf):
 if __name__ == "__main__":
     conf = load_conf("track_kernel")
     # conf.map_name = "race_track"
-    # build_track_kernel(conf)
-    build_track_discrim(conf)
+    build_track_kernel(conf)
+    # build_track_discrim(conf)
     # construct_obs_track(conf)
 
     # conf = load_conf("forest_kernel")
