@@ -299,7 +299,7 @@ def build_discrim_dynamics(phis, qs, velocity, time, conf):
                 action = np.array([m, velocity])
                 new_state = update_complex_state(state, action, time)
                 dx, dy, phi = new_state[0], new_state[1], new_state[2]
-                
+
                 if phi > np.pi:
                     phi = phi - 2*np.pi
                 elif phi < -np.pi:
@@ -422,7 +422,7 @@ def build_track_discrim(conf):
     # plt.pause(0.0001)
     kernel = DiscrimGenerator(img, conf)
     kernel.calculate_kernel(100)
-    kernel.save_kernel(f"TrackKernel_{conf.track_kernel_path}_{conf.map_name}")
+    kernel.save_kernel(f"DiscKern_{conf.track_kernel_path}_{conf.map_name}")
     kernel.view_build(True)
 
 
