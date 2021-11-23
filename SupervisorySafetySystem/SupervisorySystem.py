@@ -72,6 +72,8 @@ class Supervisor:
         self.safe_history = SafetyHistory()
         self.intervene = False
 
+        self.time_step = conf.lookahead_time_step
+
         # aliases for the test functions
         try:
             self.n_beams = planner.n_beams
@@ -84,13 +86,13 @@ class Supervisor:
         init_action = self.planner.plan_act(obs)
         state = np.array(obs['state'])
 
-        safe, next_state = check_init_action(state, init_action, self.kernel)
+        safe, next_state = check_init_action(state, init_action, self.kernel, self.time_step)
         if safe:
             self.safe_history.add_locations(init_action[0], init_action[0])
             return init_action
 
         dw = self.generate_dw()
-        valids = simulate_and_classify(state, dw, self.kernel)
+        valids = simulate_and_classify(state, dw, self.kernel, self.time_step)
         if not valids.any():
             print('No Valid options')
             print(f"State: {obs['state']}")
@@ -146,7 +148,7 @@ class LearningSupervisor(Supervisor):
         init_action = self.planner.plan_act(obs)
         state = np.array(obs['state'])
 
-        safe, next_state = check_init_action(state, init_action, self.kernel)
+        safe, next_state = check_init_action(state, init_action, self.kernel, self.time_step)
         if safe:
             self.intervention_mag = 0
             self.safe_history.add_locations(init_action[0], init_action[0])
@@ -156,7 +158,7 @@ class LearningSupervisor(Supervisor):
         self.intervene = True
 
         dw = self.generate_dw()
-        valids = simulate_and_classify(state, dw, self.kernel)
+        valids = simulate_and_classify(state, dw, self.kernel, self.time_step)
         if not valids.any():
             print('No Valid options')
             print(f"State: {obs['state']}")
@@ -175,18 +177,16 @@ class LearningSupervisor(Supervisor):
 
 #TODO jit all of this.
 
-def check_init_action(state, u0, kernel):
-    next_state = update_complex_state(state, u0, 0.2)
-    # next_state = update_std_state(state, u0, 0.2)
+def check_init_action(state, u0, kernel, time_step=0.1):
+    next_state = update_complex_state(state, u0, time_step)
     safe = kernel.check_state(next_state)
     
     return safe, next_state
 
-def simulate_and_classify(state, dw, kernel):
+def simulate_and_classify(state, dw, kernel, time_step=0.1):
     valid_ds = np.ones(len(dw))
     for i in range(len(dw)):
-        next_state = update_complex_state(state, dw[i], 0.2)
-        # next_state = update_std_state(state, dw[i], 0.2)
+        next_state = update_complex_state(state, dw[i], time_step)
         safe = kernel.check_state(next_state)
         valid_ds[i] = safe 
 
@@ -230,12 +230,12 @@ class BaseKernel:
         plt.pause(0.0001)
 
     def check_state(self, state=[0, 0, 0]):
-        i, j, k = self.get_indices(state)
+        i, j, k, m = self.get_indices(state)
 
         # print(f"Expected Location: {state} -> Inds: {i}, {j}, {k} -> Value: {self.kernel[i, j, k]}")
         if self.plotting:
             self.plot_kernel_point(i, j, k)
-        if self.kernel[i, j, k] != 0:
+        if self.kernel[i, j, k, m] != 0:
             return False # unsfae state
         return True # safe state
 
@@ -300,12 +300,17 @@ def construct_forest_kernel(track_size, obs_locations, resolution, side_kernel, 
 
 
 class TrackKernel(BaseKernel):
-    def __init__(self, sim_conf, plotting=False):
+    def __init__(self, sim_conf, plotting=False, kernel_name=None):
         super().__init__(sim_conf, plotting)
-        kernel_name = f"{sim_conf.kernel_path}TrackKernel_{sim_conf.track_kernel_path}_{sim_conf.map_name}.npy"
+        if kernel_name is None:
+            kernel_name = f"{sim_conf.kernel_path}TrackKernel_{sim_conf.track_kernel_path}_{sim_conf.map_name}.npy"
+        else:
+            kernel_name = f"{sim_conf.kernel_path}{kernel_name}"
         self.clean_kernel = np.load(kernel_name)
         self.kernel = self.clean_kernel.copy()
         self.phi_range = sim_conf.phi_range
+        self.n_modes = sim_conf.n_modes
+        self.max_steer = sim_conf.max_steer
 
         self.obs_kernel = np.load(f"{sim_conf.kernel_path}ObsKernelTrack_{sim_conf.track_kernel_path}.npy")
         img_size = int(sim_conf.obs_img_size * sim_conf.n_dx)
@@ -348,11 +353,9 @@ class TrackKernel(BaseKernel):
             phi = phi + phi_range
         theta_ind = int(round((phi + phi_range/2) / phi_range * (self.kernel.shape[2]-1)))
 
-        if theta_ind > 40 or theta_ind < -40:
-            print(f"Theta ind: {theta_ind}")
+        mode_ind = min(max(0, int(round((state[4]+self.max_steer)*self.n_modes ))), self.kernel.shape[3]-1)
 
-
-        return x_ind, y_ind, theta_ind
+        return x_ind, y_ind, theta_ind, mode_ind
 
 
 @njit(cache=True)

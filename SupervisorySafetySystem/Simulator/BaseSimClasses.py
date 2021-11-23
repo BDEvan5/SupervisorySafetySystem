@@ -152,6 +152,7 @@ class BaseSim:
         self.max_steer = sim_conf.max_steer
         self.max_a = sim_conf.max_a
         self.max_v = sim_conf.max_v
+        self.previous_progress = 0.000000
 
     def step_plan(self, action):
         """
@@ -163,17 +164,7 @@ class BaseSim:
         """
         action = np.array(action)
         self.action = action
-        # for _ in range(self.plan_steps):
-        #     u = control_system(self.state, action, self.max_v, self.max_steer, 8, 3.2)
-        #     self.state = update_kinematic_state(self.state, u, self.timestep, self.wheelbase, self.max_steer, self.max_v)
 
-
-        #     if self.done_fcn():
-        #         break
-
-        # for _ in range(self.plan_steps):
-        #     self.state = update_simple_state(self.state, action, self.timestep, self.wheelbase, self.max_steer, self.max_v)
-        # self.state = update_std_state(self.state, action, self.timestep)
         self.state = update_complex_state(self.state, action, self.timestep)
         self.steps += 1 
 
@@ -184,6 +175,12 @@ class BaseSim:
         self.record_history(action)
 
         obs = self.get_observation()
+        # angle_diff = lib.sub_angles_complex(obs['target'][2], self.state[2]) 
+        # if abs(angle_diff) > 0.95*np.pi:
+        #     self.reward = 0
+        #     self.done = True 
+        #     self.done_reason = f"Wrong direction: {self.state[2]},track direction: {obs['target'][2]} -> diff: {angle_diff}"
+        #     print(f"{self.done_reason}")
         done = self.done
         reward = self.reward
 
@@ -220,6 +217,7 @@ class BaseSim:
         self.action_memory = []
         self.steps = 0
         self.reward = 0
+        self.previous_progress = 0
 
         self.state[0:3] = self.env_map.start_pose 
         self.state[3:5] = np.zeros(2)
@@ -321,9 +319,13 @@ class BaseSim:
         angle = lib.sub_angles_complex(base_angle, self.state[2])
 
         em = self.env_map
-        s = calculate_progress(pos, em.ref_pts, em.diffs, em.l2s, em.ss_normal)
+        s, idx = calculate_track_progress_idx(pos, em.ref_pts, em.diffs, em.l2s, em.ss_normal)
+        
+        lower_idx = int(max(0, idx-2))
+        upper_idx = int(min(len(em.ref_pts)-1, idx+2))
+        track_angle = lib.get_bearing(em.ref_pts[lower_idx], em.ref_pts[upper_idx])
 
-        return [angle, s]
+        return [angle, s, track_angle]
     
     def get_observation(self):
         """
@@ -344,8 +346,10 @@ class BaseSim:
         return observation
 
 
+
+
 @njit(cache=True)
-def calculate_progress(point, wpts, diffs, l2s, ss):
+def calculate_track_progress_idx(point, wpts, diffs, l2s, ss):
     dots = np.empty((wpts.shape[0]-1, ))
     dots_shape = dots.shape[0]
     for i in range(dots_shape):
@@ -370,6 +374,6 @@ def calculate_progress(point, wpts, diffs, l2s, ss):
 
     s = s / ss[-1]
 
-    return s 
+    return s, min_dist_segment
 
 
