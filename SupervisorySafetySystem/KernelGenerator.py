@@ -26,17 +26,11 @@ class BaseKernel:
         self.xs = np.linspace(0, self.n_x/self.n_dx, self.n_x) 
         self.ys = np.linspace(0, self.n_y/self.n_dx, self.n_y)
         self.phis = np.linspace(-self.phi_range/2, self.phi_range/2, self.n_phi)
-        self.qs = None
         
-        self.build_qs()
+        self.qs = np.linspace(-self.max_steer, self.max_steer, self.n_modes)
+
         self.o_map = np.copy(self.track_img)    
         self.fig, self.axs = plt.subplots(2, 2)
-
-
-    # config functions
-    def build_qs(self):
-        self.qs = np.linspace(-self.max_steer, self.max_steer, self.n_modes)
-        # self.qs = self.velocity / self.L * np.tan(self.qs)
 
     def save_kernel(self, name):
         np.save(f"SupervisorySafetySystem/Kernels/{name}.npy", self.kernel)
@@ -46,10 +40,10 @@ class ViabilityGenerator(BaseKernel):
     def __init__(self, track_img, sim_conf):
         super().__init__(track_img, sim_conf)
         
-        self.kernel = np.zeros((self.n_x, self.n_y, self.n_phi))
-        self.previous_kernel = np.zeros((self.n_x, self.n_y, self.n_phi))
+        self.kernel = np.zeros((self.n_x, self.n_y, self.n_phi, self.n_modes))
+        self.previous_kernel = np.zeros((self.n_x, self.n_y, self.n_phi, self.n_modes))
         
-        self.kernel[:, :, :] = self.track_img[:, :, None] * np.ones((self.n_x, self.n_y, self.n_phi))
+        self.kernel[:, :, :, :] = self.track_img[:, :, None, None] * np.ones((self.n_x, self.n_y, self.n_phi, self.n_modes))
 
         self.dynamics = build_viability_dynamics(self.phis, self.qs, self.velocity, self.t_step, self.sim_conf)
 
@@ -83,15 +77,16 @@ class ViabilityGenerator(BaseKernel):
 
         half_phi = int(len(self.phis)/2)
         quarter_phi = int(len(self.phis)/4)
+        mode = 2
 
-        self.axs[0, 0].imshow(self.kernel[:, :, 0].T + self.o_map.T, origin='lower')
+        self.axs[0, 0].imshow(self.kernel[:, :, 0, mode].T + self.o_map.T, origin='lower')
         self.axs[0, 0].set_title(f"Kernel phi: {self.phis[0]}")
         # axs[0, 0].clear()
-        self.axs[1, 0].imshow(self.kernel[:, :, half_phi].T + self.o_map.T, origin='lower')
+        self.axs[1, 0].imshow(self.kernel[:, :, half_phi, mode].T + self.o_map.T, origin='lower')
         self.axs[1, 0].set_title(f"Kernel phi: {self.phis[half_phi]}")
-        self.axs[0, 1].imshow(self.kernel[:, :, -quarter_phi].T + self.o_map.T, origin='lower')
+        self.axs[0, 1].imshow(self.kernel[:, :, -quarter_phi, mode].T + self.o_map.T, origin='lower')
         self.axs[0, 1].set_title(f"Kernel phi: {self.phis[-quarter_phi]}")
-        self.axs[1, 1].imshow(self.kernel[:, :, quarter_phi].T + self.o_map.T, origin='lower')
+        self.axs[1, 1].imshow(self.kernel[:, :, quarter_phi, mode].T + self.o_map.T, origin='lower')
         self.axs[1, 1].set_title(f"Kernel phi: {self.phis[quarter_phi]}")
 
         # plt.title(f"Building Kernel")
@@ -140,9 +135,9 @@ class ViabilityGenerator(BaseKernel):
                 print("Kernel has not changed: convergence has been reached")
                 break
             self.previous_kernel = np.copy(self.kernel)
-            self.kernel = viability_loop(self.kernel, self.n_modes, self.dynamics)
+            self.kernel = viability_loop(self.kernel, self.dynamics)
 
-            # self.view_build(False)
+            self.view_build(False)
 
 # @njit(cache=True)
 def build_viability_dynamics(phis, qs, velocity, time, conf):
@@ -155,7 +150,6 @@ def build_viability_dynamics(phis, qs, velocity, time, conf):
                 state = np.array([0, 0, p, velocity, 0])
                 action = np.array([m, velocity])
                 new_state = update_complex_state(state, action, time)
-                # new_state = update_complex_state_const(state, action, time)
                 dx, dy, phi = new_state[0], new_state[1], new_state[2]
 
                 if phi > np.pi:
@@ -172,27 +166,28 @@ def build_viability_dynamics(phis, qs, velocity, time, conf):
     return dynamics
 
 @njit(cache=True)
-def viability_loop(kernel, n_modes, dynamics):
+def viability_loop(kernel, dynamics):
     previous_kernel = np.copy(kernel)
-    l_xs, l_ys, l_phis = kernel.shape
+    l_xs, l_ys, l_phis, n_modes = kernel.shape
     for i in range(l_xs):
         for j in range(l_ys):
             for k in range(l_phis):
-                    if kernel[i, j, k] == 1:
+                for m in range(n_modes):
+                    if kernel[i, j, k, m] == 1:
                         continue 
-                    kernel[i, j, k] = check_viable_state(i, j, k, n_modes, dynamics, previous_kernel)
+                    kernel[i, j, k, m] = check_viable_state(i, j, k, m, dynamics, previous_kernel)
 
     return kernel
 
 @njit(cache=True)
-def check_viable_state(i, j, k, n_modes, dynamics, previous_kernel):
-    l_xs, l_ys, l_phis = previous_kernel.shape
-    for l in range(n_modes):
+def check_viable_state(i, j, k, m, dynamics, previous_kernel):
+    l_xs, l_ys, l_phis, n_modes = previous_kernel.shape
+    for l in range(n_modes): #TODO: change this to only be permitted search modes.
         di, dj, new_k = dynamics[k, l, :]
         new_i = min(max(0, i + di), l_xs-1)  
         new_j = min(max(0, j + dj), l_ys-1)
 
-        if not previous_kernel[new_i, new_j, new_k]:
+        if not previous_kernel[new_i, new_j, new_k, m]:
             return False
     return True
 
