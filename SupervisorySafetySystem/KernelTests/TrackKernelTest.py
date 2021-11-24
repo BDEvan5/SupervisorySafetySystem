@@ -28,14 +28,14 @@ def rando_test():
 
     env = TrackSim(conf)
     planner = RandomPlanner()
-    kernel = TrackKernel(conf, False, f"TrackKernel_{conf.track_kernel_path}_{conf.map_name}.npy")
-    # kernel = TrackKernel(conf, False, f"DiscKern_{conf.track_kernel_path}_{conf.map_name}.npy")
+    # kernel = TrackKernel(conf, False, f"TrackKernel_{conf.track_kernel_path}_{conf.map_name}.npy")
+    kernel = TrackKernel(conf, False, f"DiscKern_{conf.track_kernel_path}_{conf.map_name}.npy")
     safety_planner = Supervisor(planner, kernel, conf)
 
-    test_kernel_vehicle(env, safety_planner, True, 30, add_obs=False, wait=False)
+    # test_kernel_vehicle(env, safety_planner, True, 30, add_obs=False, wait=False)
     # test_kernel_vehicle(env, safety_planner, True, 30, add_obs=False, wait=True)
     # test_kernel_vehicle(env, safety_planner, True, 100, add_obs=False)
-    # test_kernel_vehicle(env, safety_planner, False, 100, add_obs=False)
+    test_kernel_vehicle(env, safety_planner, False, 100, add_obs=False)
 
 
 def straight_test():

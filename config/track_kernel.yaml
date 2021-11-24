@@ -20,9 +20,10 @@ end_distance: 1.5
 # end_distance: 3
 
 # map info
-# map_name: "torino"
+map_name: "torino"
 # map_name: "berlin"
-map_name: "porto"
+# map_name: "example_map"
+# map_name: "porto"
 # map_name: "race_track"
 # map_name: "berlin"
 n_dx: 80

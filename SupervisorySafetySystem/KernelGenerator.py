@@ -14,7 +14,6 @@ class BaseKernel:
         self.t_step = sim_conf.kernel_time_step
         self.n_phi = sim_conf.n_phi
         self.phi_range = sim_conf.phi_range
-        self.half_block = 1 / (2*self.n_dx)
         self.half_phi = self.phi_range / (2*self.n_phi)
         self.n_modes = sim_conf.n_modes
         self.sim_conf = sim_conf
@@ -136,7 +135,7 @@ class ViabilityGenerator(BaseKernel):
             self.previous_kernel = np.copy(self.kernel)
             self.kernel = viability_loop(self.kernel, self.dynamics)
 
-            self.view_build(False)
+            # self.view_build(False)
 
 # @njit(cache=True)
 def build_viability_dynamics(phis, qs, velocity, time, conf):
@@ -220,14 +219,38 @@ def prepare_track_img(sim_conf):
     return map_img2
 
 
+@njit(cache=True)
+def shrink_img(img, n_shrinkpx):
+    o_img = np.copy(img)
+
+    search = np.array([[0, 1], [1, 0], [0, -1], 
+                [-1, 0], [1, 1], [1, -1], 
+                [-1, 1], [-1, -1]])
+    for i in range(n_shrinkpx):
+        t_img = np.copy(img)
+        for j in range(img.shape[0]):
+            for k in range(img.shape[1]):
+                if img[j, k] == 1:
+                    continue
+                for l in range(len(search)):
+                    di, dj = search[l, :]
+                    new_i = min(max(0, j + di), img.shape[0]-1)
+                    new_j = min(max(0, k + dj), img.shape[1]-1)
+                    if t_img[new_i, new_j] == 1:
+                        img[j, k] = 1.
+                        break
+
+    print(f"Finished Shrinking")
+    return o_img, img #
+
+
+
 
 def build_track_kernel(conf):
   
-  
-
     img = prepare_track_img(conf) 
-    # settrace(my_tracer)
-    kernel = ViabilityGenerator(img, conf)
+    img, img2 = shrink_img(img, 5)
+    kernel = ViabilityGenerator(img2, conf)
     kernel.calculate_kernel(100)
     kernel.save_kernel(f"TrackKernel_{conf.track_kernel_path}_{conf.map_name}")
     kernel.view_build(True)

@@ -65,8 +65,7 @@ class Supervisor:
         """
         
         self.d_max = conf.max_steer
-        # self.v = 2
-        # self.kernel = ForestKernel(conf)
+        self.v = 2
         self.kernel = kernel
         self.planner = planner
         self.safe_history = SafetyHistory()
@@ -110,10 +109,11 @@ class Supervisor:
         n_segments = 5
         dw = np.ones((5, 2))
         dw[:, 0] = np.linspace(-self.d_max, self.d_max, n_segments)
-        dw = np.vstack((dw, dw, dw))
-        dw[0:5, 1] *= 1
-        dw[5:10, 1] *= 2
-        dw[10:, 1] *= 3
+        dw[:, 1] *= self.v
+        # dw = np.vstack((dw, dw, dw))
+        # dw[0:5, 1] *= 1
+        # dw[5:10, 1] *= 2
+        # dw[10:, 1] *= 3
         return dw
 
 
