@@ -410,6 +410,7 @@ def train_kernel_vehicle(env, vehicle, sim_conf, add_obs=False, show=False):
 
 def train_continuous_kernel(env, vehicle, sim_conf, add_obs=False, show=False):
     start_time = time.time()
+    
 
     done = False
     state = env.reset(add_obs)
@@ -424,14 +425,14 @@ def train_continuous_kernel(env, vehicle, sim_conf, add_obs=False, show=False):
         vehicle.planner.agent.train(2)
         
         if done:
-            
-            # vehicle.done_entry(s_prime)
+            vehicle.fake_done(env.steps)
             if show:
                 env.render(wait=False)
                 vehicle.safe_history.plot_safe_history()
+
             done = False
 
-            # state = env.reset(add_obs)
+            state = env.fake_reset()
             # vehicle.kernel.construct_kernel(env.env_map.map_img.shape, env.env_map.obs_pts)
 
     vehicle.planner.t_his.print_update(True)

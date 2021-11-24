@@ -233,6 +233,27 @@ class BaseSim:
 
         return self.get_observation()
 
+    def fake_reset(self):
+        """
+        Resets the simulation
+
+        Args:
+            add_obs: a boolean flag if obstacles should be added to the map
+
+        Returns:
+            state observation
+        """
+        self.done = False
+        self.done_reason = "Null"
+        self.action_memory = []
+        self.steps = 0
+        self.reward = 0
+        self.previous_progress = 0
+
+        self.history.reset_history()
+
+        return self.get_observation()
+
     def render(self, wait=False, name="No vehicle name set"):
         """
         Renders the map using the plt library

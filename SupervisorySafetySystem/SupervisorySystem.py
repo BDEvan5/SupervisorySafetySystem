@@ -124,12 +124,19 @@ class LearningSupervisor(Supervisor):
         self.calculate_reward = None # to be replaced by a function
         self.ep_interventions = 0
         self.intervention_list = []
+        self.lap_times = []
 
     def done_entry(self, s_prime):
         s_prime['reward'] = self.calculate_reward(self.intervention_mag)
         self.planner.done_entry(s_prime)
         self.intervention_list.append(self.ep_interventions)
         self.ep_interventions = 0
+
+    def fake_done(self, steps):
+        self.planner.fake_done()
+        self.intervention_list.append(self.ep_interventions)
+        self.ep_interventions = 0
+        self.lap_times.append(steps)
 
     def save_intervention_list(self):
         full_name = self.planner.path + f'/{self.planner.name}_intervention_list.csv'
@@ -145,6 +152,20 @@ class LearningSupervisor(Supervisor):
         plt.plot(self.intervention_list)
         plt.savefig(f"{self.planner.path}/{self.planner.name}_interventions.png")
         plt.savefig(f"{self.planner.path}/{self.planner.name}_interventions.svg")
+
+        full_name = self.planner.path + f'/{self.planner.name}_laptime_list.csv'
+        data = []
+        for i in range(len(self.lap_times)):
+            data.append([i, self.lap_times[i]])
+        with open(full_name, 'w') as csvfile:
+            csvwriter = csv.writer(csvfile)
+            csvwriter.writerows(data)
+
+        plt.figure(6)
+        plt.clf()
+        plt.plot(self.lap_times)
+        plt.savefig(f"{self.planner.path}/{self.planner.name}_laptimes.png")
+        plt.savefig(f"{self.planner.path}/{self.planner.name}_laptimes.svg")
 
     def plan(self, obs):
         obs['reward'] = self.calculate_reward(self.intervention_mag)
