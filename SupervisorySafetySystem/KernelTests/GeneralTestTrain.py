@@ -408,6 +408,43 @@ def train_kernel_vehicle(env, vehicle, sim_conf, add_obs=False, show=False):
     return train_time 
 
 
+def train_continuous_kernel(env, vehicle, sim_conf, add_obs=False, show=False):
+    start_time = time.time()
+
+    done = False
+    state = env.reset(add_obs)
+
+    print(f"Starting Training: {vehicle.planner.name}")
+    vehicle.kernel.construct_kernel(env.env_map.map_img.shape, env.env_map.obs_pts)
+    for n in range(sim_conf.train_n):
+        a = vehicle.plan(state)
+        s_prime, r, done, _ = env.step_plan(a)
+
+        state = s_prime
+        vehicle.planner.agent.train(2)
+        
+        if done:
+            
+            # vehicle.done_entry(s_prime)
+            if show:
+                env.render(wait=False)
+                vehicle.safe_history.plot_safe_history()
+            done = False
+
+            # state = env.reset(add_obs)
+            # vehicle.kernel.construct_kernel(env.env_map.map_img.shape, env.env_map.obs_pts)
+
+    vehicle.planner.t_his.print_update(True)
+    vehicle.planner.t_his.save_csv_data()
+    vehicle.planner.agent.save(vehicle.planner.path)
+    vehicle.save_intervention_list()
+
+    train_time = time.time() - start_time
+    print(f"Finished Training: {vehicle.planner.name} in {train_time} seconds")
+
+    return train_time 
+
+
 def load_conf(fname):
     full_path =  "config/" + fname + '.yaml'
     with open(full_path) as file:
@@ -421,6 +458,7 @@ def load_conf(fname):
 
 def train_vehicle(env, vehicle, sim_conf, add_obs=False, show=False):
     start_time = time.time()
+    crash_counter = 0
 
     done = False
     state = env.reset(add_obs)
@@ -437,6 +475,8 @@ def train_vehicle(env, vehicle, sim_conf, add_obs=False, show=False):
             vehicle.done_entry(s_prime)
             if show:
                 env.render(wait=False)
+            if state['reward'] == -1:
+                crash_counter += 1
 
             # vehicle.reset_lap()
             state = env.reset(add_obs)
@@ -447,8 +487,9 @@ def train_vehicle(env, vehicle, sim_conf, add_obs=False, show=False):
 
     train_time = time.time() - start_time
     print(f"Finished Training: {vehicle.name} in {train_time} seconds")
+    print(f"Crashes: {crash_counter}")
 
-    return train_time 
+    return train_time, crash_counter
 
 
 def save_conf_dict(dictionary):

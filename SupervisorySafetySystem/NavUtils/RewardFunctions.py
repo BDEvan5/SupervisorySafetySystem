@@ -135,22 +135,41 @@ class TrackPtsBase:
         return shaped_r
 
 
-# class RefDistanceReward(TrackPtsBase):
-#     def __init__(self, config, b_distance) -> None:
-#         TrackPtsBase.__init__(self, config)
+class RefDistanceReward(TrackPtsBase):
+    def __init__(self, config, b_distance) -> None:
+        TrackPtsBase.__init__(self, config)
 
-#         self.load_reference_pts()
-#         self.b_distance = b_distance
+        self.load_reference_pts()
+        self.b_distance = b_distance
 
-#     def __call__(self, state, s_prime):
-#         s_prime['reward'] = find_reward(s_prime)
-#         prime_pos = np.array([s_prime['poses_x'][0], s_prime['poses_y'][0]])
-#         pos = np.array([state['poses_x'][0], state['poses_y'][0]])
-#         reward = self.get_distance_r(pos, prime_pos, 1)
+    def __call__(self, state, s_prime):
+        car_state = s_prime['state']
+        prime_pos = car_state[0:2]
+        pos = state['state'][0:2]
 
-#         reward += s_prime['reward']
+        reward = self.get_distance_r(pos, prime_pos, 1)
 
-#         return reward
+        reward += s_prime['reward']
+
+        return reward
+
+class CenterDistanceReward(TrackPtsBase):
+    def __init__(self, config, b_distance) -> None:
+        TrackPtsBase.__init__(self, config)
+
+        self.load_center_pts()
+        self.b_distance = b_distance
+
+    def __call__(self, state, s_prime):
+        car_state = s_prime['state']
+        prime_pos = car_state[0:2]
+        pos = state['state'][0:2]
+
+        reward = self.get_distance_r(pos, prime_pos, 1)
+
+        reward += s_prime['reward']
+
+        return reward
 
 class RefCTHReward(TrackPtsBase):
     def __init__(self, conf, mh, md) -> None:
@@ -180,6 +199,35 @@ class RefCTHReward(TrackPtsBase):
         new_r =  self.mh * np.cos(d_th) * v_scale - self.md * d_c
 
         return new_r + s_prime['reward']
+
+class RefCTHRewardContinuous(TrackPtsBase):
+    def __init__(self, conf, mh, md) -> None:
+        TrackPtsBase.__init__(self, conf)
+        self.max_v = conf.max_v
+        self.dis_scale = 1
+
+        self.load_reference_pts()
+        self.mh = mh 
+        self.md = md 
+
+    def __call__(self, state, s_prime):
+        car_state = s_prime['state']
+        prime_pos = car_state[0:2]
+        theta = car_state[2]
+        velocity = car_state[3]
+
+        pt_i, pt_ii, d_i, d_ii = find_closest_pt(prime_pos, self.wpts)
+        d = get_distance(pt_i, pt_ii)
+        d_c = get_tiangle_h(d_i, d_ii, d) / self.dis_scale
+
+        th_ref = get_bearing(pt_i, pt_ii)
+        th = theta
+        d_th = abs(sub_angles_complex(th_ref, th))
+        v_scale = velocity / self.max_v
+
+        new_r =  self.mh * np.cos(d_th) * v_scale - self.md * d_c
+
+        return new_r 
 
 class CenterCTHReward(TrackPtsBase):
     def __init__(self, conf, mh, md) -> None:

@@ -162,13 +162,27 @@ def test_zero_vehicle(n):
     test_kernel_vehicle(env, safety_planner, False, 100)
     # test_kernel_vehicle(env, safety_planner, True, 30)
 
+def render_picture(n):
+    sim_conf = load_conf("track_kernel")
+    env = TrackSim(sim_conf)
+    agent_name = f"Kernel_Const_{0}_{n}"
+    planner = EndVehicleTest(agent_name, sim_conf)
+    kernel = TrackKernel(sim_conf, False)
+    safety_planner = Supervisor(planner, kernel, sim_conf)
+
+    sim_conf.test_n = 4
+
+    eval_kernel(env, safety_planner, sim_conf, False)
+    # test_kernel_vehicle(env, safety_planner, True, 30)
+
 if __name__ == "__main__":
 
     # run_reward_tests()
     n = 1
-    learning_comparision_sss(n)
+    # learning_comparision_sss(n)
     # learning_comparision_pure(n)
 
     # test_zero_vehicle(n)
 
+    render_picture(n)
 

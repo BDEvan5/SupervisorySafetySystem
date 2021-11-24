@@ -112,7 +112,7 @@ class EndVehicleTest(EndBase):
 
         self.path = 'EvalVehicles/' + agent_name
         self.actor = torch.load(self.path + '/' + agent_name + "_actor.pth")
-        self.n_beams = 10
+        # self.n_beams = 10
 
         print(f"Agent loaded: {agent_name}")
 
