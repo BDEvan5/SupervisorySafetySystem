@@ -249,10 +249,10 @@ def shrink_img(img, n_shrinkpx):
 def build_track_kernel(conf):
   
     img = prepare_track_img(conf) 
-    img, img2 = shrink_img(img, 5)
-    kernel = ViabilityGenerator(img2, conf)
+    # img, img2 = shrink_img(img, 5)
+    kernel = ViabilityGenerator(img, conf)
     kernel.calculate_kernel(100)
-    kernel.save_kernel(f"TrackKernel_{conf.track_kernel_path}_{conf.map_name}")
+    kernel.save_kernel(f"Kernel_viab_{conf.map_name}")
     kernel.view_build(True)
 
 

@@ -83,9 +83,8 @@ def run_reward_tests():
         eval_magnitude_reward(1, n)
 
 
-def learning_comparision_sss():
+def learning_comparision_sss(n):
     sim_conf = load_conf("track_kernel")
-    n = 1
     eval_name = f"LearningComparison_SSS_{n}"
     test = TestVehicles(sim_conf, eval_name)
     env = TrackSim(sim_conf)
@@ -123,9 +122,8 @@ def learning_comparision_sss():
 
     test.run_free_eval(env, 100, wait=False)
 
-def learning_comparision_pure():
+def learning_comparision_pure(n):
     sim_conf = load_conf("track_kernel")
-    n = 1
     eval_name = f"LearningComparison_pure_{n}"
     test = TestVehicles(sim_conf, eval_name)
     env = TrackSim(sim_conf)
@@ -153,12 +151,24 @@ def learning_comparision_pure():
 
     test.run_free_eval(env, 100, wait=False)
 
+def test_zero_vehicle(n):
+    sim_conf = load_conf("track_kernel")
+    env = TrackSim(sim_conf)
+    agent_name = f"Kernel_Const_{0}_{n}"
+    planner = EndVehicleTest(agent_name, sim_conf)
+    kernel = TrackKernel(sim_conf, False)
+    safety_planner = Supervisor(planner, kernel, sim_conf)
 
+    test_kernel_vehicle(env, safety_planner, False, 100)
+    # test_kernel_vehicle(env, safety_planner, True, 30)
 
 if __name__ == "__main__":
 
     # run_reward_tests()
-    # learning_comparision_sss()
-    # learning_comparision_pure()
+    n = 2
+    # learning_comparision_sss(n)
+    # learning_comparision_pure(n)
+
+    test_zero_vehicle(n)
 
 

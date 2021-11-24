@@ -20,12 +20,11 @@ end_distance: 1.5
 # end_distance: 3
 
 # map info
-map_name: "torino"
+# map_name: "torino"
 # map_name: "berlin"
 # map_name: "example_map"
-# map_name: "porto"
+map_name: "porto"
 # map_name: "race_track"
-# map_name: "berlin"
 n_dx: 80
 
 
@@ -33,7 +32,8 @@ n_obs: 0
 obs_size: 0.5
 
 kernel_path: "Kernels/"
-track_kernel_path: "test"
+track_kernel_mode: "disc"
+# track_kernel_mode: "viab"
 vehicle_path: "EvalVehicles/"
 obs_img_size: 3 # size in meters 
 side_img_size: [2, 1]
