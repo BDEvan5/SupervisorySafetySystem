@@ -31,8 +31,8 @@ n_dx: 80
 n_obs: 0
 obs_size: 0.5
 
-kernel_path: "SupervisorySafetySystem/Kernels/"
-track_kernel_path: "std"
+kernel_path: "Kernels/"
+track_kernel_path: "test"
 vehicle_path: "EvalVehicles/"
 obs_img_size: 3 # size in meters 
 side_img_size: [2, 1]
