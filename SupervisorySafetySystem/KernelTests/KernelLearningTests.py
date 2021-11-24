@@ -19,8 +19,9 @@ def eval_episodic(n):
     sss_reward_scale = 1
     sim_conf = load_conf("track_kernel")
     env = TrackSim(sim_conf)
-    agent_name = f"Kernel_Mag_{sss_reward_scale}_{n}"
+    agent_name = f"Kernel_Episodic_{n}"
     planner = EndVehicleTrain(agent_name, sim_conf)
+    planner.calculate_reward = RefCTHReward(sim_conf, 0.04, 0.004) 
     kernel = TrackKernel(sim_conf)
     safety_planner = LearningSupervisor(planner, kernel, sim_conf)
     safety_planner.calculate_reward = MagnitudeReward(sss_reward_scale)
@@ -74,5 +75,5 @@ def eval_continuous(n):
     save_conf_dict(config_dict)
 
 if __name__ == "__main__":
-    eval_continuous(5)
-
+    # eval_continuous(6)
+    eval_episodic(2)

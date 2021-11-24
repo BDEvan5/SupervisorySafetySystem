@@ -389,7 +389,7 @@ def train_kernel_vehicle(env, vehicle, sim_conf, add_obs=False, show=False):
         
         if done:
             
-            vehicle.done_entry(s_prime)
+            vehicle.done_entry(s_prime, env.steps)
             if show:
                 env.render(wait=False)
                 vehicle.safe_history.plot_safe_history()

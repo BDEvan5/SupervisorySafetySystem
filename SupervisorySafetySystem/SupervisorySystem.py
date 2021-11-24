@@ -126,11 +126,12 @@ class LearningSupervisor(Supervisor):
         self.intervention_list = []
         self.lap_times = []
 
-    def done_entry(self, s_prime):
+    def done_entry(self, s_prime, steps=0):
         s_prime['reward'] = self.calculate_reward(self.intervention_mag)
         self.planner.done_entry(s_prime)
         self.intervention_list.append(self.ep_interventions)
         self.ep_interventions = 0
+        self.lap_times.append(steps)
 
     def fake_done(self, steps):
         self.planner.fake_done()
