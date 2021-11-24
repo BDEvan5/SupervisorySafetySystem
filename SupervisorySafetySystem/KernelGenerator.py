@@ -28,24 +28,22 @@ class BaseKernel:
         self.phis = np.linspace(-self.phi_range/2, self.phi_range/2, self.n_phi)
         
         self.qs = np.linspace(-self.max_steer, self.max_steer, self.n_modes)
-        # self.mode_window = int(round(self.t_step * sim_conf.max_d_dot / (self.max_steer*2/(self.n_modes-1)))) # should probably be floor not round
-        self.mode_window = 4
 
         self.o_map = np.copy(self.track_img)    
         self.fig, self.axs = plt.subplots(2, 2)
 
     def save_kernel(self, name):
-        np.save(f"SupervisorySafetySystem/Kernels/{name}.npy", self.kernel)
+        np.save(f"{self.sim_conf.kernel_path}{name}.npy", self.kernel)
         print(f"Saved kernel to file: {name}")
 
 class ViabilityGenerator(BaseKernel):
     def __init__(self, track_img, sim_conf):
         super().__init__(track_img, sim_conf)
         
-        self.kernel = np.zeros((self.n_x, self.n_y, self.n_phi, self.n_modes))
-        self.previous_kernel = np.zeros((self.n_x, self.n_y, self.n_phi, self.n_modes))
+        self.kernel = np.zeros((self.n_x, self.n_y, self.n_phi))
+        self.previous_kernel = np.zeros((self.n_x, self.n_y, self.n_phi))
         
-        self.kernel[:, :, :, :] = self.track_img[:, :, None, None] * np.ones((self.n_x, self.n_y, self.n_phi, self.n_modes))
+        self.kernel[:, :, :] = self.track_img[:, :, None] * np.ones((self.n_x, self.n_y, self.n_phi))
 
         self.dynamics = build_viability_dynamics(self.phis, self.qs, self.velocity, self.t_step, self.sim_conf)
 
@@ -79,16 +77,15 @@ class ViabilityGenerator(BaseKernel):
 
         half_phi = int(len(self.phis)/2)
         quarter_phi = int(len(self.phis)/4)
-        mode = 2
 
-        self.axs[0, 0].imshow(self.kernel[:, :, 0, mode].T + self.o_map.T, origin='lower')
+        self.axs[0, 0].imshow(self.kernel[:, :, 0].T + self.o_map.T, origin='lower')
         self.axs[0, 0].set_title(f"Kernel phi: {self.phis[0]}")
         # axs[0, 0].clear()
-        self.axs[1, 0].imshow(self.kernel[:, :, half_phi, mode].T + self.o_map.T, origin='lower')
+        self.axs[1, 0].imshow(self.kernel[:, :, half_phi].T + self.o_map.T, origin='lower')
         self.axs[1, 0].set_title(f"Kernel phi: {self.phis[half_phi]}")
-        self.axs[0, 1].imshow(self.kernel[:, :, -quarter_phi, mode].T + self.o_map.T, origin='lower')
+        self.axs[0, 1].imshow(self.kernel[:, :, -quarter_phi].T + self.o_map.T, origin='lower')
         self.axs[0, 1].set_title(f"Kernel phi: {self.phis[-quarter_phi]}")
-        self.axs[1, 1].imshow(self.kernel[:, :, quarter_phi, mode].T + self.o_map.T, origin='lower')
+        self.axs[1, 1].imshow(self.kernel[:, :, quarter_phi].T + self.o_map.T, origin='lower')
         self.axs[1, 1].set_title(f"Kernel phi: {self.phis[quarter_phi]}")
 
         # plt.title(f"Building Kernel")
@@ -137,7 +134,7 @@ class ViabilityGenerator(BaseKernel):
                 print("Kernel has not changed: convergence has been reached")
                 break
             self.previous_kernel = np.copy(self.kernel)
-            self.kernel = viability_loop(self.kernel, self.dynamics, self.mode_window)
+            self.kernel = viability_loop(self.kernel, self.dynamics)
 
             self.view_build(False)
 
@@ -154,9 +151,9 @@ def build_viability_dynamics(phis, qs, velocity, time, conf):
                 new_state = update_complex_state(state, action, time)
                 dx, dy, phi = new_state[0], new_state[1], new_state[2]
 
-                if phi > np.pi:
+                while phi > np.pi:
                     phi = phi - 2*np.pi
-                elif phi < -np.pi:
+                while phi < -np.pi:
                     phi = phi + 2*np.pi
                 new_k = int(round((phi + phi_range/2) / phi_range * (len(phis)-1)))
                 dynamics[i, j, 2] = min(max(0, new_k), len(phis)-1)
@@ -168,38 +165,30 @@ def build_viability_dynamics(phis, qs, velocity, time, conf):
     return dynamics
 
 @njit(cache=True)
-def viability_loop(kernel, dynamics, mode_window):
+def viability_loop(kernel, dynamics):
     previous_kernel = np.copy(kernel)
-    l_xs, l_ys, l_phis, n_modes = kernel.shape
+    l_xs, l_ys, l_phis = kernel.shape
     for i in range(l_xs):
         for j in range(l_ys):
             for k in range(l_phis):
-                for m in range(n_modes):
-                    if kernel[i, j, k, m] == 1:
-                        continue 
-                    kernel[i, j, k, m] = check_viable_state(i, j, k, m, dynamics, previous_kernel, mode_window)
+                if kernel[i, j, k] == 1:
+                    continue 
+                kernel[i, j, k] = check_viable_state(i, j, k, dynamics, previous_kernel)
 
     return kernel
 
 @njit(cache=True)
-def check_viable_state(i, j, k, m, dynamics, previous_kernel, mode_window):
-    l_xs, l_ys, l_phis, n_modes = previous_kernel.shape
-    for l in get_mode_list(m, mode_window, n_modes):
-    # for l in range(n_modes):
+def check_viable_state(i, j, k, dynamics, previous_kernel):
+    l_xs, l_ys, l_phis = previous_kernel.shape
+    n_modes = dynamics.shape[1]
+    for l in range(n_modes):
         di, dj, new_k = dynamics[k, l, :]
         new_i = min(max(0, i + di), l_xs-1)  
         new_j = min(max(0, j + dj), l_ys-1)
 
-        if not previous_kernel[new_i, new_j, new_k, m]:
+        if not previous_kernel[new_i, new_j, new_k]:
             return False
     return True
-
-@njit(cache=True)
-def get_mode_list(m, mode_window, n_modes):
-    lower_ind = max(0, m-mode_window)
-    upper_ind = min(n_modes, m+mode_window)
-    return range(lower_ind, upper_ind)
-
 
 """
     External functions
@@ -230,30 +219,13 @@ def prepare_track_img(sim_conf):
 
     return map_img2
 
-# local trace function which returns itself
-from sys import settrace
-import sys
-def my_tracer(frame, event, arg = None):
-    # extracts frame code
-    code = frame.f_code
-  
-    # extracts calling function name
-    func_name = code.co_name
-  
-    # extracts the line number
-    line_no = frame.f_lineno
-  
-    print(f"A {event} encountered in \
-    {func_name}() at line number {line_no} ")
-  
-    return my_tracer
+
 
 def build_track_kernel(conf):
   
   
 
     img = prepare_track_img(conf) 
-    sys.setrecursionlimit(10000)
     # settrace(my_tracer)
     kernel = ViabilityGenerator(img, conf)
     kernel.calculate_kernel(100)
