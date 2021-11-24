@@ -65,7 +65,7 @@ class Supervisor:
         """
         
         self.d_max = conf.max_steer
-        self.v = 2
+        # self.v = 2
         # self.kernel = ForestKernel(conf)
         self.kernel = kernel
         self.planner = planner
@@ -110,7 +110,10 @@ class Supervisor:
         n_segments = 5
         dw = np.ones((5, 2))
         dw[:, 0] = np.linspace(-self.d_max, self.d_max, n_segments)
-        dw[:, 1] *= self.v
+        dw = np.vstack((dw, dw, dw))
+        dw[0:5, 1] *= 1
+        dw[5:10, 1] *= 2
+        dw[10:, 1] *= 3
         return dw
 
 
@@ -230,12 +233,12 @@ class BaseKernel:
         plt.pause(0.0001)
 
     def check_state(self, state=[0, 0, 0]):
-        i, j, k, m = self.get_indices(state)
+        i, j, k= self.get_indices(state)
 
         # print(f"Expected Location: {state} -> Inds: {i}, {j}, {k} -> Value: {self.kernel[i, j, k]}")
         if self.plotting:
             self.plot_kernel_point(i, j, k)
-        if self.kernel[i, j, k, m] != 0:
+        if self.kernel[i, j, k] != 0:
             return False # unsfae state
         return True # safe state
 
@@ -312,7 +315,7 @@ class TrackKernel(BaseKernel):
         self.n_modes = sim_conf.n_modes
         self.max_steer = sim_conf.max_steer
 
-        self.obs_kernel = np.load(f"{sim_conf.kernel_path}ObsKernelTrack_{sim_conf.track_kernel_path}.npy")
+        # self.obs_kernel = np.load(f"{sim_conf.kernel_path}ObsKernelTrack_{sim_conf.track_kernel_path}.npy")
         img_size = int(sim_conf.obs_img_size * sim_conf.n_dx)
         obs_size = int(sim_conf.obs_size * sim_conf.n_dx)
         self.obs_offset = int((img_size - obs_size) / 2)
@@ -353,9 +356,9 @@ class TrackKernel(BaseKernel):
             phi = phi + phi_range
         theta_ind = int(round((phi + phi_range/2) / phi_range * (self.kernel.shape[2]-1)))
 
-        mode_ind = min(max(0, int(round((state[4]+self.max_steer)*self.n_modes ))), self.kernel.shape[3]-1)
+        # mode_ind = min(max(0, int(round((state[4]+self.max_steer)*self.n_modes ))), self.kernel.shape[3]-1)
 
-        return x_ind, y_ind, theta_ind, mode_ind
+        return x_ind, y_ind, theta_ind
 
 
 @njit(cache=True)
