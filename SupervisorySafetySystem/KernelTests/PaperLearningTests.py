@@ -165,10 +165,10 @@ def test_zero_vehicle(n):
 if __name__ == "__main__":
 
     # run_reward_tests()
-    n = 2
-    # learning_comparision_sss(n)
+    n = 1
+    learning_comparision_sss(n)
     # learning_comparision_pure(n)
 
-    test_zero_vehicle(n)
+    # test_zero_vehicle(n)
 
 

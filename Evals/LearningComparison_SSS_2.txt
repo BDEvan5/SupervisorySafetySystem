@@ -6,30 +6,30 @@ Map name:
 Vehicle: Kernel_Const_0.5_2
 Crashes: 0.0 --> Completes 100.0
 % Finished = 100.00
-Avg lap times: 116.29
+Avg lap times: 116.2
 No Obs Time: 0.0
 -----------------------------------------------------
 Vehicle: Kernel_Const_1_2
 Crashes: 0.0 --> Completes 100.0
 % Finished = 100.00
-Avg lap times: 117.94
+Avg lap times: 116.29
 No Obs Time: 0.0
 -----------------------------------------------------
 Vehicle: Kernel_Const_0_2
-Crashes: 24.0 --> Completes 76.0
-% Finished = 76.00
-Avg lap times: 148.94736842105263
+Crashes: 0.0 --> Completes 100.0
+% Finished = 100.00
+Avg lap times: 146.32
 No Obs Time: 0.0
 -----------------------------------------------------
 Vehicle: Kernel_Mag_0.5_2
 Crashes: 0.0 --> Completes 100.0
 % Finished = 100.00
-Avg lap times: 127.41
+Avg lap times: 127.18
 No Obs Time: 0.0
 -----------------------------------------------------
 Vehicle: Kernel_Mag_1_2
 Crashes: 0.0 --> Completes 100.0
 % Finished = 100.00
-Avg lap times: 102.73
+Avg lap times: 102.69
 No Obs Time: 0.0
 -----------------------------------------------------
