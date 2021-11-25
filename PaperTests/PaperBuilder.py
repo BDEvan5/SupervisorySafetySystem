@@ -42,7 +42,7 @@ class DataBuilder:
 
 
     def save_data_table(self, name="PaperTable"):
-        directory = "SystemTuning/" + name + ".csv"
+        directory = "PaperProcessing/" + name + ".csv"
         with open(directory, 'w') as file:
             writer = csv.DictWriter(file, fieldnames=self.base_keys)
             writer.writeheader()
@@ -53,10 +53,13 @@ class DataBuilder:
 
         print(f"Data saved to {name} --> {len(self.data)} Entries")
 
-if __name__ == "__main__":
+def run_builder():
     db = DataBuilder()
     db.build_keys()
     db.read_data()
     db.save_data_table()
+
+if __name__ == "__main__":
+    run_builder()
 
 

@@ -76,22 +76,30 @@ def kernel_reward_tests():
 
 
 def render_picture(n):
-    sim_conf = load_conf("track_kernel")
+    sim_conf = load_conf("test_kernel")
     env = TrackSim(sim_conf)
+    sim_conf.test_n = 4
 
-    # agent_name = f"Kernel_Const_{0}_{n}"
-    # agent_name = f"Kernel_Mag_{1}_{n}"
-    # planner = EndVehicleTest(agent_name, sim_conf)
     agent_name = f"Kernel_Mag_NoTrain_{n}"
     planner = EndVehicleTrain(agent_name, sim_conf)
-
     kernel = TrackKernel(sim_conf, False)
     safety_planner = Supervisor(planner, kernel, sim_conf)
 
-    sim_conf.test_n = 4
+    render_kernel(env, safety_planner, sim_conf, False)
+
+    agent_name = f"Kernel_Const_{0}_{n}"
+    planner = EndVehicleTest(agent_name, sim_conf)
+    kernel = TrackKernel(sim_conf, False)
+    safety_planner = Supervisor(planner, kernel, sim_conf)
 
     render_kernel(env, safety_planner, sim_conf, False)
 
+    agent_name = f"Kernel_Mag_{1}_{n}"
+    planner = EndVehicleTest(agent_name, sim_conf)
+    kernel = TrackKernel(sim_conf, False)
+    safety_planner = Supervisor(planner, kernel, sim_conf)
+
+    render_kernel(env, safety_planner, sim_conf, False)
 
 def eval_continuous(n):
     sim_conf = load_conf("test_kernel")
