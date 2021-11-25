@@ -337,11 +337,6 @@ class TrackKernel(BaseKernel):
         self.n_modes = sim_conf.n_modes
         self.max_steer = sim_conf.max_steer
 
-        # self.obs_kernel = np.load(f"{sim_conf.kernel_path}ObsKernelTrack_{sim_conf.track_kernel_path}.npy")
-        img_size = int(sim_conf.obs_img_size * sim_conf.n_dx)
-        obs_size = int(sim_conf.obs_size * sim_conf.n_dx)
-        self.obs_offset = int((img_size - obs_size) / 2)
-
         file_name = 'maps/' + sim_conf.map_name + '.yaml'
         with open(file_name) as file:
             documents = yaml.full_load(file)
@@ -349,22 +344,7 @@ class TrackKernel(BaseKernel):
         self.origin = yaml_file['origin']
 
     def construct_kernel(self, a, obs_locations):
-        if len(obs_locations) == 0:
-            self.kernel = self.clean_kernel
-            return
-
-        resize = self.clean_kernel.shape[0] / a[1]
-        obs_locations *= resize
-        self.kernel = construct_track_kernel(self.clean_kernel, obs_locations, self.obs_kernel, self.obs_offset)
-
-        theta_ind = int(round((0 + self.phi_range/2) / self.phi_range * (self.kernel.shape[2]-1)))
-        plt.figure(5)
-        plt.title(f"Kernel phi: {0} (ind: {theta_ind}) combined")
-        img = self.kernel[:, :, theta_ind].T + self.clean_kernel[:, :, theta_ind].T
-        plt.imshow(img, origin='lower')
-
-        # plt.show()
-        plt.pause(0.0001)
+        pass
 
     def get_indices(self, state):
         phi_range = np.pi * 2

@@ -15,7 +15,8 @@ class RandomPlanner:
         self.v = 2        
         self.name = name
         
-        path = os.getcwd() + "/EvalVehicles/" + self.name 
+        path = os.getcwd() + "/PaperData/Vehicles/" + self.name 
+        # path = os.getcwd() + "/EvalVehicles/" + self.name 
         if os.path.exists(path):
             try:
                 os.rmdir(path)
@@ -37,7 +38,8 @@ class ConstantPlanner:
         self.v = 2        
         self.name = name
 
-        path = os.getcwd() + "/EvalVehicles/" + self.name 
+        path = os.getcwd() + "/PaperData/Vehicles/" + self.name 
+        # path = os.getcwd() + "/EvalVehicles/" + self.name 
         if os.path.exists(path):
             try:
                 os.rmdir(path)
