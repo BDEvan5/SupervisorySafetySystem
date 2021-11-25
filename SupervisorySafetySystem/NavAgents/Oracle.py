@@ -75,7 +75,7 @@ class Oracle(OraclePP):
         self.sim_conf = sim_conf # kept for optimisation
         self.n_beams = 10
 
-        path = os.getcwd() + "/EvalVehicles/" + name 
+        path = sim_conf.vehicle_path + name 
         if os.path.exists(path):
             try:
                 os.rmdir(path)

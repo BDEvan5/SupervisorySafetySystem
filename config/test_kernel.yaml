@@ -43,6 +43,9 @@ kernel_reward: "Magnitude"
 sss_reward_scale: 1 
 learning: "Episodic"
 
+r1: 0.04
+r2: 0.004
+
 
 
 # Reward

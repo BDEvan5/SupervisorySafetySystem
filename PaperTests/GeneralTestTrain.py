@@ -211,8 +211,8 @@ def render_baseline(env, vehicle, sim_conf, show=False):
         print(f"({i}) Complete -> time: {env.steps}")
         lap_times.append(env.steps)
         env.render_trajectory(vehicle.path, f"Traj_{i}")
-        state = env.reset(True)
-        # state = env.reset(False)
+        # state = env.reset(True)
+        state = env.reset(False)
         
         done = False
 

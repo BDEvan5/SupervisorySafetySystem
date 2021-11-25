@@ -12,12 +12,12 @@ class ForestFGM:
     MAX_LIDAR_DIST = 10
     REDUCTION = 200
     
-    def __init__(self, name="FGM"):
+    def __init__(self, sim_conf, name="FGM"):
         self.degrees_per_elem = None
         self.name = "Follow the Forest Gap"
         self.n_beams = 1000
 
-        path = os.getcwd() + "/EvalVehicles/" + name 
+        path = sim_conf.vehicle_path + name 
         if os.path.exists(path):
             try:
                 os.rmdir(path)

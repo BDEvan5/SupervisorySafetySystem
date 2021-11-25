@@ -1,0 +1,16 @@
+EvalName,reward,kernel_reward,sss_reward_scale,r1,r2,kernel_time_step,name,avg_times,std_dev,success_rate,test_number,train_time
+KernelDiscret_time,progress,Magnitude,1,,,0.15,RandoKernelTest_0.15,157.73,2.275324152730771,100.0,0,
+KernelReward,progress,Magnitude,1,,,0.1,Kernel_Mag_1_0,127.5,2.295648056649799,100.0,0,109.33209896087646
+BaselineComp,progress,Magnitude,1,0.04,0.004,0.1,Kernel_ModelSSS_1,65.62,3.4022933442018184,100.0,1,118.98065209388733
+KernelReward,progress,Constant,1,,,0.1,Kernel_Const_1_0,125.25,4.656984002549289,100.0,0,112.53421688079834
+Safety,progress,Magnitude,1,,,0.1,MaxSteerPlanner,162.0,0.0,,0,
+LearningMode,progress,Magnitude,1,,,0.1,Kernel_Continuous_1,62.65,18.36429960548455,100.0,1,124.39240193367004
+KernelDiscret_time,progress,Magnitude,1,,,0.1,RandoKernelTest_0.1,158.76,1.9189580506097572,100.0,0,
+BaselineComp,cthRef,Magnitude,1,0.04,0.004,0.1,Baseline_cthRef_1,157.65,4.375785643744447,100.0,1,116.4205470085144
+KernelDiscret_ndx,progress,Magnitude,1,,,0.1,RandoKernelTest_80,158.76,1.9189580506097572,100.0,0,
+Safety,progress,Magnitude,1,,,0.1,StraightPlanner,158.0,0.0,,0,
+Safety,progress,Magnitude,1,,,0.1,RandoResult,158.76,1.9189580506097572,100.0,0,
+KernelDiscret_ndx,progress,Magnitude,1,,,0.1,RandoKernelTest_100,159.1219512195122,2.679598822823857,82.0,0,
+LearningMode,progress,Magnitude,1,,,0.1,Kernel_Episodic_1,55.93,4.703732560424753,100.0,1,119.09883522987366
+KernelReward,progress,Constant,0,,,0.1,Kernel_Const_0_0,141.46938775510205,3.7175921591657786,98.0,0,122.83696126937866
+Safety,progress,Magnitude,1,,,0.1,MinSteerPlanner,112.0,0.0,,0,

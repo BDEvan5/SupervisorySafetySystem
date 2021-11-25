@@ -6,9 +6,9 @@ from matplotlib import pyplot as plt
 
 
 class TrainHistory():
-    def __init__(self, agent_name, load=False) -> None:
+    def __init__(self, agent_name, sim_conf, load=False) -> None:
         self.agent_name = agent_name
-        self.path = '/EvalVehicles/' + self.agent_name 
+        self.path = sim_conf.vehicle_path + self.agent_name 
 
         # training data
         self.ptr = 0
@@ -25,7 +25,8 @@ class TrainHistory():
             self.init_file_struct()
 
     def init_file_struct(self):
-        path = os.getcwd() + self.path
+        # path = os.getcwd() + self.path
+        path  = self.path
         if os.path.exists(path):
             try:
                 os.rmdir(path)
@@ -73,13 +74,13 @@ class TrainHistory():
         data = []
         for i in range(self.ptr):
             data.append([i, self.rewards[i], self.lengths[i]])
-        full_name = 'EvalVehicles/' + self.agent_name + '/training_data.csv'
+        full_name = self.path + '/training_data.csv'
         with open(full_name, 'w') as csvfile:
             csvwriter = csv.writer(csvfile)
             csvwriter.writerows(data)
 
         plt.figure(2)
-        plt.savefig('EvalVehicles/' + self.agent_name + "/training_rewards.png")
+        plt.savefig(self.path + "/training_rewards.png")
         
 def moving_average(data, period):
     return np.convolve(data, np.ones(period), 'same') / period

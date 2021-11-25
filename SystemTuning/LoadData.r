@@ -27,9 +27,10 @@ test_data %>%
 
 test_data %>%
   filter(EvalName=="PaperTest")%>%
+  filter(sss_reward_scale==1)%>%
   filter(kernel_reward=="Magnitude"|kernel_reward=="Constant")%>%
-  select(avg_times, success_rate, test_number, reward, kernel_reward) %>%
-  ggplot(aes(x=kernel_reward, y=(avg_times)))+
+  select(avg_times, success_rate, test_number, reward, kernel_reward, sss_reward_scale, test_number) %>%
+  ggplot(aes(x=kernel_reward, y=(avg_times), color=test_number))+
   geom_boxplot()+
   geom_point()
 
