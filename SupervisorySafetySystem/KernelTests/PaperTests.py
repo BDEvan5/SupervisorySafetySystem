@@ -52,9 +52,9 @@ def rando_results():
 
 def straight_test():
     conf = load_conf("track_kernel")
-    # planner = ConstantPlanner("StraightPlanner", 0)
+    planner = ConstantPlanner("StraightPlanner", 0)
     # planner = ConstantPlanner("MaxSteerPlanner", 0.4)
-    planner = ConstantPlanner("MinSteerPlanner", -0.4)
+    # planner = ConstantPlanner("MinSteerPlanner", -0.4)
 
     env = TrackSim(conf)
     kernel = TrackKernel(conf, False)
@@ -62,8 +62,9 @@ def straight_test():
 
     conf.test_n = 1
     eval_dict = eval_kernel(env, safety_planner, conf, True)
+    # eval_dict = eval_vehicle(env, safety_planner, conf, False)
     
-    config_dict = vars(sim_conf)
+    config_dict = vars(conf)
     config_dict['EvalName'] = "PaperTest" 
     config_dict['test_number'] = 0
     config_dict.update(eval_dict)
@@ -181,6 +182,6 @@ if __name__ == "__main__":
 
     # rando_results()
     # rando_pictures()
-    # straight_test()
+    straight_test()
 
 

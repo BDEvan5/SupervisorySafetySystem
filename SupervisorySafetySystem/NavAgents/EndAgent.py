@@ -96,6 +96,18 @@ class EndVehicleTrain(EndBase):
 
         self.agent.replay_buffer.add(self.nn_state, self.nn_act, nn_s_prime, reward, True)
 
+    def fake_done(self):
+        """
+        To be called when ep is done.
+        """
+        self.t_his.lap_done(False)
+        self.t_his.print_update(False) #remove this line
+        if self.t_his.ptr % 10 == 0:
+            self.t_his.print_update(False)
+            self.agent.save(self.path)
+
+
+
 
 class EndVehicleTest(EndBase):
     def __init__(self, agent_name, sim_conf):
@@ -112,7 +124,7 @@ class EndVehicleTest(EndBase):
 
         self.path = 'EvalVehicles/' + agent_name
         self.actor = torch.load(self.path + '/' + agent_name + "_actor.pth")
-        self.n_beams = 10
+        # self.n_beams = 10
 
         print(f"Agent loaded: {agent_name}")
 

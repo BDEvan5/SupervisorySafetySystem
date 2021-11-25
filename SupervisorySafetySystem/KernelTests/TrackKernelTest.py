@@ -28,7 +28,8 @@ def rando_test():
 
     env = TrackSim(conf)
     planner = RandomPlanner()
-    kernel = TrackKernel(conf, False, f"TrackKernel_{conf.track_kernel_path}_{conf.map_name}.npy")
+    kernel = TrackKernel(conf, False)
+    # kernel = TrackKernel(conf, False, f"TrackKernel_{conf.track_kernel_path}_{conf.map_name}.npy")
     # kernel = TrackKernel(conf, False, f"DiscKern_{conf.track_kernel_path}_{conf.map_name}.npy")
     safety_planner = Supervisor(planner, kernel, conf)
 

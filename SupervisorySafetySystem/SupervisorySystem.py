@@ -65,8 +65,7 @@ class Supervisor:
         """
         
         self.d_max = conf.max_steer
-        # self.v = 2
-        # self.kernel = ForestKernel(conf)
+        self.v = 2
         self.kernel = kernel
         self.planner = planner
         self.safe_history = SafetyHistory()
@@ -110,10 +109,11 @@ class Supervisor:
         n_segments = 5
         dw = np.ones((5, 2))
         dw[:, 0] = np.linspace(-self.d_max, self.d_max, n_segments)
-        dw = np.vstack((dw, dw, dw))
-        dw[0:5, 1] *= 1
-        dw[5:10, 1] *= 2
-        dw[10:, 1] *= 3
+        dw[:, 1] *= self.v
+        # dw = np.vstack((dw, dw, dw))
+        # dw[0:5, 1] *= 1
+        # dw[5:10, 1] *= 2
+        # dw[10:, 1] *= 3
         return dw
 
 
@@ -124,12 +124,20 @@ class LearningSupervisor(Supervisor):
         self.calculate_reward = None # to be replaced by a function
         self.ep_interventions = 0
         self.intervention_list = []
+        self.lap_times = []
 
-    def done_entry(self, s_prime):
+    def done_entry(self, s_prime, steps=0):
         s_prime['reward'] = self.calculate_reward(self.intervention_mag)
         self.planner.done_entry(s_prime)
         self.intervention_list.append(self.ep_interventions)
         self.ep_interventions = 0
+        self.lap_times.append(steps)
+
+    def fake_done(self, steps):
+        self.planner.fake_done()
+        self.intervention_list.append(self.ep_interventions)
+        self.ep_interventions = 0
+        self.lap_times.append(steps)
 
     def save_intervention_list(self):
         full_name = self.planner.path + f'/{self.planner.name}_intervention_list.csv'
@@ -145,6 +153,20 @@ class LearningSupervisor(Supervisor):
         plt.plot(self.intervention_list)
         plt.savefig(f"{self.planner.path}/{self.planner.name}_interventions.png")
         plt.savefig(f"{self.planner.path}/{self.planner.name}_interventions.svg")
+
+        full_name = self.planner.path + f'/{self.planner.name}_laptime_list.csv'
+        data = []
+        for i in range(len(self.lap_times)):
+            data.append([i, self.lap_times[i]])
+        with open(full_name, 'w') as csvfile:
+            csvwriter = csv.writer(csvfile)
+            csvwriter.writerows(data)
+
+        plt.figure(6)
+        plt.clf()
+        plt.plot(self.lap_times)
+        plt.savefig(f"{self.planner.path}/{self.planner.name}_laptimes.png")
+        plt.savefig(f"{self.planner.path}/{self.planner.name}_laptimes.svg")
 
     def plan(self, obs):
         obs['reward'] = self.calculate_reward(self.intervention_mag)
@@ -306,7 +328,7 @@ class TrackKernel(BaseKernel):
     def __init__(self, sim_conf, plotting=False, kernel_name=None):
         super().__init__(sim_conf, plotting)
         if kernel_name is None:
-            kernel_name = f"{sim_conf.kernel_path}TrackKernel_{sim_conf.track_kernel_path}_{sim_conf.map_name}.npy"
+            kernel_name = f"{sim_conf.kernel_path}Kernel_{sim_conf.track_kernel_mode}_{sim_conf.map_name}.npy"
         else:
             kernel_name = f"{sim_conf.kernel_path}{kernel_name}"
         self.clean_kernel = np.load(kernel_name)

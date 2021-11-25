@@ -135,6 +135,43 @@ def eval_kernel(env, vehicle, sim_conf, show=False):
 
     return eval_dict
 
+def render_baseline(env, vehicle, sim_conf, show=False):
+    lap_times = [] 
+
+    state = env.reset(False)
+    done, score = False, 0.0
+
+    state = env.reset(False)
+    done, score = False, 0.0
+    for i in range(sim_conf.test_n):
+        while not done:
+            a = vehicle.plan_act(state)
+            s_p, r, done, _ = env.step_plan(a)
+            state = s_p
+        if show:
+            env.render(wait=False, name=vehicle.name)
+
+
+        print(f"({i}) Complete -> time: {env.steps}")
+        lap_times.append(env.steps)
+        env.render_trajectory(vehicle.path, f"Traj_{i}")
+        state = env.reset(True)
+        # state = env.reset(False)
+        
+        done = False
+
+    avg_times, std_dev = np.mean(lap_times), np.std(lap_times)
+    print(f"Lap times Avg: {avg_times} --> Std: {std_dev}")
+
+    eval_dict = {}
+    eval_dict['name'] = vehicle.name
+    eval_dict['avg_times'] = float(avg_times)
+    eval_dict['std_dev'] = float(std_dev)
+
+    print(f"Finished running test and saving file with results.")
+
+    return eval_dict
+
 def eval_vehicle_times(env, vehicle, sim_conf, show=False):
     crashes = 0
     completes = 0
@@ -389,13 +426,51 @@ def train_kernel_vehicle(env, vehicle, sim_conf, add_obs=False, show=False):
         
         if done:
             
-            vehicle.done_entry(s_prime)
+            vehicle.done_entry(s_prime, env.steps)
             if show:
                 env.render(wait=False)
                 vehicle.safe_history.plot_safe_history()
 
             state = env.reset(add_obs)
             vehicle.kernel.construct_kernel(env.env_map.map_img.shape, env.env_map.obs_pts)
+
+    vehicle.planner.t_his.print_update(True)
+    vehicle.planner.t_his.save_csv_data()
+    vehicle.planner.agent.save(vehicle.planner.path)
+    vehicle.save_intervention_list()
+
+    train_time = time.time() - start_time
+    print(f"Finished Training: {vehicle.planner.name} in {train_time} seconds")
+
+    return train_time 
+
+
+def train_continuous_kernel(env, vehicle, sim_conf, add_obs=False, show=False):
+    start_time = time.time()
+    
+
+    done = False
+    state = env.reset(add_obs)
+
+    print(f"Starting Training: {vehicle.planner.name}")
+    vehicle.kernel.construct_kernel(env.env_map.map_img.shape, env.env_map.obs_pts)
+    for n in range(sim_conf.train_n):
+        a = vehicle.plan(state)
+        s_prime, r, done, _ = env.step_plan(a)
+
+        state = s_prime
+        vehicle.planner.agent.train(2)
+        
+        if done:
+            vehicle.fake_done(env.steps)
+            if show:
+                env.render(wait=False)
+                vehicle.safe_history.plot_safe_history()
+
+            done = False
+
+            state = env.fake_reset()
+            # vehicle.kernel.construct_kernel(env.env_map.map_img.shape, env.env_map.obs_pts)
 
     vehicle.planner.t_his.print_update(True)
     vehicle.planner.t_his.save_csv_data()
@@ -421,6 +496,7 @@ def load_conf(fname):
 
 def train_vehicle(env, vehicle, sim_conf, add_obs=False, show=False):
     start_time = time.time()
+    crash_counter = 0
 
     done = False
     state = env.reset(add_obs)
@@ -437,6 +513,8 @@ def train_vehicle(env, vehicle, sim_conf, add_obs=False, show=False):
             vehicle.done_entry(s_prime)
             if show:
                 env.render(wait=False)
+            if state['reward'] == -1:
+                crash_counter += 1
 
             # vehicle.reset_lap()
             state = env.reset(add_obs)
@@ -447,8 +525,9 @@ def train_vehicle(env, vehicle, sim_conf, add_obs=False, show=False):
 
     train_time = time.time() - start_time
     print(f"Finished Training: {vehicle.name} in {train_time} seconds")
+    print(f"Crashes: {crash_counter}")
 
-    return train_time 
+    return train_time, crash_counter
 
 
 def save_conf_dict(dictionary):

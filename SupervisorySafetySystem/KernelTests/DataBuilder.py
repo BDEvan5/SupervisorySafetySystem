@@ -28,8 +28,12 @@ class DataBuilder:
                 print(f"Filename issue: {folder}")
                 continue
             
+
             with open(config, 'r') as f:
                 config_data = yaml.safe_load(f)
+
+            if config_data is None:
+                continue
 
             self.data[i] = {}
             for key in config_data.keys():

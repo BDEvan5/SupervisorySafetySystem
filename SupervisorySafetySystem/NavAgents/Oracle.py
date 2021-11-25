@@ -2,6 +2,7 @@ import numpy as np
 from numba import njit
 from matplotlib import pyplot as plt
 import csv
+import os, shutil
 
 from LearningLocalPlanning.NavUtils.TrajectoryPlanner import Max_velocity, Max_velocity_conf, MinCurvatureTrajectoryForest, MinCurvatureTrajectory, ObsAvoidTraj
 import LearningLocalPlanning.LibFunctions as lib
@@ -69,10 +70,19 @@ class OraclePP:
 
 
 class Oracle(OraclePP):
-    def __init__(self, sim_conf):
+    def __init__(self, sim_conf, name="Oracle"):
         OraclePP.__init__(self, sim_conf)
         self.sim_conf = sim_conf # kept for optimisation
         self.n_beams = 10
+
+        path = os.getcwd() + "/EvalVehicles/" + name 
+        if os.path.exists(path):
+            try:
+                os.rmdir(path)
+            except:
+                shutil.rmtree(path)
+        os.mkdir(path)
+        self.path = path
 
     def plan_track(self, env_map):
         track = []

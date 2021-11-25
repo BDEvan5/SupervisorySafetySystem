@@ -29,7 +29,7 @@ class DiscrimGenerator(BaseKernel):
                 break
             self.previous_kernel = np.copy(self.kernel)
             self.kernel = discrim_loop(self.kernel, self.n_modes, self.dynamics)
-            self.view_build(False)
+            # self.view_build(False)
             # self.view_kernel(0, False, z)
 
     def view_kernel(self, phi, show=True, n=0):
@@ -197,7 +197,7 @@ def build_track_discrim(conf):
     # plt.pause(0.0001)
     kernel = DiscrimGenerator(img, conf)
     kernel.calculate_kernel(100)
-    kernel.save_kernel(f"DiscKern_{conf.track_kernel_path}_{conf.map_name}")
+    kernel.save_kernel(f"Kernel_disc_{conf.map_name}")
     kernel.view_build(True)
 
 
