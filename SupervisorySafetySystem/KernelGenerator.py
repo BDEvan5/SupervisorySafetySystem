@@ -121,7 +121,7 @@ class ViabilityGenerator(BaseKernel):
         
         plt.pause(0.0001)
         plt.pause(1)
-        plt.savefig("SupervisorySafetySystem/Kernels/Kernel_build.svg")
+        plt.savefig(f"{self.sim_conf.kernel_path}Kernel_build_{self.sim_conf.kernel_mode}.svg")
 
         if show:
             plt.show()

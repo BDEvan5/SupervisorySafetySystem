@@ -328,7 +328,7 @@ class TrackKernel(BaseKernel):
     def __init__(self, sim_conf, plotting=False, kernel_name=None):
         super().__init__(sim_conf, plotting)
         if kernel_name is None:
-            kernel_name = f"{sim_conf.kernel_path}Kernel_{sim_conf.track_kernel_mode}_{sim_conf.map_name}.npy"
+            kernel_name = f"{sim_conf.kernel_path}Kernel_{sim_conf.kernel_mode}_std_{sim_conf.map_name}.npy"
         else:
             kernel_name = f"{sim_conf.kernel_path}{kernel_name}"
         self.clean_kernel = np.load(kernel_name)
