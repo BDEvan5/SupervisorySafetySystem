@@ -45,6 +45,30 @@ def eval_episodic(n):
     save_conf_dict(config_dict)
 
 
+def eval_test_episodic(n):
+    sim_conf = load_conf("track_kernel")
+    env = TrackSim(sim_conf)
+    agent_name = f"Kernel_Episodic_{n}"
+
+    planner = EndVehicleTest(agent_name, sim_conf)
+    # safety_planner = Supervisor(planner, kernel, sim_conf)
+
+    # eval_dict = eval_vehicle(env, planner, sim_conf, False)
+    sim_conf.test_n = 5
+    eval_dict = render_baseline(env, planner, sim_conf, False)
+    
+    # config_dict = vars(sim_conf)
+    # config_dict['EvalName'] = "PaperTest" 
+    # config_dict['test_number'] = n
+    # config_dict['train_time'] = train_time
+    # config_dict['learning'] = "Episodic"
+    # config_dict['kernel_reward'] = "Magnitude"
+    # config_dict['sss_reward_scale'] = sss_reward_scale
+    # config_dict.update(eval_dict)
+
+    # save_conf_dict(config_dict)
+
+
 def eval_continuous(n):
     sss_reward_scale = 1
     sim_conf = load_conf("track_kernel")
@@ -76,4 +100,5 @@ def eval_continuous(n):
 
 if __name__ == "__main__":
     # eval_continuous(6)
-    eval_episodic(2)
+    # eval_episodic(2)
+    eval_test_episodic(2)

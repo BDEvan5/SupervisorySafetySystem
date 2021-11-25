@@ -2,7 +2,7 @@ import numpy as np
 from numba import njit
  
 from LearningLocalPlanning.NavUtils.speed_utils import calculate_speed
-
+import os, shutil
 
 #TODO: most of this can be njitted
 class ForestFGM:    
@@ -12,10 +12,19 @@ class ForestFGM:
     MAX_LIDAR_DIST = 10
     REDUCTION = 200
     
-    def __init__(self):
+    def __init__(self, name="FGM"):
         self.degrees_per_elem = None
         self.name = "Follow the Forest Gap"
         self.n_beams = 1000
+
+        path = os.getcwd() + "/EvalVehicles/" + name 
+        if os.path.exists(path):
+            try:
+                os.rmdir(path)
+            except:
+                shutil.rmtree(path)
+        os.mkdir(path)
+        self.path = path
     
     def preprocess_lidar(self, ranges):
         self.degrees_per_elem = (180) / len(ranges)

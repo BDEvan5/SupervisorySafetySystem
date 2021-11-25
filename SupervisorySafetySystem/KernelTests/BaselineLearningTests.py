@@ -136,10 +136,30 @@ def eval_baseline_cth(n):
 
 
 
+def render_picture(n):
+    sim_conf = load_conf("track_kernel")
+    env = TrackSim(sim_conf)
+    # agent_name = f"Kernel_Const_{0}_{n}"
+    # agent_name = f"Kernel_Const_{1}_{n}"
+    agent_name = f"Baseline_reward_cthRef_0.04_{n}"
+    planner = EndVehicleTest(agent_name, sim_conf)
+    kernel = TrackKernel(sim_conf, False)
+    safety_planner = Supervisor(planner, kernel, sim_conf)
+
+    sim_conf.test_n = 4
+
+    # eval_kernel(env, safety_planner, sim_conf, False)
+    render_baseline(env, planner, sim_conf, False)
+    # test_kernel_vehicle(env, safety_planner, True, 30)
+
+
+
 if __name__ == "__main__":
     # train_baseline_rewards(1)
     # train_baseline_distance(2)
     # train_baseline_cth(4)
-    eval_baseline_cth(1)
+    # eval_baseline_cth(1)
+
+    render_picture(1)
 
 

@@ -3,33 +3,33 @@ Testing Complete
 Map name:  
 -----------------------------------------------------
 -----------------------------------------------------
-Vehicle: Kernel_Const_0.5_1
+Vehicle: Kernel_Const_0.5_3
 Crashes: 0.0 --> Completes 100.0
 % Finished = 100.00
-Avg lap times: 122.58
+Avg lap times: 126.83
 No Obs Time: 0.0
 -----------------------------------------------------
-Vehicle: Kernel_Const_1_1
+Vehicle: Kernel_Const_1_3
 Crashes: 0.0 --> Completes 100.0
 % Finished = 100.00
-Avg lap times: 140.59
+Avg lap times: 98.79
 No Obs Time: 0.0
 -----------------------------------------------------
-Vehicle: Kernel_Const_0_1
-Crashes: 100.0 --> Completes 0.0
-% Finished = 0.00
-Avg lap times: 0.0
+Vehicle: Kernel_Const_0_3
+Crashes: 2.0 --> Completes 98.0
+% Finished = 98.00
+Avg lap times: 161.29591836734693
 No Obs Time: 0.0
 -----------------------------------------------------
-Vehicle: Kernel_Mag_0.5_1
+Vehicle: Kernel_Mag_0.5_3
 Crashes: 0.0 --> Completes 100.0
 % Finished = 100.00
-Avg lap times: 151.23
+Avg lap times: 101.88
 No Obs Time: 0.0
 -----------------------------------------------------
-Vehicle: Kernel_Mag_1_1
-Crashes: 12.0 --> Completes 88.0
-% Finished = 88.00
-Avg lap times: 109.61363636363636
+Vehicle: Kernel_Mag_1_3
+Crashes: 0.0 --> Completes 100.0
+% Finished = 100.00
+Avg lap times: 99.69
 No Obs Time: 0.0
 -----------------------------------------------------

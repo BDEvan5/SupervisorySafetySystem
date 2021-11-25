@@ -23,3 +23,13 @@ test_data %>%
   ggplot(aes(x=reward, y=(avg_times)))+
   geom_point()
 # ylim(380, 720)
+
+
+test_data %>%
+  filter(EvalName=="PaperTest")%>%
+  filter(kernel_reward=="Magnitude"|kernel_reward=="Constant")%>%
+  select(avg_times, success_rate, test_number, reward, kernel_reward) %>%
+  ggplot(aes(x=kernel_reward, y=(avg_times)))+
+  geom_boxplot()+
+  geom_point()
+

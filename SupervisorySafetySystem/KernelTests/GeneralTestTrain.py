@@ -135,6 +135,43 @@ def eval_kernel(env, vehicle, sim_conf, show=False):
 
     return eval_dict
 
+def render_baseline(env, vehicle, sim_conf, show=False):
+    lap_times = [] 
+
+    state = env.reset(False)
+    done, score = False, 0.0
+
+    state = env.reset(False)
+    done, score = False, 0.0
+    for i in range(sim_conf.test_n):
+        while not done:
+            a = vehicle.plan_act(state)
+            s_p, r, done, _ = env.step_plan(a)
+            state = s_p
+        if show:
+            env.render(wait=False, name=vehicle.name)
+
+
+        print(f"({i}) Complete -> time: {env.steps}")
+        lap_times.append(env.steps)
+        env.render_trajectory(vehicle.path, f"Traj_{i}")
+        state = env.reset(True)
+        # state = env.reset(False)
+        
+        done = False
+
+    avg_times, std_dev = np.mean(lap_times), np.std(lap_times)
+    print(f"Lap times Avg: {avg_times} --> Std: {std_dev}")
+
+    eval_dict = {}
+    eval_dict['name'] = vehicle.name
+    eval_dict['avg_times'] = float(avg_times)
+    eval_dict['std_dev'] = float(std_dev)
+
+    print(f"Finished running test and saving file with results.")
+
+    return eval_dict
+
 def eval_vehicle_times(env, vehicle, sim_conf, show=False):
     crashes = 0
     completes = 0

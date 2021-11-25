@@ -69,7 +69,7 @@ def eval_constant_reward(sss_reward_scale, n):
     save_conf_dict(config_dict)
 
 def run_reward_tests():
-    n = 1
+    # n = 1
     for n in range(5):
         eval_constant_reward(0, n)
         eval_constant_reward(0.2, n)
@@ -165,8 +165,12 @@ def test_zero_vehicle(n):
 def render_picture(n):
     sim_conf = load_conf("track_kernel")
     env = TrackSim(sim_conf)
-    agent_name = f"Kernel_Const_{0}_{n}"
-    planner = EndVehicleTest(agent_name, sim_conf)
+    # agent_name = f"Kernel_Const_{0}_{n}"
+    # agent_name = f"Kernel_Const_{1}_{n}"
+    # agent_name = f"Kernel_Mag_{1}_{n}"
+    agent_name = f"Kernel_Mag_NoTrain_{n}"
+    # planner = EndVehicleTest(agent_name, sim_conf)
+    planner = EndVehicleTrain(agent_name, sim_conf)
     kernel = TrackKernel(sim_conf, False)
     safety_planner = Supervisor(planner, kernel, sim_conf)
 
@@ -178,8 +182,11 @@ def render_picture(n):
 if __name__ == "__main__":
 
     # run_reward_tests()
-    n = 1
-    # learning_comparision_sss(n)
+    n = 2
+    # for n in range(5):
+    #     learning_comparision_sss(n)
+    #     learning_comparision_pure(n)
+    # # learning_comparision_sss(n)
     # learning_comparision_pure(n)
 
     # test_zero_vehicle(n)
