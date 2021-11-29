@@ -31,4 +31,8 @@ test_data %>%
 
 ```
 
+The tests show that the SSS produces much more similar results than the baseline agent.
+The standard deviation of the data is much smaller at ... vs ...
+
+The average times produced by the SSS is also lower, showing that the SSS leads to faster racing behaviour.
 

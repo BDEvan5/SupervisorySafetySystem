@@ -65,14 +65,15 @@ def kernel_reward_tests():
     for n in range(1):
         eval_constant_reward(0, n)
         # eval_constant_reward(0.2, n)
-        # eval_constant_reward(0.5, n)
+        eval_constant_reward(0.5, n)
         # eval_constant_reward(0.7, n)
         eval_constant_reward(1, n)
 
         # eval_magnitude_reward(0.2, n)
-        # eval_magnitude_reward(0.5, n)
+        eval_magnitude_reward(0.5, n)
         # eval_magnitude_reward(0.7, n)
         eval_magnitude_reward(1, n)
+        eval_magnitude_reward(2.5, n)
 
 
 def render_picture(n):
@@ -159,8 +160,8 @@ def eval_episodic(n):
 
 
 if __name__ == "__main__":
-    # kernel_reward_tests()
+    kernel_reward_tests()
     # render_picture()
 
-    eval_continuous(1)
-    eval_episodic(1)
+    # eval_continuous(1)
+    # eval_episodic(1)

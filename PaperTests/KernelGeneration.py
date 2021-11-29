@@ -29,7 +29,7 @@ def generate_discriminating_kernel(conf, val, make_picture=False):
     img = prepare_track_img(conf) 
     kernel = ViabilityGenerator(img, conf)
     kernel.calculate_kernel(50)
-    kernel.save_kernel(f"Kernel_viab_{val}_{conf.map_name}")
+    kernel.save_kernel(f"Kernel_disc_{val}_{conf.map_name}")
     time_taken = time.time() - start_time
     print(f"Time taken: {time_taken}")
     kernel.view_build(False)
@@ -56,9 +56,10 @@ def kernel_discretization_ndx():
     for value in discretes:
         conf.n_dx = value
         kernel_time = generate_viability_kernel(conf, value)
+        kernel_time = generate_discriminating_kernel(conf, value)
 
         kernel_name = f"Kernel_viab_{value}_{conf.map_name}.npy"    
-        planner = RandomPlanner(f"RandoKernelTest_{value}")
+        planner = RandomPlanner(f"RandoKernelTest_viab_{value}")
 
         kernel = TrackKernel(conf, False, kernel_name)
         safety_planner = Supervisor(planner, kernel, conf)
@@ -74,8 +75,27 @@ def kernel_discretization_ndx():
 
         save_conf_dict(config_dict)
 
-        print(f"Discretizations: {discretes}")
-        print(f"Success rates: {success_rates}")
+        # # disc
+        # conf.kernel_mode = "disc"
+        # conf.name = f"RandoResult_disc"
+        # kernel_name = f"Kernel_disc_{value}_{conf.map_name}.npy"    
+        # planner = RandomPlanner(f"RandoKernelTest_disc_{value}")
+        # kernel = TrackKernel(conf, False, kernel_name)
+        # safety_planner = Supervisor(planner, kernel, conf)
+
+        # eval_dict = evaluate_vehicle(env, safety_planner, conf, False)
+        # success_rates.append(eval_dict['success_rate'])
+        
+        # config_dict = vars(conf)
+        # config_dict['EvalName'] = "KernelDiscret_ndx" 
+        # config_dict['test_number'] = 0
+        # config_dict['kernel_time'] = kernel_time
+        # config_dict.update(eval_dict)
+
+        # save_conf_dict(config_dict)
+
+    print(f"Discretizations: {discretes}")
+    print(f"Success rates: {success_rates}")
     
 def kernel_discretization_time():
     conf = load_conf("test_kernel")
@@ -122,43 +142,50 @@ def rando_pictures():
     conf.test_n = 5
     render_kernel(env, safety_planner, conf, True)
 
-def rando_results():
-    conf = load_conf("test_kernel")
-    planner = RandomPlanner("RandoResult")
+def rando_results(n):
+    conf = load_conf("SafetyTests")
+    conf.kernel_mode = "disc"
+    conf.vehicle = "random"
+    conf.test_n = 100
 
     env = TrackSim(conf)
-    kernel = TrackKernel(conf, False)
-    safety_planner = Supervisor(planner, kernel, conf)
+    for mode in ["viab", "disc"]:
+        conf.kernel_mode = mode
+        planner = RandomPlanner(f"RandoResult_{conf.kernel_mode}_{n}")
 
-    eval_dict = evaluate_vehicle(env, safety_planner, conf, False)
-    
-    config_dict = vars(conf)
-    config_dict['EvalName'] = "Safety" 
-    config_dict['test_number'] = 0
-    config_dict.update(eval_dict)
-
-    save_conf_dict(config_dict)
-
-def straight_test():
-    conf = load_conf("test_kernel")
-    planner1 = ConstantPlanner("StraightPlanner", 0)
-    planner2 = ConstantPlanner("MaxSteerPlanner", 0.4)
-    planner3 = ConstantPlanner("MinSteerPlanner", -0.4)
-
-    for planner in [planner1, planner2, planner3]:
-        env = TrackSim(conf)
         kernel = TrackKernel(conf, False)
         safety_planner = Supervisor(planner, kernel, conf)
 
-        conf.test_n = 1 # same behaviour
-        eval_dict = render_kernel(env, safety_planner, conf, True)
+        eval_dict = evaluate_vehicle(env, safety_planner, conf, False)
         
         config_dict = vars(conf)
-        config_dict['EvalName'] = "Safety" 
-        config_dict['test_number'] = 0
+        config_dict['test_number'] = n
         config_dict.update(eval_dict)
 
         save_conf_dict(config_dict)
+
+def run_constant_tests(n):
+    conf = load_conf("SafetyTests")
+    conf.vehicle = "constant"
+
+    env = TrackSim(conf)
+    for mode in ["viab", "disc"]:
+        conf.kernel_mode = mode
+        kernel = TrackKernel(conf, False)
+        for value in [0, -0.4, 0.4]:
+            conf.constant_value = value
+            planner = ConstantPlanner(f"ConstPlanner_{value}_{conf.kernel_mode}_{n}", conf.constant_value)
+            safety_planner = Supervisor(planner, kernel, conf)
+
+            eval_dict = render_kernel(env, safety_planner, conf, True)
+            
+            config_dict = vars(conf)
+            config_dict['test_number'] = n
+            config_dict.update(eval_dict)
+
+            save_conf_dict(config_dict)
+
+
 
 
 
@@ -169,8 +196,8 @@ if __name__ == "__main__":
 
     # generate_standard_kernels()
 
-    rando_pictures()
-    rando_results()
-    straight_test()
+    # rando_pictures()
+    rando_results(1)
+    run_constant_tests(1)
 
 

@@ -11,8 +11,6 @@ max_d_dot: 3.2
 
 # Vehicle parameters
 n_beams: 20
-range_finder_scale: 5
-h_size: 100
 
 # Simulator parameters
 time_step: 0.1
@@ -39,17 +37,11 @@ kernel_time_step: 0.1
 lookahead_time_step: 0.2
 n_dx: 80
 
-kernel_reward: "Magnitude"
-sss_reward_scale: 1 
-learning: "Episodic"
+vehicle: constant
 
-r1: 0.04
-r2: 0.004
+test_n: 1
+EvalName: "Safety"
 
-vehicle: reactive
+constant_value: 0
+test_number: 0
 
-# Reward
-reward: 'cthRef'
-
-train_n: 20000
-test_n: 100
