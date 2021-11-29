@@ -1,0 +1,34 @@
+---
+title: "Paper Data Presetation"
+author: "Benjamin Evans"
+date: "29/11/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+
+test_data = read.csv("PaperTable.csv")
+library(ggplot2)
+library(dplyr)
+
+```
+
+# Tests
+
+## Repeatability
+
+We evaluate 10 agents of the baseline and the SSS.
+
+```{r}
+
+test_data %>%
+  filter(EvalName=="BaselineComp")%>%
+  select(avg_times, success_rate, test_number, reward, kernel_reward, vehicle, test_number) %>%
+  ggplot(aes(x=vehicle, y=(avg_times), color=test_number))+
+  geom_boxplot()+
+  geom_point()
+
+```
+
+

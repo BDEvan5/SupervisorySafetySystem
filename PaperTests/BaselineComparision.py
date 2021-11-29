@@ -8,10 +8,10 @@ from SupervisorySafetySystem.NavUtils.RewardFunctions import *
 
 
 
-def train_baseline_cth(n):
+def train_baseline_cth(n, i):
     sim_conf = load_conf("test_kernel")
     reward = "cthRef"
-    agent_name = f"Baseline_{reward}_{n}"
+    agent_name = f"Baseline_{reward}_{i}_{n}"
 
     env = TrackSim(sim_conf)
     planner = EndVehicleTrain(agent_name, sim_conf)
@@ -34,10 +34,10 @@ def train_baseline_cth(n):
     save_conf_dict(config_dict)
 
 
-def eval_model_sss(n):
+def eval_model_sss(n, i):
     sim_conf = load_conf("test_kernel")
     env = TrackSim(sim_conf)
-    agent_name = f"Kernel_ModelSSS_{n}"
+    agent_name = f"Kernel_ModelSSS_{i}_{n}"
     planner = EndVehicleTrain(agent_name, sim_conf)
     planner.calculate_reward = RefCTHReward(sim_conf, 0.04, 0.004) 
     kernel = TrackKernel(sim_conf)
@@ -61,10 +61,10 @@ def eval_model_sss(n):
 
     save_conf_dict(config_dict)
 
-def repeatability_comparision():
+def repeatability_comparision(n):
     for i in range(10):
-        train_baseline_cth(i)
-        eval_model_sss(i)
+        train_baseline_cth(n, i)
+        eval_model_sss(n, i)
 
 if __name__ == "__main__":
     train_baseline_cth(1)

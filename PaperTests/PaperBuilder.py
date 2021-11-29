@@ -40,6 +40,13 @@ class DataBuilder:
                 if key in self.base_keys:
                     self.data[i][key] = config_data[key]
 
+            name = config_data["name"][0:6]
+            if name == "Kernel":
+                self.data[i]["vehicle"] = "kernel"
+            elif name == "Baseli":
+                self.data[i]["vehicle"] = "baseline"
+
+
 
     def save_data_table(self, name="PaperTable"):
         directory = "PaperProcessing/" + name + ".csv"

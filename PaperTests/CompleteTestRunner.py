@@ -19,16 +19,16 @@ def main():
     # render_picture(0)
 
     # eval_continuous(1)
-    eval_episodic(1)
+    # eval_episodic(1)
 
-    train_baseline_cth(1)
-    eval_model_sss(1)
+    # train_baseline_cth(1)
+    # eval_model_sss(1)
 
-    # repeatability_comparision()
+    repeatability_comparision(0)
 
-    test_FGM()
-    test_oracle()
+    # test_FGM()
+    # test_oracle()
 
-    run_builder()
+    # run_builder()
 
 main()
