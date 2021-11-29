@@ -13,7 +13,7 @@ def generate_viability_kernel(conf, val, make_picture=False):
     start_time = time.time()
     img = prepare_track_img(conf) 
     kernel = ViabilityGenerator(img, conf)
-    kernel.calculate_kernel(50)
+    filled = kernel.calculate_kernel(50)
     kernel.save_kernel(f"Kernel_viab_{val}_{conf.map_name}")
     time_taken = time.time() - start_time
     print(f"Time taken: {time_taken}")
@@ -21,14 +21,14 @@ def generate_viability_kernel(conf, val, make_picture=False):
     if make_picture:
         kernel.make_picture(False)
 
-    return time_taken
+    return time_taken, filled
 
 def generate_discriminating_kernel(conf, val, make_picture=False):
     assert conf.kernel_mode == "disc"
     start_time = time.time()
     img = prepare_track_img(conf) 
-    kernel = ViabilityGenerator(img, conf)
-    kernel.calculate_kernel(50)
+    kernel = DiscrimGenerator(img, conf)
+    filled = kernel.calculate_kernel(50)
     kernel.save_kernel(f"Kernel_disc_{val}_{conf.map_name}")
     time_taken = time.time() - start_time
     print(f"Time taken: {time_taken}")
@@ -36,7 +36,7 @@ def generate_discriminating_kernel(conf, val, make_picture=False):
     if make_picture:
         kernel.make_picture(False)
 
-    return time_taken
+    return time_taken, filled
     
 def generate_standard_kernels():
     conf = load_conf("TestKernelGen")
@@ -58,13 +58,14 @@ def kernel_discretization_ndx():
     success_rates = []
     for value in discretes:
         conf.n_dx = value
-        conf.kernel_mode = "viab"
-        kernel_time = generate_viability_kernel(conf, value)
-        conf.kernel_mode = "disc"
-        kernel_time = generate_discriminating_kernel(conf, value)
 
         for mode in ["viab", "disc"]:
             conf.kernel_mode = mode
+            if mode == "viab":
+                kernel_time, kernel_filled = generate_viability_kernel(conf, value)
+            elif mode == "disc":
+                kernel_time, kernel_filled = generate_discriminating_kernel(conf, value)
+
             kernel_name = f"Kernel_{conf.kernel_mode}_{value}_{conf.map_name}.npy"    
             planner = RandomPlanner(f"RandoKernelTest_{conf.kernel_mode}_{value}")
 
@@ -76,6 +77,7 @@ def kernel_discretization_ndx():
             
             config_dict = vars(conf)
             config_dict['kernel_time'] = kernel_time
+            config_dict['kernel_filled'] = kernel_filled
             config_dict.update(eval_dict)
 
             save_conf_dict(config_dict)
@@ -122,35 +124,6 @@ def kernel_discretization_time():
     print(f"Discretizations: {times}")
     print(f"Success rates: {success_rates}")
     
-# def kernel_discretization_time():
-#     # times = [0.09, 0.1, 0.12, 0.15]
-#     times = [0.1, 0.15]
-#     success_rates = []
-#     for value in times:
-#         conf.kernel_time_step = value
-#         conf.lookahead_time_step = value * 2    
-#         kernel_time = generate_viability_kernel(conf, value)
-
-#         kernel_name = f"Kernel_viab_{value}_{conf.map_name}.npy"    
-#         planner = RandomPlanner(f"RandoKernelTest_{value}")
-
-#         kernel = TrackKernel(conf, False, kernel_name)
-#         safety_planner = Supervisor(planner, kernel, conf)
-
-#         eval_dict = evaluate_vehicle(env, safety_planner, conf, False)
-#         success_rates.append(eval_dict['success_rate'])
-        
-#         config_dict = vars(conf)
-#         config_dict['EvalName'] = "KernelDiscret_time" 
-#         config_dict['test_number'] = 0
-#         config_dict['kernel_time'] = kernel_time
-#         config_dict.update(eval_dict)
-
-#         save_conf_dict(config_dict)
-
-#         print(f"Times: {times}")
-#         print(f"Success rates: {success_rates}")
-
     
 
 def rando_pictures():
@@ -168,7 +141,7 @@ def rando_results(n):
     conf = load_conf("SafetyTests")
     conf.kernel_mode = "disc"
     conf.vehicle = "random"
-    conf.test_n = 100
+    conf.test_n = 10
 
     env = TrackSim(conf)
     for mode in ["viab", "disc"]:
@@ -176,6 +149,7 @@ def rando_results(n):
         planner = RandomPlanner(f"RandoResult_{conf.kernel_mode}_{n}")
 
         kernel = TrackKernel(conf, False)
+        kernel.print_kernel_area()
         safety_planner = Supervisor(planner, kernel, conf)
 
         eval_dict = evaluate_vehicle(env, safety_planner, conf, False)
@@ -213,8 +187,8 @@ def run_constant_tests(n):
 
 
 if __name__ == "__main__":
-    # kernel_discretization_ndx()
-    kernel_discretization_time()
+    kernel_discretization_ndx()
+    # kernel_discretization_time()
 
     # generate_standard_kernels()
 

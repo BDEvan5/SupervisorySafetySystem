@@ -274,6 +274,11 @@ class BaseKernel:
         # plt.show()
         plt.pause(0.0001)
 
+    def print_kernel_area(self):
+        filled = np.count_nonzero(self.kernel)
+        total = self.kernel.size
+        print(f"Filled: {filled} / {total} -> {filled/total}")
+
 class ForestKernel(BaseKernel):
     def __init__(self, sim_conf, plotting=False):
         super().__init__(sim_conf, plotting)
@@ -361,6 +366,7 @@ class TrackKernel(BaseKernel):
         # mode_ind = min(max(0, int(round((state[4]+self.max_steer)*self.n_modes ))), self.kernel.shape[3]-1)
 
         return x_ind, y_ind, theta_ind
+
 
 
 @njit(cache=True)
