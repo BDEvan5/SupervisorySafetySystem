@@ -39,7 +39,7 @@ n_dx: 80
 
 vehicle: constant
 
-test_n: 1
+test_n: 2
 EvalName: "Safety"
 
 constant_value: 0
