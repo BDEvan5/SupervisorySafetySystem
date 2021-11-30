@@ -9,7 +9,7 @@ class DataBuilder:
         self.path = f"PaperData/Vehicles/"
 
     def build_keys(self):
-        with open(f"{self.path}base_key_builder.yaml") as f:
+        with open(f"PaperData/base_key_builder.yaml") as f:
             key_data = yaml.safe_load(f)
 
         for key in key_data:

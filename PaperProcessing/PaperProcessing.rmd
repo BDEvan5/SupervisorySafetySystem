@@ -36,3 +36,69 @@ The standard deviation of the data is much smaller at ... vs ...
 
 The average times produced by the SSS is also lower, showing that the SSS leads to faster racing behaviour.
 
+## Kernel Generation
+
+
+```{r}
+
+test_data %>%
+  filter(EvalName=="KernelDiscret_ndx")%>%
+  select(avg_times, success_rate, test_number, n_dx, constant_value, kernel_mode, kernel_filled)%>%
+  ggplot(aes(x=n_dx, y=kernel_filled, group=kernel_mode))+
+  geom_line(aes(linetype=kernel_mode))
+
+```
+
+The test shows that a higher percentage of the image region is filled for the discriminating kernel than the viability kernel.
+It also shows that the two amounts converge as the discretization step gets smaller.
+
+## Kernel Reward
+
+There are very interesting results from the evaluations on the kernel reward signal
+We start by looking at the direct results from all the tests run.
+
+
+
+```{r, fig.cap="Constant Reward Signals"}
+
+test_data %>%
+  filter(EvalName=="KernelReward"&test_number==1&kernel_reward=="Constant")%>%
+  select(avg_times, success_rate, test_number, reward, kernel_reward, sss_reward_scale, test_number) %>%
+  group_by(sss_reward_scale)%>%
+  mutate(mean_time=mean(avg_times))%>%
+  ggplot(aes(x=sss_reward_scale))+
+  geom_boxplot(aes(y=avg_times, group=sss_reward_scale))+
+  geom_point(aes(y=avg_times), size=2)+
+  geom_line(aes(y=mean_time))+
+  geom_point(aes(y=mean_time), shape='x', size=8)
+
+```
+The first and most obvious result is that using a reward signal value of zero is produces poor behaviour with slow lap times.
+Apart from that, the results show that as the sss reward scale increases the lap times become slower. This is true for the magnitude and constant reward signals.
+
+```{r, fig.cap="Magnitude Reward Signals"}
+
+test_data %>%
+  filter(EvalName=="KernelReward"&test_number==1&kernel_reward=="Magnitude")%>%
+  select(avg_times, success_rate, test_number, reward, kernel_reward, sss_reward_scale, test_number) %>%
+  group_by(sss_reward_scale)%>%
+  mutate(mean_time=mean(avg_times))%>%
+  mutate(median_time=median(avg_times))%>%
+  ggplot(aes(x=sss_reward_scale))+
+  geom_boxplot(aes(y=avg_times, group=sss_reward_scale))+
+  geom_point(aes(y=avg_times), size=2)+
+  geom_line(aes(y=mean_time))+
+  geom_point(aes(y=mean_time), shape='x', size=8)
+```
+
+What is interesting to note and is not shown on the graphs is that for the 0.2 reward, ti only achieves a success rate of around 97% without the SSS.
+This means that it doesn't learn to be totally independant of the supervisor.
+This is definitely something to watch out for. 
+
+The interpretation of this result is the clear balance between performance and safety. 
+
+### Comparision
+
+We now compare he two results against each other.
+
+

@@ -53,8 +53,8 @@ def kernel_discretization_ndx():
     conf.test_n = 100
     env = TrackSim(conf)
 
-    # discretes = [60, 70, 80, 90, 100, 120]
-    discretes = [80, 100]
+    discretes = [60, 70, 80, 90, 100, 120]
+    # discretes = [80, 100]
     success_rates = []
     for value in discretes:
         conf.n_dx = value

@@ -24,7 +24,7 @@ def main():
     # train_baseline_cth(1)
     # eval_model_sss(1)
 
-    repeatability_comparision(0)
+    # repeatability_comparision(0)
 
     # test_FGM()
     # test_oracle()

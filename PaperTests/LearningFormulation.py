@@ -8,10 +8,10 @@ from SupervisorySafetySystem.NavUtils.RewardFunctions import *
 
 
 # Kernel Reward Tests
-def eval_magnitude_reward(sss_reward_scale, n):
-    sim_conf = load_conf("test_kernel")
+def eval_magnitude_reward(sss_reward_scale, i, n):
+    sim_conf = load_conf("FormulationTests")
     env = TrackSim(sim_conf)
-    agent_name = f"Kernel_Mag_{sss_reward_scale}_{n}"
+    agent_name = f"Kernel_Mag_{sss_reward_scale}_{i}_{n}"
     planner = EndVehicleTrain(agent_name, sim_conf)
     kernel = TrackKernel(sim_conf)
     safety_planner = LearningSupervisor(planner, kernel, sim_conf)
@@ -34,10 +34,10 @@ def eval_magnitude_reward(sss_reward_scale, n):
 
     save_conf_dict(config_dict)
 
-def eval_constant_reward(sss_reward_scale, n):
-    sim_conf = load_conf("test_kernel")
+def eval_constant_reward(sss_reward_scale, i, n):
+    sim_conf = load_conf("FormulationTests")
     env = TrackSim(sim_conf)
-    agent_name = f"Kernel_Const_{sss_reward_scale}_{n}"
+    agent_name = f"Kernel_Const_{sss_reward_scale}_{i}_{n}"
     planner = EndVehicleTrain(agent_name, sim_conf)
     kernel = TrackKernel(sim_conf)
     safety_planner = LearningSupervisor(planner, kernel, sim_conf)
@@ -60,21 +60,46 @@ def eval_constant_reward(sss_reward_scale, n):
 
     save_conf_dict(config_dict)
 
-def kernel_reward_tests():
+def kernel_reward_tests(n):
     # n = 1
-    for n in range(1):
-        eval_constant_reward(0, n)
-        # eval_constant_reward(0.2, n)
-        eval_constant_reward(0.5, n)
-        # eval_constant_reward(0.7, n)
-        eval_constant_reward(1, n)
+    for i in range(10):
+        eval_constant_reward(0, i, n)
+        eval_constant_reward(0.2, i, n)
+        eval_constant_reward(0.5, i, n)
+        eval_constant_reward(0.7, i, n)
+        eval_constant_reward(1, i, n)
 
-        # eval_magnitude_reward(0.2, n)
-        eval_magnitude_reward(0.5, n)
-        # eval_magnitude_reward(0.7, n)
-        eval_magnitude_reward(1, n)
-        eval_magnitude_reward(2.5, n)
+        eval_magnitude_reward(0.2, i, n)
+        eval_magnitude_reward(0.5, i, n)
+        eval_magnitude_reward(0.7, i, n)
+        eval_magnitude_reward(1, i, n)
+        eval_magnitude_reward(2, i, n)
+        eval_magnitude_reward(4, i, n)
 
+def test_vehicle():
+    sim_conf = load_conf("FormulationTests")
+    env = TrackSim(sim_conf)
+
+    sss_reward_scale = 1
+    i = 6
+    n = 1
+
+    agent_name = f"Kernel_Const_{sss_reward_scale}_{i}_{n}"
+    # agent_name = f"Kernel_Mag_{sss_reward_scale}_{i}_{n}"
+    
+    planner = EndVehicleTest(agent_name, sim_conf)
+
+    eval_dict = evaluate_vehicle(env, planner, sim_conf, False)
+    
+    config_dict = vars(sim_conf)
+    config_dict['EvalName'] = "KernelReward" 
+    config_dict['test_number'] = n
+    config_dict['train_time'] = 0
+    config_dict['kernel_reward'] = "Constant"
+    config_dict['sss_reward_scale'] = sss_reward_scale
+    config_dict.update(eval_dict)
+
+    save_conf_dict(config_dict, "PureTest")
 
 def render_picture(n):
     sim_conf = load_conf("test_kernel")
@@ -102,15 +127,15 @@ def render_picture(n):
 
     render_kernel(env, safety_planner, sim_conf, False)
 
-def eval_continuous(n):
-    sim_conf = load_conf("test_kernel")
+def eval_continuous(i, n):
+    sim_conf = load_conf("FormulationTests")
+    # sim_conf.r1 = 0.05
     env = TrackSim(sim_conf)
-    agent_name = f"Kernel_Continuous_{n}"
+    agent_name = f"Kernel_Continuous_{i}_{n}"
     planner = EndVehicleTrain(agent_name, sim_conf)
-    planner.calculate_reward = RefCTHRewardContinuous(sim_conf, 0.04, 0.004) 
     kernel = TrackKernel(sim_conf)
     safety_planner = LearningSupervisor(planner, kernel, sim_conf)
-    safety_planner.calculate_reward = MagnitudeReward(sim_conf.sss_reward_scale)
+    safety_planner.calculate_reward = ConstantContinuousReward(sim_conf.sss_reward_scale)
     
     train_time = train_kernel_continuous(env, safety_planner, sim_conf, show=False)
 
@@ -123,22 +148,21 @@ def eval_continuous(n):
     config_dict['EvalName'] = "LearningMode" 
     config_dict['test_number'] = n
     config_dict['train_time'] = train_time
-    config_dict['kernel_reward'] = "Magnitude"
+    config_dict['kernel_reward'] = "Constant"
     config_dict['learning'] = "Continuous"
     config_dict.update(eval_dict)
 
     save_conf_dict(config_dict)
 
-def eval_episodic(n):
-    sss_reward_scale = 1
-    sim_conf = load_conf("test_kernel")
+def eval_episodic(i, n):
+    sim_conf = load_conf("FormulationTests")
+    # sim_conf.r1 = 0.05
     env = TrackSim(sim_conf)
-    agent_name = f"Kernel_Episodic_{n}"
+    agent_name = f"Kernel_Episodic_{i}_{n}"
     planner = EndVehicleTrain(agent_name, sim_conf)
-    planner.calculate_reward = RefCTHReward(sim_conf, 0.04, 0.004) 
     kernel = TrackKernel(sim_conf)
     safety_planner = LearningSupervisor(planner, kernel, sim_conf)
-    safety_planner.calculate_reward = MagnitudeReward(sss_reward_scale)
+    safety_planner.calculate_reward = ConstantReward(sim_conf.sss_reward_scale)
     
     train_time = train_kernel_episodic(env, safety_planner, sim_conf, show=False)
 
@@ -152,16 +176,23 @@ def eval_episodic(n):
     config_dict['test_number'] = n
     config_dict['train_time'] = train_time
     config_dict['learning'] = "Episodic"
-    config_dict['kernel_reward'] = "Magnitude"
-    config_dict['sss_reward_scale'] = sss_reward_scale
+    config_dict['kernel_reward'] = "Constant"
     config_dict.update(eval_dict)
 
     save_conf_dict(config_dict)
 
 
+def learning_mode_tests(n):
+    for i in range(10):
+        eval_continuous(i, n)
+        eval_episodic(i, n)
+
 if __name__ == "__main__":
-    kernel_reward_tests()
+    # kernel_reward_tests(1)
     # render_picture()
 
-    # eval_continuous(1)
+    # eval_continuous(3)
     # eval_episodic(1)
+
+    learning_mode_tests(1)
+    # test_vehicle()

@@ -127,7 +127,7 @@ class LearningSupervisor(Supervisor):
         self.lap_times = []
 
     def done_entry(self, s_prime, steps=0):
-        s_prime['reward'] = self.calculate_reward(self.intervention_mag)
+        s_prime['reward'] = self.calculate_reward(self.intervention_mag, s_prime)
         self.planner.done_entry(s_prime)
         self.intervention_list.append(self.ep_interventions)
         self.ep_interventions = 0
@@ -169,15 +169,18 @@ class LearningSupervisor(Supervisor):
         plt.savefig(f"{self.planner.path}/{self.planner.name}_laptimes.svg")
 
     def plan(self, obs):
-        obs['reward'] = self.calculate_reward(self.intervention_mag)
+        obs['reward'] = self.calculate_reward(self.intervention_mag, obs)
         init_action = self.planner.plan_act(obs)
         state = np.array(obs['state'])
+
+        fake_done = False
+        if self.intervention_mag > 0.01: fake_done = True
 
         safe, next_state = check_init_action(state, init_action, self.kernel, self.time_step)
         if safe:
             self.intervention_mag = 0
             self.safe_history.add_locations(init_action[0], init_action[0])
-            return init_action
+            return init_action, fake_done
 
         self.ep_interventions += 1
         self.intervene = True
@@ -189,7 +192,7 @@ class LearningSupervisor(Supervisor):
             print(f"State: {obs['state']}")
             # plt.show()
             self.intervention_mag = 1
-            return init_action
+            return init_action, fake_done
         
         action = modify_action(valids, dw)
         # print(f"Valids: {valids} -> new action: {action}")
@@ -197,7 +200,7 @@ class LearningSupervisor(Supervisor):
 
         self.intervention_mag = action[0] - init_action[0]
 
-        return action
+        return action, fake_done
 
 
 #TODO jit all of this.

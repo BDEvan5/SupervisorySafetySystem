@@ -36,7 +36,7 @@ class TrainHistory():
 
     def add_step_data(self, new_r):
         self.ep_reward += new_r
-        # self.ep_rewards.append(new_r)
+        self.ep_rewards.append(new_r)
         self.ep_counter += 1
         self.t_counter += 1 
 
@@ -56,7 +56,7 @@ class TrainHistory():
 
         self.ep_counter = 0
         self.ep_reward = 0
-        # self.ep_rewards = []
+        self.ep_rewards = []
 
     def print_update(self, plot_reward=True):
         if self.ptr < 100:
