@@ -174,7 +174,7 @@ class LearningSupervisor(Supervisor):
         state = np.array(obs['state'])
 
         fake_done = False
-        if self.intervention_mag > 0.01: fake_done = True
+        if abs(self.intervention_mag) > 0: fake_done = True
 
         safe, next_state = check_init_action(state, init_action, self.kernel, self.time_step)
         if safe:
@@ -198,7 +198,7 @@ class LearningSupervisor(Supervisor):
         # print(f"Valids: {valids} -> new action: {action}")
         self.safe_history.add_locations(init_action[0], action[0])
 
-        self.intervention_mag = action[0] - init_action[0]
+        self.intervention_mag = (action[0] - init_action[0])/self.d_max
 
         return action, fake_done
 

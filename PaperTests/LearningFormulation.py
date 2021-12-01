@@ -127,15 +127,14 @@ def render_picture(n):
 
     render_kernel(env, safety_planner, sim_conf, False)
 
-def eval_continuous(i, n):
+def eval_continuous_mag(i, n):
     sim_conf = load_conf("FormulationTests")
-    # sim_conf.r1 = 0.05
     env = TrackSim(sim_conf)
-    agent_name = f"Kernel_Continuous_{i}_{n}"
+    agent_name = f"Kernel_Continuous_mag_{i}_{n}"
     planner = EndVehicleTrain(agent_name, sim_conf)
     kernel = TrackKernel(sim_conf)
     safety_planner = LearningSupervisor(planner, kernel, sim_conf)
-    safety_planner.calculate_reward = ConstantContinuousReward(sim_conf.sss_reward_scale)
+    safety_planner.calculate_reward = MagnitudeReward(sim_conf.sss_reward_scale)
     
     train_time = train_kernel_continuous(env, safety_planner, sim_conf, show=False)
 
@@ -148,20 +147,75 @@ def eval_continuous(i, n):
     config_dict['EvalName'] = "LearningMode" 
     config_dict['test_number'] = n
     config_dict['train_time'] = train_time
-    config_dict['kernel_reward'] = "Constant"
+    config_dict['kernel_reward'] = "Magnitude"
     config_dict['learning'] = "Continuous"
+    config_dict['learning_mode'] = "ContinuousMag"
     config_dict.update(eval_dict)
 
     save_conf_dict(config_dict)
 
-def eval_episodic(i, n):
+def eval_episodic_mag(i, n):
     sim_conf = load_conf("FormulationTests")
-    # sim_conf.r1 = 0.05
     env = TrackSim(sim_conf)
-    agent_name = f"Kernel_Episodic_{i}_{n}"
+    agent_name = f"Kernel_Episodic_mag_{i}_{n}"
     planner = EndVehicleTrain(agent_name, sim_conf)
     kernel = TrackKernel(sim_conf)
     safety_planner = LearningSupervisor(planner, kernel, sim_conf)
+    safety_planner.calculate_reward = MagnitudeReward(sim_conf.sss_reward_scale)
+    
+    train_time = train_kernel_episodic(env, safety_planner, sim_conf, show=False)
+
+    planner = EndVehicleTest(agent_name, sim_conf)
+    safety_planner = Supervisor(planner, kernel, sim_conf)
+
+    eval_dict = evaluate_vehicle(env, safety_planner, sim_conf, False)
+    
+    config_dict = vars(sim_conf)
+    config_dict['EvalName'] = "LearningMode" 
+    config_dict['test_number'] = n
+    config_dict['train_time'] = train_time
+    config_dict['learning'] = "Episodic"
+    config_dict['kernel_reward'] = "Magnitude"
+    config_dict['learning_mode'] = "EpisodicMag"
+    config_dict.update(eval_dict)
+
+    save_conf_dict(config_dict)
+
+def eval_continuous_const(i, n):
+    sim_conf = load_conf("FormulationTests")
+    env = TrackSim(sim_conf)
+    agent_name = f"Kernel_Continuous_const_{i}_{n}"
+    planner = EndVehicleTrain(agent_name, sim_conf)
+    kernel = TrackKernel(sim_conf)
+    safety_planner = LearningSupervisor(planner, kernel, sim_conf)
+    safety_planner.calculate_reward = ConstantReward(sim_conf.sss_reward_scale)
+    
+    train_time = train_kernel_continuous(env, safety_planner, sim_conf, show=False)
+
+    planner = EndVehicleTest(agent_name, sim_conf)
+    safety_planner = Supervisor(planner, kernel, sim_conf)
+
+    eval_dict = evaluate_vehicle(env, safety_planner, sim_conf, False)
+    
+    config_dict = vars(sim_conf)
+    config_dict['EvalName'] = "LearningMode" 
+    config_dict['test_number'] = n
+    config_dict['train_time'] = train_time
+    config_dict['kernel_reward'] = "Magnitude"
+    config_dict['learning'] = "Continuous"
+    config_dict['learning_mode'] = "ContinuousConst"
+    config_dict.update(eval_dict)
+
+    save_conf_dict(config_dict)
+
+def eval_episodic_const(i, n):
+    sim_conf = load_conf("FormulationTests")
+    env = TrackSim(sim_conf)
+    agent_name = f"Kernel_Episodic_const_{i}_{n}"
+    planner = EndVehicleTrain(agent_name, sim_conf)
+    kernel = TrackKernel(sim_conf)
+    safety_planner = LearningSupervisor(planner, kernel, sim_conf)
+    safety_planner.calculate_reward = MagnitudeReward(sim_conf.sss_reward_scale)
     safety_planner.calculate_reward = ConstantReward(sim_conf.sss_reward_scale)
     
     train_time = train_kernel_episodic(env, safety_planner, sim_conf, show=False)
@@ -177,15 +231,19 @@ def eval_episodic(i, n):
     config_dict['train_time'] = train_time
     config_dict['learning'] = "Episodic"
     config_dict['kernel_reward'] = "Constant"
+    config_dict['learning_mode'] = "EpisodicConst"
     config_dict.update(eval_dict)
 
     save_conf_dict(config_dict)
 
 
 def learning_mode_tests(n):
-    for i in range(10):
-        eval_continuous(i, n)
-        eval_episodic(i, n)
+    for i in range(1, 5):
+        eval_continuous_mag(i, n)
+        eval_episodic_mag(i, n)
+        eval_continuous_const(i, n)
+        eval_episodic_const(i, n)
+
 
 if __name__ == "__main__":
     # kernel_reward_tests(1)
@@ -194,5 +252,5 @@ if __name__ == "__main__":
     # eval_continuous(3)
     # eval_episodic(1)
 
-    learning_mode_tests(1)
+    learning_mode_tests(6)
     # test_vehicle()

@@ -21,3 +21,5 @@ kernel_filled: 0
 n_dx: 80
 
 train_n: 0
+learning: Episodic
+learning_mode: "contConst"

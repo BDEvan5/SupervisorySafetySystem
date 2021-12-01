@@ -48,7 +48,7 @@ class TrainHistory():
         if show_reward:
             plt.figure(8)
             plt.clf()
-            plt.plot(self.ep_rewards[0:self.ptr])
+            plt.plot(self.ep_rewards[0:self.ep_counter])
             plt.plot(self.ep_rewards, 'x', markersize=10)
             plt.title(f"Ep rewards: total: {self.ep_reward:.4f}")
             plt.ylim([-1.1, 1.5])
