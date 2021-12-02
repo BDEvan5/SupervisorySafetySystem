@@ -17,12 +17,13 @@ def eval_magnitude_reward(sss_reward_scale, i, n):
     safety_planner = LearningSupervisor(planner, kernel, sim_conf)
     safety_planner.calculate_reward = MagnitudeReward(sss_reward_scale)
     
-    train_time = train_kernel_episodic(env, safety_planner, sim_conf, show=False)
+    train_time = train_kernel_continuous(env, safety_planner, sim_conf, show=False)
 
     planner = EndVehicleTest(agent_name, sim_conf)
-    safety_planner = Supervisor(planner, kernel, sim_conf)
+    # safety_planner = Supervisor(planner, kernel, sim_conf)
 
-    eval_dict = evaluate_vehicle(env, safety_planner, sim_conf, False)
+    eval_dict = evaluate_vehicle(env, planner, sim_conf, False)
+    # eval_dict = evaluate_vehicle(env, safety_planner, sim_conf, False)
     
     config_dict = vars(sim_conf)
     config_dict['EvalName'] = "KernelReward" 
@@ -43,12 +44,13 @@ def eval_constant_reward(sss_reward_scale, i, n):
     safety_planner = LearningSupervisor(planner, kernel, sim_conf)
     safety_planner.calculate_reward = MagnitudeReward(sss_reward_scale)
     
-    train_time = train_kernel_episodic(env, safety_planner, sim_conf, show=False)
+    train_time = train_kernel_continuous(env, safety_planner, sim_conf, show=False)
 
     planner = EndVehicleTest(agent_name, sim_conf)
-    safety_planner = Supervisor(planner, kernel, sim_conf)
+    # safety_planner = Supervisor(planner, kernel, sim_conf)
 
-    eval_dict = evaluate_vehicle(env, safety_planner, sim_conf, False)
+    eval_dict = evaluate_vehicle(env, planner, sim_conf, False)
+    # eval_dict = evaluate_vehicle(env, safety_planner, sim_conf, False)
     
     config_dict = vars(sim_conf)
     config_dict['EvalName'] = "KernelReward" 
@@ -62,19 +64,19 @@ def eval_constant_reward(sss_reward_scale, i, n):
 
 def kernel_reward_tests(n):
     # n = 1
-    for i in range(10):
+    for i in range(2, 5):
         eval_constant_reward(0, i, n)
         eval_constant_reward(0.2, i, n)
-        eval_constant_reward(0.5, i, n)
-        eval_constant_reward(0.7, i, n)
+        # eval_constant_reward(0.5, i, n)
+        # eval_constant_reward(0.7, i, n)
         eval_constant_reward(1, i, n)
 
         eval_magnitude_reward(0.2, i, n)
-        eval_magnitude_reward(0.5, i, n)
-        eval_magnitude_reward(0.7, i, n)
+        # eval_magnitude_reward(0.5, i, n)
+        # eval_magnitude_reward(0.7, i, n)
         eval_magnitude_reward(1, i, n)
-        eval_magnitude_reward(2, i, n)
-        eval_magnitude_reward(4, i, n)
+        # eval_magnitude_reward(2, i, n)
+        # eval_magnitude_reward(4, i, n)
 
 def test_vehicle():
     sim_conf = load_conf("FormulationTests")
@@ -246,11 +248,11 @@ def learning_mode_tests(n):
 
 
 if __name__ == "__main__":
-    # kernel_reward_tests(1)
+    kernel_reward_tests(2)
     # render_picture()
 
     # eval_continuous(3)
     # eval_episodic(1)
 
-    learning_mode_tests(6)
+    # learning_mode_tests(6)
     # test_vehicle()

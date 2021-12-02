@@ -41,6 +41,9 @@ class TrainHistory():
         self.t_counter += 1 
 
     def lap_done(self, show_reward=False):
+        if self.ptr > len(self.rewards)-1:
+            self.rewards = np.append(self.rewards, np.zeros(10000))
+            self.lengths = np.append(self.lengths, np.zeros(10000))
         self.lengths[self.ptr] = self.ep_counter
         self.rewards[self.ptr] = self.ep_reward
         self.ptr += 1
