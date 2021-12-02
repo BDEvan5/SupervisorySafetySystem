@@ -11,10 +11,84 @@ knitr::opts_chunk$set(echo = FALSE)
 test_data = read.csv("PaperTable.csv")
 library(ggplot2)
 library(dplyr)
+library(tidyr)
 
 ```
 
+# Kernel Safety Tests
+
+
 # Tests
+
+
+## Kernel Space Discretisation
+
+```{r}
+test_data %>%
+  filter(EvalName=="KernelDiscret_ndx")%>%
+  filter(success_rate>80)%>%
+  select(avg_times, success_rate, test_number, n_dx, constant_value, kernel_mode, kernel_filled)%>%
+  ggplot(aes(x=n_dx, y=kernel_filled, group=kernel_mode))+
+  geom_line(aes(linetype=kernel_mode))+
+  geom_point()
+
+```
+
+The test shows that a higher percentage of the image region is filled for the discriminating kernel than the viability kernel.
+It also shows that the two amounts converge as the discretization step gets smaller.
+
+<!-- ## Kernel Time Discretization -->
+
+## Kernel Safety
+
+Make a table here like the one that I am going to put into the report.
+
+# Learning Formulation
+
+## Learning Mode
+
+```{r}
+test_data %>%
+  filter(EvalName=="LearningMode") %>%
+  # filter(avg_times!=0) %>%
+  select(avg_times, success_rate, kernel_reward, learning, learning_mode, train_n) %>%
+  group_by(learning_mode)%>%
+  mutate(mean_time=mean(avg_times))%>%
+  ggplot(aes(x=learning_mode, y=avg_times, group=learning_mode))+
+  geom_boxplot()+
+  geom_point()+
+  geom_point(aes(y=mean_time), shape='x', size=10)
+
+```
+
+The test shows that the standard learning formulation used in robotics (episodic learning with a constant punishment) is very ineffective.
+The method presented in this paper enables continuous learning where the agent is able to continue driving around the race track because it never crashes.
+Continuous learning is shown to produce significantly lower lap times than episodic learning.
+
+Additionally, due to the supervisors intervention, the severity of how bad an action is can be easily measured.
+The magnitude based reward signal punishes the agent relative to the magnitude of the intervention required to keep the vehicle from crashing.
+The results indicate that using a magnitude based punishment in both continuous and episodic learning leads to an improvement.
+
+Overall, our novel learning style of continuous learning using a punishment related to the magnitude of the supervisors intervention, leads to significantly faster racing performance.
+
+## Kernel Reward
+
+```{r}
+test_data %>%
+  filter(EvalName=="KernelReward")%>%
+  select(avg_times, success_rate, test_number, reward, kernel_reward, sss_reward_scale, test_number) %>%
+  unite("label", kernel_reward, sss_reward_scale, sep="__")%>%
+  group_by(label) %>%
+  mutate(mean_success=mean(success_rate))%>%
+  ggplot(aes(x=label, y=avg_times))+
+  geom_boxplot(outlier.shape=NA)+
+  geom_point(aes(y=avg_times), size=2)+
+  geom_point(aes(y=mean_success), shape='x', size=12)
+```
+
+
+# Baseline Comparision
+
 
 ## Repeatability
 
@@ -24,6 +98,7 @@ We evaluate 10 agents of the baseline and the SSS.
 
 test_data %>%
   filter(EvalName=="BaselineComp")%>%
+  filter(avg_times!=0&avg_times<200) %>%
   select(avg_times, success_rate, test_number, reward, kernel_reward, vehicle, test_number) %>%
   ggplot(aes(x=vehicle, y=(avg_times), color=test_number))+
   geom_boxplot()+
@@ -36,21 +111,31 @@ The standard deviation of the data is much smaller at ... vs ...
 
 The average times produced by the SSS is also lower, showing that the SSS leads to faster racing behaviour.
 
-## Kernel Generation
+## Training Rate
 
+```{r}
+test_data %>%
+  filter(EvalName=="StepsSSS") %>%
+  filter(avg_times!=0) %>%
+  select(avg_times, success_rate, kernel_reward, vehicle, train_n) %>%
+  ggplot(aes(x=train_n, y=avg_times))+
+  geom_point()+
+  geom_smooth(method=lm)
 
+```
 ```{r}
 
 test_data %>%
-  filter(EvalName=="KernelDiscret_ndx")%>%
-  select(avg_times, success_rate, test_number, n_dx, constant_value, kernel_mode, kernel_filled)%>%
-  ggplot(aes(x=n_dx, y=kernel_filled, group=kernel_mode))+
-  geom_line(aes(linetype=kernel_mode))
+  filter(EvalName=="StepsSSS") %>%
+  filter(avg_times!=0) %>%
+  select(avg_times, success_rate, kernel_reward, vehicle, train_n) %>%
+  ggplot(aes(x=train_n, y=success_rate))+
+  geom_point()
 
 ```
 
-The test shows that a higher percentage of the image region is filled for the discriminating kernel than the viability kernel.
-It also shows that the two amounts converge as the discretization step gets smaller.
+
+# Archive Tests
 
 ## Kernel Reward
 
@@ -97,8 +182,5 @@ This is definitely something to watch out for.
 
 The interpretation of this result is the clear balance between performance and safety. 
 
-### Comparision
-
-We now compare he two results against each other.
 
 
