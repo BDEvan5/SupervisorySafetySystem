@@ -6,9 +6,9 @@ from matplotlib import pyplot as plt
 
 
 class TrainHistory():
-    def __init__(self, agent_name, load=False) -> None:
+    def __init__(self, agent_name, sim_conf, load=False) -> None:
         self.agent_name = agent_name
-        self.path = '/EvalVehicles/' + self.agent_name 
+        self.path = sim_conf.vehicle_path + self.agent_name 
 
         # training data
         self.ptr = 0
@@ -25,7 +25,8 @@ class TrainHistory():
             self.init_file_struct()
 
     def init_file_struct(self):
-        path = os.getcwd() + self.path
+        # path = os.getcwd() + self.path
+        path  = self.path
         if os.path.exists(path):
             try:
                 os.rmdir(path)
@@ -35,11 +36,14 @@ class TrainHistory():
 
     def add_step_data(self, new_r):
         self.ep_reward += new_r
-        # self.ep_rewards.append(new_r)
+        self.ep_rewards.append(new_r)
         self.ep_counter += 1
         self.t_counter += 1 
 
     def lap_done(self, show_reward=False):
+        if self.ptr > len(self.rewards)-1:
+            self.rewards = np.append(self.rewards, np.zeros(10000))
+            self.lengths = np.append(self.lengths, np.zeros(10000))
         self.lengths[self.ptr] = self.ep_counter
         self.rewards[self.ptr] = self.ep_reward
         self.ptr += 1
@@ -47,7 +51,7 @@ class TrainHistory():
         if show_reward:
             plt.figure(8)
             plt.clf()
-            plt.plot(self.ep_rewards[0:self.ptr])
+            plt.plot(self.ep_rewards[0:self.ep_counter])
             plt.plot(self.ep_rewards, 'x', markersize=10)
             plt.title(f"Ep rewards: total: {self.ep_reward:.4f}")
             plt.ylim([-1.1, 1.5])
@@ -55,7 +59,7 @@ class TrainHistory():
 
         self.ep_counter = 0
         self.ep_reward = 0
-        # self.ep_rewards = []
+        self.ep_rewards = []
 
     def print_update(self, plot_reward=True):
         if self.ptr < 100:
@@ -73,13 +77,13 @@ class TrainHistory():
         data = []
         for i in range(self.ptr):
             data.append([i, self.rewards[i], self.lengths[i]])
-        full_name = 'EvalVehicles/' + self.agent_name + '/training_data.csv'
+        full_name = self.path + '/training_data.csv'
         with open(full_name, 'w') as csvfile:
             csvwriter = csv.writer(csvfile)
             csvwriter.writerows(data)
 
         plt.figure(2)
-        plt.savefig('EvalVehicles/' + self.agent_name + "/training_rewards.png")
+        plt.savefig(self.path + "/training_rewards.png")
         
 def moving_average(data, period):
     return np.convolve(data, np.ones(period), 'same') / period

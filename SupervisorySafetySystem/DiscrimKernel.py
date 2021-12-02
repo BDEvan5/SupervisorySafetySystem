@@ -32,6 +32,9 @@ class DiscrimGenerator(BaseKernel):
             # self.view_build(False)
             # self.view_kernel(0, False, z)
 
+        return self.get_filled_kernel()
+        
+
     def view_kernel(self, phi, show=True, n=0):
         phi_ind = np.argmin(np.abs(self.phis - phi))
         plt.figure(1)
@@ -95,6 +98,37 @@ class DiscrimGenerator(BaseKernel):
 
         if show:
             plt.show()
+
+    def make_picture(self, show=True):
+        self.axs[0, 0].cla()
+        self.axs[1, 0].cla()
+        self.axs[0, 1].cla()
+        self.axs[1, 1].cla()
+
+        half_phi = int(len(self.phis)/2)
+        quarter_phi = int(len(self.phis)/4)
+
+        self.axs[0, 0].set(xticks=[])
+        self.axs[0, 0].set(yticks=[])
+        self.axs[1, 0].set(xticks=[])
+        self.axs[1, 0].set(yticks=[])
+        self.axs[0, 1].set(xticks=[])
+        self.axs[0, 1].set(yticks=[])
+        self.axs[1, 1].set(xticks=[])
+        self.axs[1, 1].set(yticks=[])
+
+        self.axs[0, 0].imshow(self.kernel[:, :, 0].T + self.o_map.T, origin='lower')
+        self.axs[1, 0].imshow(self.kernel[:, :, half_phi].T + self.o_map.T, origin='lower')
+        self.axs[0, 1].imshow(self.kernel[:, :, -quarter_phi].T + self.o_map.T, origin='lower')
+        self.axs[1, 1].imshow(self.kernel[:, :, quarter_phi].T + self.o_map.T, origin='lower')
+        
+        plt.pause(0.0001)
+        plt.pause(1)
+        plt.savefig(f"{self.sim_conf.kernel_path}Kernel_build_{self.sim_conf.kernel_mode}.svg")
+
+        if show:
+            plt.show()
+
 
 # @njit(cache=True)
 def build_discrim_dynamics(phis, qs, velocity, time, conf):

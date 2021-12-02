@@ -127,7 +127,7 @@ class LearningSupervisor(Supervisor):
         self.lap_times = []
 
     def done_entry(self, s_prime, steps=0):
-        s_prime['reward'] = self.calculate_reward(self.intervention_mag)
+        s_prime['reward'] = self.calculate_reward(self.intervention_mag, s_prime)
         self.planner.done_entry(s_prime)
         self.intervention_list.append(self.ep_interventions)
         self.ep_interventions = 0
@@ -169,15 +169,18 @@ class LearningSupervisor(Supervisor):
         plt.savefig(f"{self.planner.path}/{self.planner.name}_laptimes.svg")
 
     def plan(self, obs):
-        obs['reward'] = self.calculate_reward(self.intervention_mag)
+        obs['reward'] = self.calculate_reward(self.intervention_mag, obs)
         init_action = self.planner.plan_act(obs)
         state = np.array(obs['state'])
+
+        fake_done = False
+        if abs(self.intervention_mag) > 0: fake_done = True
 
         safe, next_state = check_init_action(state, init_action, self.kernel, self.time_step)
         if safe:
             self.intervention_mag = 0
             self.safe_history.add_locations(init_action[0], init_action[0])
-            return init_action
+            return init_action, fake_done
 
         self.ep_interventions += 1
         self.intervene = True
@@ -189,15 +192,15 @@ class LearningSupervisor(Supervisor):
             print(f"State: {obs['state']}")
             # plt.show()
             self.intervention_mag = 1
-            return init_action
+            return init_action, fake_done
         
         action = modify_action(valids, dw)
         # print(f"Valids: {valids} -> new action: {action}")
         self.safe_history.add_locations(init_action[0], action[0])
 
-        self.intervention_mag = action[0] - init_action[0]
+        self.intervention_mag = (action[0] - init_action[0])/self.d_max
 
-        return action
+        return action, fake_done
 
 
 #TODO jit all of this.
@@ -274,6 +277,11 @@ class BaseKernel:
         # plt.show()
         plt.pause(0.0001)
 
+    def print_kernel_area(self):
+        filled = np.count_nonzero(self.kernel)
+        total = self.kernel.size
+        print(f"Filled: {filled} / {total} -> {filled/total}")
+
 class ForestKernel(BaseKernel):
     def __init__(self, sim_conf, plotting=False):
         super().__init__(sim_conf, plotting)
@@ -328,7 +336,7 @@ class TrackKernel(BaseKernel):
     def __init__(self, sim_conf, plotting=False, kernel_name=None):
         super().__init__(sim_conf, plotting)
         if kernel_name is None:
-            kernel_name = f"{sim_conf.kernel_path}Kernel_{sim_conf.track_kernel_mode}_{sim_conf.map_name}.npy"
+            kernel_name = f"{sim_conf.kernel_path}Kernel_{sim_conf.kernel_mode}_std_{sim_conf.map_name}.npy"
         else:
             kernel_name = f"{sim_conf.kernel_path}{kernel_name}"
         self.clean_kernel = np.load(kernel_name)
@@ -337,11 +345,6 @@ class TrackKernel(BaseKernel):
         self.n_modes = sim_conf.n_modes
         self.max_steer = sim_conf.max_steer
 
-        # self.obs_kernel = np.load(f"{sim_conf.kernel_path}ObsKernelTrack_{sim_conf.track_kernel_path}.npy")
-        img_size = int(sim_conf.obs_img_size * sim_conf.n_dx)
-        obs_size = int(sim_conf.obs_size * sim_conf.n_dx)
-        self.obs_offset = int((img_size - obs_size) / 2)
-
         file_name = 'maps/' + sim_conf.map_name + '.yaml'
         with open(file_name) as file:
             documents = yaml.full_load(file)
@@ -349,22 +352,7 @@ class TrackKernel(BaseKernel):
         self.origin = yaml_file['origin']
 
     def construct_kernel(self, a, obs_locations):
-        if len(obs_locations) == 0:
-            self.kernel = self.clean_kernel
-            return
-
-        resize = self.clean_kernel.shape[0] / a[1]
-        obs_locations *= resize
-        self.kernel = construct_track_kernel(self.clean_kernel, obs_locations, self.obs_kernel, self.obs_offset)
-
-        theta_ind = int(round((0 + self.phi_range/2) / self.phi_range * (self.kernel.shape[2]-1)))
-        plt.figure(5)
-        plt.title(f"Kernel phi: {0} (ind: {theta_ind}) combined")
-        img = self.kernel[:, :, theta_ind].T + self.clean_kernel[:, :, theta_ind].T
-        plt.imshow(img, origin='lower')
-
-        # plt.show()
-        plt.pause(0.0001)
+        pass
 
     def get_indices(self, state):
         phi_range = np.pi * 2
@@ -381,6 +369,7 @@ class TrackKernel(BaseKernel):
         # mode_ind = min(max(0, int(round((state[4]+self.max_steer)*self.n_modes ))), self.kernel.shape[3]-1)
 
         return x_ind, y_ind, theta_ind
+
 
 
 @njit(cache=True)

@@ -35,6 +35,13 @@ class BaseKernel:
         np.save(f"{self.sim_conf.kernel_path}{name}.npy", self.kernel)
         print(f"Saved kernel to file: {name}")
 
+    def get_filled_kernel(self):
+        filled = np.count_nonzero(self.kernel)
+        total = self.kernel.size
+        print(f"Filled: {filled} / {total} -> {filled/total}")
+        return filled/total
+
+
 class ViabilityGenerator(BaseKernel):
     def __init__(self, track_img, sim_conf):
         super().__init__(track_img, sim_conf)
@@ -121,7 +128,7 @@ class ViabilityGenerator(BaseKernel):
         
         plt.pause(0.0001)
         plt.pause(1)
-        plt.savefig("SupervisorySafetySystem/Kernels/Kernel_build.svg")
+        plt.savefig(f"{self.sim_conf.kernel_path}Kernel_build_{self.sim_conf.kernel_mode}.svg")
 
         if show:
             plt.show()
@@ -136,6 +143,7 @@ class ViabilityGenerator(BaseKernel):
             self.kernel = viability_loop(self.kernel, self.dynamics)
 
             # self.view_build(False)
+        return self.get_filled_kernel()
 
 # @njit(cache=True)
 def build_viability_dynamics(phis, qs, velocity, time, conf):

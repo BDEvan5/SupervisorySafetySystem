@@ -38,7 +38,7 @@ class EndVehicleTrain(EndBase):
     def __init__(self, agent_name, sim_conf, load=False):
         super().__init__(agent_name, sim_conf)
 
-        self.path = 'EvalVehicles/' + agent_name
+        self.path = sim_conf.vehicle_path + agent_name
         state_space = 2 + self.n_beams
         self.agent = TD3(state_space, 1, 1, agent_name)
         self.agent.try_load(load, sim_conf.h_size, self.path)
@@ -48,12 +48,13 @@ class EndVehicleTrain(EndBase):
         self.nn_act = None
         self.action = None
 
-        self.t_his = TrainHistory(agent_name, load)
+        self.t_his = TrainHistory(agent_name, sim_conf, load)
 
         # self.calculate_reward = DistReward() 
-        # self.calculate_reward = CthReward(0.004, 0.004) 
-        self.calculate_reward = SteeringReward(0.01) 
-
+        # self.calculate_reward = CthReward(0.04, 0.004) 
+        # self.calculate_reward = SteeringReward(0.01) 
+        # self.calculate_reward = None
+        self.calculate_reward = RefCTHReward(sim_conf) 
 
     def plan_act(self, obs):
         nn_obs = self.transform_obs(obs)
@@ -122,7 +123,7 @@ class EndVehicleTest(EndBase):
 
         super().__init__(agent_name, sim_conf)
 
-        self.path = 'EvalVehicles/' + agent_name
+        self.path = sim_conf.vehicle_path + agent_name
         self.actor = torch.load(self.path + '/' + agent_name + "_actor.pth")
         # self.n_beams = 10
 
