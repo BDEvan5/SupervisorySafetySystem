@@ -60,8 +60,8 @@ def eval_model_sss(n, i):
     save_conf_dict(config_dict)
 
 def repeatability_comparision(n):
-    for i in range(5):
-        # train_baseline_cth(n, i)
+    for i in range(10):
+        train_baseline_cth(n, i)
         eval_model_sss(n, i)
 
 def training_steps(n):

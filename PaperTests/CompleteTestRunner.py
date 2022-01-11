@@ -16,12 +16,12 @@ def main():
     # kernel_reward_tests(1)
     # render_picture(0)
 
-    # learning_mode_tests(1)
+    learning_mode_tests(1)
 
     # train_baseline_cth(1)
     # eval_model_sss(1)
 
-    # repeatability_comparision(1)
+    repeatability_comparision(1)
     # training_steps(1)
     # test_FGM()
     # test_oracle()
