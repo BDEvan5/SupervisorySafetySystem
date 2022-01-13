@@ -60,7 +60,7 @@ def eval_model_sss(n, i):
     save_conf_dict(config_dict)
 
 def eval_test():
-    n = 2
+    n = 1
     i = 1
     sim_conf = load_conf("BaselineComp")
     env = TrackSim(sim_conf)
@@ -86,6 +86,6 @@ def eval_test():
 
 if __name__ == "__main__":
     # train_baseline_cth(1, 1)
-    eval_model_sss(1, 1)
+    # eval_model_sss(1, 1)
 
-    # eval_test()
+    eval_test()
