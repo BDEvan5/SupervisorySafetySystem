@@ -240,7 +240,7 @@ def eval_episodic_const(i, n):
 
 
 def learning_mode_tests(n):
-    for i in range(1, 2):
+    for i in range(10):
         eval_continuous_mag(i, n)
         eval_episodic_mag(i, n)
         eval_continuous_const(i, n)
