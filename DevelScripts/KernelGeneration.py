@@ -43,8 +43,8 @@ def generate_standard_kernels():
 
     conf.kernel_mode = "viab"
     generate_viability_kernel(conf, "std", True)
-    conf.kernel_mode = "disc"
-    generate_discriminating_kernel(conf, "std", True)
+    # conf.kernel_mode = "disc"
+    # generate_discriminating_kernel(conf, "std", True)
 
 
 

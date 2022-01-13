@@ -24,7 +24,8 @@ end_distance: 1.5
 vehicle_path: "EvalVehicles/"
 # map_name: "torino"
 # map_name: "berlin"
-map_name: "porto"
+# map_name: "porto"
+map_name: "columbia_small"
 # map_name: "race_track"
 
 kernel_path: "Kernels/"
