@@ -25,7 +25,8 @@ vehicle_path: "EvalVehicles/"
 # map_name: "torino"
 # map_name: "berlin"
 # map_name: "porto"
-map_name: "columbia_small"
+# map_name: "columbia_small"
+map_name: "f1_aut_wide"
 # map_name: "race_track"
 
 kernel_path: "Kernels/"
@@ -54,3 +55,6 @@ reward: 'cthRef'
 
 train_n: 20000
 test_n: 100
+
+lookahead: 0.8
+v_gain: 1
