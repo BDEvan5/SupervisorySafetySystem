@@ -93,7 +93,7 @@ class TrackMap:
             start_orientation = yaml_file['start_orientation']
         except Exception as e:
             print(f"Problem loading, check key: {e}")
-            raise FileNotFoundError("Problem loading map yaml file")
+            raise FileNotFoundError("Problem loading map yaml file in TrackSim.py file inside simulator")
 
         self.start_pose = np.zeros(3)
         self.start_pose[0:2] = start_pose[0:2]

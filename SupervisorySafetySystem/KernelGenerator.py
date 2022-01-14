@@ -142,7 +142,7 @@ class ViabilityGenerator(BaseKernel):
             self.previous_kernel = np.copy(self.kernel)
             self.kernel = viability_loop(self.kernel, self.dynamics)
 
-            # self.view_build(False)
+            self.view_build(False)
         return self.get_filled_kernel()
 
 # @njit(cache=True)

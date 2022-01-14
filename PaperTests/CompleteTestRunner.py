@@ -13,7 +13,7 @@ def main():
     # rando_pictures()
     # rando_results(1)
 
-    # kernel_reward_tests(1)
+    kernel_reward_tests(1)
     # render_picture(0)
 
     # learning_mode_tests(1)

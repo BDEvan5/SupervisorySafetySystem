@@ -187,10 +187,10 @@ def run_constant_tests(n):
 
 
 if __name__ == "__main__":
-    kernel_discretization_ndx()
+    # kernel_discretization_ndx()
     # kernel_discretization_time()
 
-    # generate_standard_kernels()
+    generate_standard_kernels()
 
     # rando_pictures()
     # rando_results(1)

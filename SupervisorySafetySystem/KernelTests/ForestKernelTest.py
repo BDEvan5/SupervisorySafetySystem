@@ -1,7 +1,7 @@
 from SupervisorySafetySystem.KernelTests.GeneralTestTrain import test_kernel_vehicle, load_conf
 
 from SupervisorySafetySystem.Simulator.ForestSim import ForestSim
-from SupervisorySafetySystem.ForestKernel import construct_obs_kernel, construct_kernel_sides
+# from SupervisorySafetySystem.ForestKernel import construct_obs_kernel, construct_kernel_sides
 from SupervisorySafetySystem.NavAgents.SimplePlanners import RandomPlanner, PurePursuit 
 from SupervisorySafetySystem.SupervisorySystem import Supervisor, ForestKernel
 
