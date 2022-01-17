@@ -25,14 +25,14 @@ vehicle_path: "EvalVehicles/"
 # map_name: "torino"
 # map_name: "berlin"
 # map_name: "porto"
-# map_name: "columbia_small"
+map_name: "columbia_small"
 # map_name: "f1_aut_wide"
 # map_name: "circle"
-map_name: "torino_redraw_small"
+# map_name: "torino_redraw_small"
 
 kernel_path: "Kernels/"
-# kernel_mode: "disc"
-kernel_mode: "viab"
+kernel_mode: "disc"
+# kernel_mode: "viab"
 n_phi: 41
 n_modes: 5
 phi_range: 6.28

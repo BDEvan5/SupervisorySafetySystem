@@ -41,10 +41,10 @@ def generate_discriminating_kernel(conf, val, make_picture=False):
 def generate_standard_kernels():
     conf = load_conf("std_test_kernel")
 
-    conf.kernel_mode = "viab"
-    generate_viability_kernel(conf, "std", True)
-    # conf.kernel_mode = "disc"
-    # generate_discriminating_kernel(conf, "std", True)
+    # conf.kernel_mode = "viab"
+    # generate_viability_kernel(conf, "std", True)
+    conf.kernel_mode = "disc"
+    generate_discriminating_kernel(conf, "std", True)
 
 
 
