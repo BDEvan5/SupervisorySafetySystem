@@ -4,7 +4,7 @@ from numba import njit
 from matplotlib import pyplot as plt
 import yaml, csv
 from SupervisorySafetySystem.Simulator.Dynamics import update_complex_state, update_std_state
-
+from SupervisorySafetySystem.Modes import Modes
 
 class SafetyHistory:
     def __init__(self):
@@ -80,14 +80,16 @@ class Supervisor:
         self.plan_act = self.plan
         self.name = planner.name
 
+        self.m = Modes(conf)
 
     def plan(self, obs):
         init_action = self.planner.plan_act(obs)
         state = np.array(obs['state'])
 
-        safe, next_state = check_init_action(state, init_action, self.kernel, self.time_step)
+        init_mode_action = self.action2mode(init_action)
+        safe, next_state = self.check_init_action(state, init_mode_action)
         if safe:
-            self.safe_history.add_locations(init_action[0], init_action[0])
+            self.safe_history.add_locations(init_mode_action[0], init_mode_action[0])
             return init_action
 
         dw = self.generate_dw()
@@ -98,7 +100,7 @@ class Supervisor:
             # plt.show()
             return init_action
         
-        action = modify_action(valids, dw)
+        action = modify_mode(self.m, valids)
         # print(f"Valids: {valids} -> new action: {action}")
         self.safe_history.add_locations(init_action[0], action[0])
 
@@ -106,16 +108,28 @@ class Supervisor:
         return action
 
     def generate_dw(self):
-        n_segments = 5
-        dw = np.ones((5, 2))
-        dw[:, 0] = np.linspace(-self.d_max, self.d_max, n_segments)
-        dw[:, 1] *= self.v
-        # dw = np.vstack((dw, dw, dw))
-        # dw[0:5, 1] *= 1
-        # dw[5:10, 1] *= 2
-        # dw[10:, 1] *= 3
-        return dw
+        return self.m.qs
 
+    def action2mode(self, init_action):
+        id = self.m.get_mode_id(init_action[1], init_action[0])
+        return self.m.qs[id]
+
+    def check_init_action(self, state, init_action):
+        d, v = init_action
+        b = 0.523
+        g = 9.81
+        l_d = 0.329
+        if abs(d)> 0.06: 
+            #  only check the friction limit if it might be a problem
+            friction_v = np.sqrt(b*g*l_d/np.tan(abs(d))) *1.1
+            if friction_v < v:
+                print(f"Invalid action: check planner or expect bad resultsL {init_action} -> max_friction_v: {friction_v}")
+                return False, state
+
+        next_state = update_complex_state(state, init_action, self.time_step)
+        safe = self.kernel.check_state(next_state)
+        
+        return safe, next_state
 
 class LearningSupervisor(Supervisor):
     def __init__(self, planner, kernel, conf):
@@ -203,13 +217,13 @@ class LearningSupervisor(Supervisor):
         return action, fake_done
 
 
-#TODO jit all of this.
+# #TODO jit all of this.
 
-def check_init_action(state, u0, kernel, time_step=0.1):
-    next_state = update_complex_state(state, u0, time_step)
-    safe = kernel.check_state(next_state)
+# def check_init_action(state, u0, kernel, time_step=0.1):
+#     next_state = update_complex_state(state, u0, time_step)
+#     safe = kernel.check_state(next_state)
     
-    return safe, next_state
+#     return safe, next_state
 
 def simulate_and_classify(state, dw, kernel, time_step=0.1):
     valid_ds = np.ones(len(dw))
@@ -222,6 +236,41 @@ def simulate_and_classify(state, dw, kernel, time_step=0.1):
 
     return valid_ds 
 
+
+def modify_mode(self: Modes, valid_window):
+    """ 
+    modifies the action for obstacle avoidance only, it doesn't check the dynamic limits here.
+    """
+    # max_v_idx = 
+    #TODO: decrease the upper limit of the search according to the velocity
+    for vm in range(self.nq_velocity-1, 0, -1):
+        idx_search = int(self.nv_modes[vm] +(self.nv_level_modes[vm]-1)/2) # idx to start searching at.
+
+        if self.nv_level_modes[vm] == 1:
+            if valid_window[idx_search]:
+                return self.qs[idx_search]
+            continue
+
+        # at this point there are at least 3 steer options
+        d_search_size = int((self.nv_level_modes[vm]-1)/2)
+        for dind in range(d_search_size+1): # for d_ss=1 it should search, 0 and 1.
+            p_d = int(idx_search+dind)
+            if valid_window[p_d]:
+                return self.qs[p_d]
+            n_d = int(idx_search-dind)
+            if valid_window[n_d]:
+                return self.qs[n_d]
+        
+
+    idx_search = int((len(self.qs)-1)/2)
+    d_size = len(valid_window)
+    for i in range(d_size):
+        p_d = int(min(d_size-1, idx_search+i))
+        if valid_window[p_d]:
+            return self.qs[p_d]
+        n_d = int(max(0, idx_search-i))
+        if valid_window[n_d]:
+            return self.qs[n_d]
 
 
 @njit(cache=True)
@@ -245,11 +294,12 @@ class BaseKernel:
     def __init__(self, sim_conf, plotting):
         self.resolution = sim_conf.n_dx
         self.plotting = plotting
+        self.m = Modes(sim_conf)
 
     def view_kernel(self, theta):
         phi_range = np.pi
         theta_ind = int(round((theta + phi_range/2) / phi_range * (self.kernel.shape[2]-1)))
-        plt.figure(5)
+        plt.figure(6)
         plt.title(f"Kernel phi: {theta} (ind: {theta_ind})")
         img = self.kernel[:, :, theta_ind].T 
         plt.imshow(img, origin='lower')
@@ -257,21 +307,21 @@ class BaseKernel:
         # plt.show()
         plt.pause(0.0001)
 
-    def check_state(self, state=[0, 0, 0]):
-        i, j, k= self.get_indices(state)
+    def check_state(self, state=[0, 0, 0, 0, 0]):
+        i, j, k, m = self.get_indices(state)
 
         # print(f"Expected Location: {state} -> Inds: {i}, {j}, {k} -> Value: {self.kernel[i, j, k]}")
         if self.plotting:
-            self.plot_kernel_point(i, j, k)
-        if self.kernel[i, j, k] != 0:
+            self.plot_kernel_point(i, j, k, m)
+        if self.kernel[i, j, k, m] != 0:
             return False # unsfae state
         return True # safe state
 
-    def plot_kernel_point(self, i, j, k):
-        plt.figure(5)
+    def plot_kernel_point(self, i, j, k, m):
+        plt.figure(6)
         plt.clf()
-        plt.title(f"Kernel inds: {i}, {j}, {k}")
-        img = self.kernel[:, :, k].T 
+        plt.title(f"Kernel inds: {i}, {j}, {k}, {m}: {self.m.qs[m]}")
+        img = self.kernel[:, :, k, m].T 
         plt.imshow(img, origin='lower')
         plt.plot(i, j, 'x', markersize=20, color='red')
         # plt.show()
@@ -282,67 +332,19 @@ class BaseKernel:
         total = self.kernel.size
         print(f"Filled: {filled} / {total} -> {filled/total}")
 
-class ForestKernel(BaseKernel):
-    def __init__(self, sim_conf, plotting=False):
-        super().__init__(sim_conf, plotting)
-        self.kernel = None
-        self.side_kernel = np.load(f"{sim_conf.kernel_path}SideKernel_{sim_conf.kernel_name}.npy")
-        self.obs_kernel = np.load(f"{sim_conf.kernel_path}ObsKernel_{sim_conf.kernel_name}.npy")
-        img_size = int(sim_conf.obs_img_size * sim_conf.n_dx)
-        obs_size = int(sim_conf.obs_size * sim_conf.n_dx)
-        self.obs_offset = int((img_size - obs_size) / 2)
-
-    def construct_kernel(self, track_size, obs_locations):
-        self.kernel = construct_forest_kernel(track_size, obs_locations, self.resolution, self.side_kernel, self.obs_kernel, self.obs_offset)
-
-    def get_indices(self, state):
-        phi_range = np.pi
-        x_ind = min(max(0, int(round((state[0])*self.resolution))), self.kernel.shape[0]-1)
-        y_ind = min(max(0, int(round((state[1])*self.resolution))), self.kernel.shape[1]-1)
-        theta_ind = int(round((state[2] + phi_range/2) / phi_range * (self.kernel.shape[2]-1)))
-        theta_ind = min(max(0, theta_ind), self.kernel.shape[2]-1)
-
-        return x_ind, y_ind, theta_ind
-
-
-@njit(cache=True)
-def construct_forest_kernel(track_size, obs_locations, resolution, side_kernel, obs_kernel, obs_offset):
-    kernel = np.zeros((track_size[0], track_size[1], side_kernel.shape[2]))
-    length = int(track_size[1] / resolution)
-    for i in range(length):
-        kernel[:, i*resolution:(i+1)*resolution] = side_kernel
-
-    if obs_locations is None:
-        return kernel
-
-    for obs in obs_locations:
-        i = int(round(obs[0] * resolution)) - obs_offset
-        j = int(round(obs[1] * resolution)) - obs_offset * 2
-        if i < 0:
-            kernel[0:i+obs_kernel.shape[0], j:j+obs_kernel.shape[1]] += obs_kernel[abs(i):obs_kernel.shape[0], :]
-            continue
-
-        if kernel.shape[0] - i <= (obs_kernel.shape[0]):
-            kernel[i:i+obs_kernel.shape[0], j:j+obs_kernel.shape[1]] += obs_kernel[0:obs_kernel.shape[0]-i, :]
-            continue
-
-
-        kernel[i:i+obs_kernel.shape[0], j:j+obs_kernel.shape[1]] += obs_kernel
-    
-    return kernel
 
 
 class TrackKernel(BaseKernel):
     def __init__(self, sim_conf, plotting=False, kernel_name=None):
         super().__init__(sim_conf, plotting)
         if kernel_name is None:
-            kernel_name = f"{sim_conf.kernel_path}Kernel_{sim_conf.kernel_mode}_std_{sim_conf.map_name}.npy"
+            kernel_name = f"{sim_conf.kernel_path}Kernel_{sim_conf.kernel_mode}_{sim_conf.map_name}.npy"
         else:
             kernel_name = f"{sim_conf.kernel_path}{kernel_name}"
         self.clean_kernel = np.load(kernel_name)
         self.kernel = self.clean_kernel.copy()
         self.phi_range = sim_conf.phi_range
-        self.n_modes = sim_conf.n_modes
+        self.n_modes = self.m.n_modes
         self.max_steer = sim_conf.max_steer
 
         file_name = 'maps/' + sim_conf.map_name + '.yaml'
@@ -365,49 +367,11 @@ class TrackKernel(BaseKernel):
         elif phi < -phi_range/2:
             phi = phi + phi_range
         theta_ind = int(round((phi + phi_range/2) / phi_range * (self.kernel.shape[2]-1)))
+        mode = self.m.get_mode_id(state[3], state[4])
 
         # mode_ind = min(max(0, int(round((state[4]+self.max_steer)*self.n_modes ))), self.kernel.shape[3]-1)
 
-        return x_ind, y_ind, theta_ind
-
-
-
-@njit(cache=True)
-def construct_track_kernel(clean_kernel, obs_locations, obs_kernel, obs_offset):
-    kernel = np.copy(clean_kernel)
-
-    for obs in obs_locations:
-        i = int(round(obs[0] )) - obs_offset
-        j = int(round(obs[1] )) - obs_offset
-
-        i_start = i 
-        i_kernel = 0 
-        i_len = obs_kernel.shape[0]
-        j_start = j
-        j_kernel = 0
-        j_len = obs_kernel.shape[1]
-        
-        if i < 0:
-            i_start = 0
-            i_kernel = abs(i)
-            i_len = obs_kernel.shape[0] - i_kernel
-
-        elif kernel.shape[0] - i <= (obs_kernel.shape[0]):
-            i_len = kernel.shape[0] - i
-
-        if j < 0:
-            j_start = 0
-            j_kernel = abs(j)
-            j_len = obs_kernel.shape[1] - j_kernel
-
-        elif kernel.shape[1] - j <= (obs_kernel.shape[1]):
-            j_len = kernel.shape[1] - j
-
-        additive = obs_kernel[i_kernel:i_kernel + i_len, j_kernel:j_kernel + j_len, :]
-        kernel[i_start:i_start + i_len, j_start:j_start + j_len, :] += additive
-
-    return kernel
-
+        return x_ind, y_ind, theta_ind, mode
 
 
 
