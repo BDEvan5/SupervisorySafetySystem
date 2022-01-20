@@ -10,7 +10,7 @@ from matplotlib import pyplot as plt
 
 
 def pp_kernel_test():
-    conf = load_conf("track_kernel")
+    conf = load_conf("std_test_kernel")
 
     # build_track_kernel()
 
@@ -19,7 +19,7 @@ def pp_kernel_test():
     kernel = TrackKernel(conf)
     safety_planner = Supervisor(planner, kernel, conf)
 
-    test_kernel_vehicle(env, safety_planner, True, 10, add_obs=False)
+    test_kernel_vehicle(env, safety_planner, True, 1, add_obs=False, wait=True)
 
 def rando_test():
     conf = load_conf("std_test_kernel")
