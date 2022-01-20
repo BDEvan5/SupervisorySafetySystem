@@ -36,7 +36,7 @@ class RandomPlanner:
 class ConstantPlanner:
     def __init__(self, name="StraightPlanner", value=0):
         self.steering_value = value
-        self.v = 2        
+        self.v = 4        
         self.name = name
 
         path = os.getcwd() + "/PaperData/Vehicles/" + self.name 

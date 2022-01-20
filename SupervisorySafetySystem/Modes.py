@@ -97,7 +97,7 @@ def load_conf(fname):
 
 
 def test_modes():
-    conf = load_conf("forest_kernel")
+    conf = load_conf("std_test_kernel")
     m = Modes(conf)
     m.init_modes()
     

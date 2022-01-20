@@ -102,7 +102,7 @@ class KernelGenerator:
         # quarter_phi = int(len(self.phis)/4)
         # phi_ind = 
 
-        inds = np.array([2, 6, 0, 5], dtype=int)
+        inds = np.array([2, 4, 8, 9], dtype=int)
 
         self.axs[0, 0].imshow(self.kernel[:, :, phi_ind, inds[0]].T + self.o_map.T, origin='lower')
         self.axs[0, 0].set_title(f"Kernel speed: {2}")

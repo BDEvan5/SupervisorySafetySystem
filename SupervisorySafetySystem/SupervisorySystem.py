@@ -248,6 +248,8 @@ def modify_mode(self: Modes, valid_window):
 
         if self.nv_level_modes[vm] == 1:
             if valid_window[idx_search]:
+                if idx_search == 8 or idx_search == 9:
+                    print(f"Mode idx: {idx_search} -> {self.qs[idx_search]}")
                 return self.qs[idx_search]
             continue
 
