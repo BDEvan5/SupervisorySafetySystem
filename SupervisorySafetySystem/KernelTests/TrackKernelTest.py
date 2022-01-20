@@ -22,7 +22,7 @@ def pp_kernel_test():
     test_kernel_vehicle(env, safety_planner, True, 10, add_obs=False)
 
 def rando_test():
-    conf = load_conf("track_kernel")
+    conf = load_conf("std_test_kernel")
 
     # build_track_kernel()
 
@@ -33,27 +33,29 @@ def rando_test():
     # kernel = TrackKernel(conf, False, f"DiscKern_{conf.track_kernel_path}_{conf.map_name}.npy")
     safety_planner = Supervisor(planner, kernel, conf)
 
-    test_kernel_vehicle(env, safety_planner, True, 30, add_obs=False, wait=False)
+    # test_kernel_vehicle(env, safety_planner, True, 30, add_obs=False, wait=False)
     # test_kernel_vehicle(env, safety_planner, True, 30, add_obs=False, wait=True)
     # test_kernel_vehicle(env, safety_planner, True, 100, add_obs=False)
-    # test_kernel_vehicle(env, safety_planner, False, 100, add_obs=False)
+    test_kernel_vehicle(env, safety_planner, False, 100, add_obs=False)
 
 
 def straight_test():
-    conf = load_conf("track_kernel")
+    conf = load_conf("std_test_kernel")
 
     # build_track_kernel()
 
     env = TrackSim(conf)
-    planner = StraightPlanner()
+    # planner = ConstantPlanner("Left", -0.4)
+    # planner = ConstantPlanner("Right", -0.4)
+    planner = ConstantPlanner()
     kernel = TrackKernel(conf, False)
     safety_planner = Supervisor(planner, kernel, conf)
 
-    test_kernel_vehicle(env, safety_planner, True, 30, add_obs=False)
+    test_kernel_vehicle(env, safety_planner, True, 1, add_obs=False, wait=True)
   
 
 if __name__ == "__main__":
-    rando_test()
+    # rando_test()
     # pp_kernel_test()
-    # straight_test()
+    straight_test()
 

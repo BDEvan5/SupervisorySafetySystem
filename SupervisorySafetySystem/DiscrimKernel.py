@@ -125,6 +125,7 @@ class DiscrimGenerator(BaseKernel):
         plt.pause(0.0001)
         plt.pause(1)
         plt.savefig(f"{self.sim_conf.kernel_path}Kernel_build_{self.sim_conf.kernel_mode}.svg")
+        plt.savefig(f"{self.sim_conf.kernel_path}Kernel_{self.sim_conf.map_name}_{self.sim_conf.kernel_mode}.png")
 
         if show:
             plt.show()
