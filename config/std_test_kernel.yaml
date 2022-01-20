@@ -22,7 +22,7 @@ max_steps: 5000
 end_distance: 1.5
 # end_distance: 3
 
-vehicle_path: "EvalVehicles/"
+vehicle_path: "Data/Vehicles/"
 # map_name: "torino"
 # map_name: "berlin"
 # map_name: "porto"
@@ -31,9 +31,10 @@ map_name: "columbia_small"
 # map_name: "circle"
 # map_name: "torino_redraw_small"
 
-kernel_path: "Kernels/"
-# kernel_mode: "disc"
-kernel_mode: "viab"
+kernel_path: "Data/Kernels/"
+dynamics_path: "Data/Dynamics/"
+kernel_mode: "disc"
+# kernel_mode: "viab"
 n_phi: 41
 # n_modes: 5
 
@@ -63,3 +64,4 @@ test_n: 100
 
 lookahead: 0.8
 v_gain: 1
+traj_path: "Data/Trajectories/"

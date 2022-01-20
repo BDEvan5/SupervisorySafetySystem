@@ -1,14 +1,21 @@
+
+from SupervisorySafetySystem.Modes import Modes
+
+import numpy as np
+from matplotlib import pyplot as plt
+
 import numpy as np
 import matplotlib.pyplot as plt
 from numba import njit
 import yaml
 from PIL import Image
-from SupervisorySafetySystem.Simulator.Dynamics import update_std_state, update_complex_state, update_complex_state_const
-from SupervisorySafetySystem.KernelTests.GeneralTestTrain import load_conf
-from SupervisorySafetySystem.Modes import Modes
+from SupervisorySafetySystem.Utils import load_conf
+
+
+
 
 class KernelGenerator:
-    def __init__(self, track_img, sim_conf):
+    def __init__(self, track_img, sim_conf, load_dyns=False):
         self.track_img = track_img
         self.sim_conf = sim_conf
         self.n_dx = int(sim_conf.n_dx)
@@ -36,16 +43,11 @@ class KernelGenerator:
         
         self.kernel[:, :, :, :] = self.track_img[:, :, None, None] * np.ones((self.n_x, self.n_y, self.n_phi, self.n_modes))
 
-        if sim_conf.kernel_mode == "viab":
-            self.dynamics = build_viability_dynamics(self.phis, self.m, self.t_step, self.sim_conf)
-        elif sim_conf.kernel_mode == 'disc':
-            self.dynamics = build_disc_dynamics(self.phis, self.m, self.t_step, self.sim_conf)
-        else:
-            raise ValueError(f"Unknown kernel mode: {sim_conf.kernel_mode}")
+        self.dynamics = np.load(f"{sim_conf.dynamics_path}{sim_conf.kernel_mode}_dyns.npy")
 
     def save_kernel(self, name):
         np.save(f"{self.sim_conf.kernel_path}{name}.npy", self.kernel)
-        print(f"Saved kernel to file: {name} -> {self.kernel.shape}")
+        print(f"Saved kernel to file: {name}")
 
 
         self.view_speed_build(False)
@@ -53,8 +55,6 @@ class KernelGenerator:
 
         self.view_angle_build(False)
         plt.savefig(f"{self.sim_conf.kernel_path}KernelAngle_{name}_{self.sim_conf.kernel_mode}.png")
-
-
 
     def get_filled_kernel(self):
         filled = np.count_nonzero(self.kernel)
@@ -71,7 +71,7 @@ class KernelGenerator:
         half_phi = int(len(self.phis)/2)
         quarter_phi = int(len(self.phis)/4)
 
-        mode_ind = 9
+        mode_ind = 6
 
         self.axs[0, 0].imshow(self.kernel[:, :, 0, mode_ind].T + self.o_map.T, origin='lower')
         self.axs[0, 0].set_title(f"Kernel phi: {self.phis[0]}")
@@ -102,15 +102,17 @@ class KernelGenerator:
         # quarter_phi = int(len(self.phis)/4)
         # phi_ind = 
 
-        self.axs[0, 0].imshow(self.kernel[:, :, phi_ind, 2].T + self.o_map.T, origin='lower')
+        inds = np.array([2, 6, 0, 5], dtype=int)
+
+        self.axs[0, 0].imshow(self.kernel[:, :, phi_ind, inds[0]].T + self.o_map.T, origin='lower')
         self.axs[0, 0].set_title(f"Kernel speed: {2}")
         # axs[0, 0].clear()
-        self.axs[1, 0].imshow(self.kernel[:, :, phi_ind, 6].T + self.o_map.T, origin='lower')
+        self.axs[1, 0].imshow(self.kernel[:, :, phi_ind, inds[1]].T + self.o_map.T, origin='lower')
         self.axs[1, 0].set_title(f"Kernel speed: {3}")
-        self.axs[0, 1].imshow(self.kernel[:, :, phi_ind, 8].T + self.o_map.T, origin='lower')
+        self.axs[0, 1].imshow(self.kernel[:, :, phi_ind, inds[2]].T + self.o_map.T, origin='lower')
         self.axs[0, 1].set_title(f"Kernel speed: {4}")
 
-        self.axs[1, 1].imshow(self.kernel[:, :, phi_ind, 9].T + self.o_map.T, origin='lower')
+        self.axs[1, 1].imshow(self.kernel[:, :, phi_ind, inds[3]].T + self.o_map.T, origin='lower')
         self.axs[1, 1].set_title(f"Kernel speed: {5}")
 
         # plt.title(f"Building Kernel")
@@ -163,126 +165,10 @@ class KernelGenerator:
 
             # self.view_kernel(0, False)
             self.view_speed_build(False)
+            self.get_filled_kernel()
 
         return self.get_filled_kernel()
 
-
-
-# @njit(cache=True)
-def build_viability_dynamics(phis, m, time, conf):
-    resolution = conf.n_dx
-    phi_range = conf.phi_range
-
-    ns = 2
-
-    dynamics = np.zeros((len(phis), len(m), len(m), ns, 4), dtype=np.int)
-    for i, p in enumerate(phis):
-        for j, state_mode in enumerate(m.qs): # searches through old q's
-            state = np.array([0, 0, p, state_mode[1], state_mode[0]])
-            for k, action in enumerate(m.qs): # searches through actions
-                new_state = update_complex_state(state, action, time/2)
-                dx, dy, phi, vel, steer = new_state[0], new_state[1], new_state[2], new_state[3], new_state[4]
-                new_q = m.get_mode_id(vel, steer)
-
-                while phi > np.pi:
-                    phi = phi - 2*np.pi
-                while phi < -np.pi:
-                    phi = phi + 2*np.pi
-                new_k = int(round((phi + phi_range/2) / phi_range * (len(phis)-1)))
-                dynamics[i, j, k, 0, 2] = min(max(0, new_k), len(phis)-1)
-                
-                dynamics[i, j, k, 0, 0] = int(round(dx * resolution))                  
-                dynamics[i, j, k, 0, 1] = int(round(dy * resolution))                  
-                dynamics[i, j, k, 0, 3] = int(new_q)                  
-                
-
-                new_state = update_complex_state(state, action, time)
-                dx, dy, phi, vel, steer = new_state[0], new_state[1], new_state[2], new_state[3], new_state[4]
-                new_q = m.get_mode_id(vel, steer)
-
-                while phi > np.pi:
-                    phi = phi - 2*np.pi
-                while phi < -np.pi:
-                    phi = phi + 2*np.pi
-                new_k = int(round((phi + phi_range/2) / phi_range * (len(phis)-1)))
-                dynamics[i, j, k, 1, 2] = min(max(0, new_k), len(phis)-1)
-                
-                dynamics[i, j, k, 1, 0] = int(round(dx * resolution))                  
-                dynamics[i, j, k, 1, 1] = int(round(dy * resolution))                  
-                dynamics[i, j, k, 1, 3] = int(new_q)                  
-                
-
-    return dynamics
-
-
-# @njit(cache=True)
-def build_disc_dynamics(phis, m, time, conf):
-    resolution = conf.n_dx
-    phi_range = conf.phi_range
-    block_size = 1 / (resolution)
-    h = conf.discrim_block * block_size *0.5
-    phi_size = phi_range / (conf.n_phi -1)
-    ph = conf.discrim_phi * phi_size
-
-    ns = 1
-    dynamics = np.zeros((len(phis), len(m), len(m), 9, 4), dtype=np.int)
-    for i, p in enumerate(phis):
-        for j, state_mode in enumerate(m.qs): # searches through old q's
-            state = np.array([0, 0, p, state_mode[1], state_mode[0]])
-            for k, action in enumerate(m.qs): # searches through actions
-                new_state = update_complex_state(state, action, time)
-                dx, dy, phi, vel, steer = new_state[0], new_state[1], new_state[2], new_state[3], new_state[4]
-                new_q = m.get_mode_id(vel, steer)
-
-                if phi > np.pi:
-                    phi = phi - 2*np.pi
-                elif phi < -np.pi:
-                    phi = phi + 2*np.pi
-
-                new_k_min = int(round((phi - ph + phi_range/2) / phi_range * (len(phis)-1)))
-                dynamics[i, j, k, 0:4, 2] = min(max(0, new_k_min), len(phis)-1)
-                
-                new_k_max = int(round((phi + ph + phi_range/2) / phi_range * (len(phis)-1)))
-                dynamics[i, j, k, 4:8, 2] = min(max(0, new_k_max), len(phis)-1)
-
-                temp_dynamics = generate_temp_dynamics(dx, dy, h, resolution)
-                
-                dynamics[i, j, k, 0:8, 0:2] = np.copy(temp_dynamics)
-                dynamics[i, j, k, 0:8, 3] = int(new_q) # no q discretisation error
-
-                new_state = update_complex_state(state, action, time/2)
-                dx, dy, phi, vel, steer = new_state[0], new_state[1], new_state[2], new_state[3], new_state[4]
-                new_q = m.get_mode_id(vel, steer)
-
-                while phi > np.pi:
-                    phi = phi - 2*np.pi
-                while phi < -np.pi:
-                    phi = phi + 2*np.pi
-                new_k = int(round((phi + phi_range/2) / phi_range * (len(phis)-1)))
-                dynamics[i, j, k, 8, 2] = min(max(0, new_k), len(phis)-1)
-                
-                dynamics[i, j, k, 8, 0] = int(round(dx * resolution))                  
-                dynamics[i, j, k, 8, 1] = int(round(dy * resolution))                  
-                dynamics[i, j, k, 8, 3] = int(new_q)   
-
-    return dynamics
-
-
-@njit(cache=True)
-def generate_temp_dynamics(dx, dy, h, resolution):
-    temp_dynamics = np.zeros((8, 2))
-
-    for i in range(2):
-        temp_dynamics[0 + i*4, 0] = int(round((dx -h) * resolution))
-        temp_dynamics[0 + i*4, 1] = int(round((dy -h) * resolution))
-        temp_dynamics[1 + i*4, 0] = int(round((dx -h) * resolution))
-        temp_dynamics[1 + i*4, 1] = int(round((dy +h) * resolution))
-        temp_dynamics[2 + i*4, 0] = int(round((dx +h) * resolution))
-        temp_dynamics[2 + i*4, 1] = int(round((dy +h )* resolution))
-        temp_dynamics[3 + i*4, 0] = int(round((dx +h) * resolution))
-        temp_dynamics[3 + i*4, 1] = int(round((dy -h) * resolution))
-
-    return temp_dynamics
 
 
 @njit(cache=True)
@@ -290,6 +176,8 @@ def viability_loop(kernel, dynamics):
     previous_kernel = np.copy(kernel)
     l_xs, l_ys, l_phis, l_qs = kernel.shape
     for i in range(l_xs):
+        # if i == 150:
+            # print(f"i: {i}")
         for j in range(l_ys):
             for k in range(l_phis):
                 for q in range(l_qs):
@@ -305,8 +193,17 @@ def check_viable_state(i, j, k, q, dynamics, previous_kernel):
     l_xs, l_ys, l_phis, n_modes = previous_kernel.shape
     for l in range(n_modes):
         safe = True
+        di, dj, new_k, new_q = dynamics[k, q, l, 0, :]
+        # if np.isnan(new_q):
+        #     safe = False
+        #     continue # not a valid option. Don't even bother with safe = False
+        if new_q == -9223372036854775808:
+            continue
+
         for n in range(dynamics.shape[3]): # cycle through 8 block states
             di, dj, new_k, new_q = dynamics[k, q, l, n, :]
+
+                # return True # not safe.
             new_i = min(max(0, i + di), l_xs-1)  
             new_j = min(max(0, j + dj), l_ys-1)
 
@@ -320,10 +217,6 @@ def check_viable_state(i, j, k, q, dynamics, previous_kernel):
 
     return True # it isn't safe because I haven't found a valid action yet...
 
-
-"""
-    External functions
-"""
 
 def prepare_track_img(sim_conf):
     file_name = 'maps/' + sim_conf.map_name + '.yaml'
@@ -349,7 +242,6 @@ def prepare_track_img(sim_conf):
     map_img2[map_img2 != 0.] = 1.
 
     return map_img2
-
 
 @njit(cache=True)
 def shrink_img(img, n_shrinkpx):
@@ -377,21 +269,20 @@ def shrink_img(img, n_shrinkpx):
 
 
 
-
 def build_track_kernel(conf):
   
     img = prepare_track_img(conf) 
     # img, img2 = shrink_img(img, 5)
     kernel = KernelGenerator(img, conf)
     kernel.calculate_kernel(50)
-    kernel.save_kernel(f"Kernel_viab_{conf.map_name}")
-    # kernel.view_build(True)
-
-
+    kernel.save_kernel(f"Kernel_{conf.kernel_mode}_{conf.map_name}")
 
 
 if __name__ == "__main__":
+
+    # test_construction()
     conf = load_conf("std_test_kernel")
     build_track_kernel(conf)
+
 
 

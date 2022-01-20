@@ -30,7 +30,8 @@ class RandomPlanner:
     def plan_act(self, obs):
         steering = np.random.normal(0, 0.1)
         steering = np.clip(steering, -self.d_max, self.d_max)
-        return np.array([steering, self.v])
+        v = calculate_speed(steering)
+        return np.array([steering, v])
 
 class ConstantPlanner:
     def __init__(self, name="StraightPlanner", value=0):
@@ -72,7 +73,10 @@ class PurePursuit:
         radius = 1/(2.0*waypoint_y/self.lookahead_distance**2)
         steering_angle = np.arctan(self.L/radius)
         steering_angle = np.clip(steering_angle, -self.d_max, self.d_max)
-        return np.array([steering_angle, self.v])
+
+        v = calculate_speed(steering_angle)
+
+        return np.array([steering_angle, v])
 
 
 
