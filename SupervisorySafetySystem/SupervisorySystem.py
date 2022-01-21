@@ -1,4 +1,4 @@
-
+from SupervisorySafetySystem.Utils import load_conf
 import numpy as np
 from numba import njit
 from matplotlib import pyplot as plt
@@ -92,8 +92,7 @@ class Supervisor:
             self.safe_history.add_locations(init_mode_action[0], init_mode_action[0])
             return init_action
 
-        dw = self.generate_dw()
-        valids = simulate_and_classify(state, dw, self.kernel, self.time_step)
+        valids = simulate_and_classify(state, self.m.qs, self.kernel, self.time_step)
         if not valids.any():
             print('No Valid options')
             print(f"State: {obs['state']}")
@@ -101,14 +100,9 @@ class Supervisor:
             return init_action
         
         action = modify_mode(self.m, valids)
-        # print(f"Valids: {valids} -> new action: {action}")
         self.safe_history.add_locations(init_action[0], action[0])
 
-
         return action
-
-    def generate_dw(self):
-        return self.m.qs
 
     def action2mode(self, init_action):
         id = self.m.get_mode_id(init_action[1], init_action[0])
@@ -190,26 +184,26 @@ class LearningSupervisor(Supervisor):
         fake_done = False
         if abs(self.intervention_mag) > 0: fake_done = True
 
-        safe, next_state = check_init_action(state, init_action, self.kernel, self.time_step)
+        init_mode_action = self.action2mode(init_action)
+        safe, next_state = self.check_init_action(state, init_mode_action)
+
         if safe:
             self.intervention_mag = 0
             self.safe_history.add_locations(init_action[0], init_action[0])
-            return init_action, fake_done
+            return init_mode_action, fake_done
 
         self.ep_interventions += 1
         self.intervene = True
 
-        dw = self.generate_dw()
-        valids = simulate_and_classify(state, dw, self.kernel, self.time_step)
+        valids = simulate_and_classify(state, self.m.qs, self.kernel, self.time_step)
         if not valids.any():
             print('No Valid options')
             print(f"State: {obs['state']}")
             # plt.show()
             self.intervention_mag = 1
             return init_action, fake_done
-        
-        action = modify_action(valids, dw)
-        # print(f"Valids: {valids} -> new action: {action}")
+
+        action = modify_mode(self.m, valids)
         self.safe_history.add_locations(init_action[0], action[0])
 
         self.intervention_mag = (action[0] - init_action[0])/self.d_max
@@ -217,15 +211,7 @@ class LearningSupervisor(Supervisor):
         return action, fake_done
 
 
-# #TODO jit all of this.
-
-# def check_init_action(state, u0, kernel, time_step=0.1):
-#     next_state = update_complex_state(state, u0, time_step)
-#     safe = kernel.check_state(next_state)
-    
-#     return safe, next_state
-
-def simulate_and_classify(state, dw, kernel, time_step=0.1):
+def simulate_and_classify(state, dw, kernel, time_step):
     valid_ds = np.ones(len(dw))
     for i in range(len(dw)):
         next_state = update_complex_state(state, dw[i], time_step)
@@ -236,7 +222,7 @@ def simulate_and_classify(state, dw, kernel, time_step=0.1):
 
     return valid_ds 
 
-
+#TODO: JIT this
 def modify_mode(self: Modes, valid_window):
     """ 
     modifies the action for obstacle avoidance only, it doesn't check the dynamic limits here.
@@ -248,8 +234,8 @@ def modify_mode(self: Modes, valid_window):
 
         if self.nv_level_modes[vm] == 1:
             if valid_window[idx_search]:
-                if idx_search == 8 or idx_search == 9:
-                    print(f"Mode idx: {idx_search} -> {self.qs[idx_search]}")
+                # if idx_search == 8 or idx_search == 9:
+                    # print(f"Mode idx: {idx_search} -> {self.qs[idx_search]}")
                 return self.qs[idx_search]
             continue
 
@@ -274,21 +260,6 @@ def modify_mode(self: Modes, valid_window):
         if valid_window[n_d]:
             return self.qs[n_d]
 
-
-@njit(cache=True)
-def modify_action(valid_window, dw):
-    """ 
-    By the time that I get here, I have already established that pp action is not ok so I cannot select it, I must modify the action. 
-    """
-    idx_search = int((len(dw)-1)/2)
-    d_size = len(valid_window)
-    for i in range(d_size):
-        p_d = int(min(d_size-1, idx_search+i))
-        if valid_window[p_d]:
-            return dw[p_d]
-        n_d = int(max(0, idx_search-i))
-        if valid_window[n_d]:
-            return dw[n_d]
 
     
 
@@ -345,6 +316,8 @@ class TrackKernel(BaseKernel):
             kernel_name = f"{sim_conf.kernel_path}{kernel_name}"
         self.clean_kernel = np.load(kernel_name)
         self.kernel = self.clean_kernel.copy()
+        print(f"non: {np.count_nonzero(self.kernel[:, :, :, 8])}")
+        print(f"zero: {np.where(self.kernel[:, :, :, 8]==0)}")
         self.phi_range = sim_conf.phi_range
         self.n_modes = self.m.n_modes
         self.max_steer = sim_conf.max_steer
@@ -375,5 +348,9 @@ class TrackKernel(BaseKernel):
 
         return x_ind, y_ind, theta_ind, mode
 
+
+if __name__ == "__main__":
+    conf = load_conf("std_test_kernel")
+    t = TrackKernel(conf)
 
 

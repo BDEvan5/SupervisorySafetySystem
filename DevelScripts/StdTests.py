@@ -86,6 +86,6 @@ def eval_test():
 
 if __name__ == "__main__":
     # train_baseline_cth(1, 1)
-    # eval_model_sss(1, 1)
+    eval_model_sss(1, 2)
 
-    eval_test()
+    # eval_test()

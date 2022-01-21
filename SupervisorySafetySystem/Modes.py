@@ -1,8 +1,10 @@
 import numpy as np
+from SandboxSafety.Simulator.Dynamics import update_complex_state
 
 
 class Modes:
     def __init__(self, sim_conf):
+        self.time_step = sim_conf.time_step
         self.nq_steer = sim_conf.nq_steer
         self.nq_velocity = sim_conf.nq_velocity
         self.max_steer = sim_conf.max_steer
@@ -17,8 +19,10 @@ class Modes:
         self.nv_modes = None
         self.v_mode_list = None
         self.nv_level_modes = None
+        self.actions = None
 
         self.init_modes()
+        # self.built_transition_actions()
 
     def init_modes(self):
         b = 0.523
@@ -62,7 +66,7 @@ class Modes:
         b = 0.523
         g = 9.81
         l_d = 0.329
-        if d < 0.06:
+        if abs(d) < 0.06:
             return True # safe because steering is small
         friction_v = np.sqrt(b*g*l_d/np.tan(abs(d))) *1.1 # nice for the maths, but a bit wrong for actual friction
         if friction_v > v:
@@ -82,6 +86,32 @@ class Modes:
         return return_mode
 
     def __len__(self): return self.n_modes
+
+    def built_transition_actions(self): 
+        actions = []
+        for s, state_mode in enumerate(self.qs):
+            qas = []
+            state = np.array([0, 0, 0, state_mode[1], state_mode[0]])
+            for i, qact in enumerate(self.qs):
+                new_state = update_complex_state(state, qact, self.time_step)
+                dx, dy, phi, vel, steer = new_state[0], new_state[1], new_state[2], new_state[3], new_state[4]
+                new_q = self.get_safe_mode_id(vel, steer)
+
+                print(f"State: {s},{state_mode} + Action: {i},{qact} --> new_q: {new_q}, [{steer:.3f}  {vel:.3f}]")
+                if new_q is not None:
+                    qas.append(i)
+            actions.append(qas)
+        self.actions = actions
+        print("Transition actions built")
+        print(f"Actions: {actions}")
+
+    def get_allowed_actions(self, state_mode):
+        """
+        This method is to see what action modes are allowed for a certain state. It monitors the dynamic updates which are position and orienttaion independant becuase the velocity and steering are the only thing of concern.
+
+        For a given state mode, what actions will actually have an effect? 
+        """
+        return self.actions[state_mode]
 
 
 from argparse import Namespace

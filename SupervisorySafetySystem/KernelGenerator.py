@@ -102,18 +102,18 @@ class KernelGenerator:
         # quarter_phi = int(len(self.phis)/4)
         # phi_ind = 
 
-        inds = np.array([2, 4, 8, 9], dtype=int)
+        inds = np.array([2, 6, 7, 8], dtype=int)
 
         self.axs[0, 0].imshow(self.kernel[:, :, phi_ind, inds[0]].T + self.o_map.T, origin='lower')
-        self.axs[0, 0].set_title(f"Kernel speed: {2}")
+        self.axs[0, 0].set_title(f"Kernel Mode: {self.m.qs[inds[0]]}")
         # axs[0, 0].clear()
         self.axs[1, 0].imshow(self.kernel[:, :, phi_ind, inds[1]].T + self.o_map.T, origin='lower')
-        self.axs[1, 0].set_title(f"Kernel speed: {3}")
+        self.axs[1, 0].set_title(f"Kernel Mode: {self.m.qs[inds[1]]}")
         self.axs[0, 1].imshow(self.kernel[:, :, phi_ind, inds[2]].T + self.o_map.T, origin='lower')
-        self.axs[0, 1].set_title(f"Kernel speed: {4}")
+        self.axs[0, 1].set_title(f"Kernel Mode: {self.m.qs[inds[2]]}")
 
         self.axs[1, 1].imshow(self.kernel[:, :, phi_ind, inds[3]].T + self.o_map.T, origin='lower')
-        self.axs[1, 1].set_title(f"Kernel speed: {5}")
+        self.axs[1, 1].set_title(f"Kernel Mode: {self.m.qs[inds[3]]}")
 
         # plt.title(f"Building Kernel")
 
@@ -167,6 +167,9 @@ class KernelGenerator:
             self.view_speed_build(False)
             self.get_filled_kernel()
 
+        print(f"non: {np.count_nonzero(self.kernel[:, :, :, 8])}")
+        print(f"zero: {np.where(self.kernel[:, :, :, 8]==0)}")
+
         return self.get_filled_kernel()
 
 
@@ -176,8 +179,6 @@ def viability_loop(kernel, dynamics):
     previous_kernel = np.copy(kernel)
     l_xs, l_ys, l_phis, l_qs = kernel.shape
     for i in range(l_xs):
-        # if i == 150:
-            # print(f"i: {i}")
         for j in range(l_ys):
             for k in range(l_phis):
                 for q in range(l_qs):
@@ -194,9 +195,7 @@ def check_viable_state(i, j, k, q, dynamics, previous_kernel):
     for l in range(n_modes):
         safe = True
         di, dj, new_k, new_q = dynamics[k, q, l, 0, :]
-        # if np.isnan(new_q):
-        #     safe = False
-        #     continue # not a valid option. Don't even bother with safe = False
+
         if new_q == -9223372036854775808:
             continue
 
