@@ -176,7 +176,7 @@ class LearningSupervisor(Supervisor):
         fake_done = False
         if abs(self.intervention_mag) > 0: fake_done = True
 
-        init_mode_action = self.action2mode(init_action)
+        init_mode_action = self.m.action2mode(init_action)
         safe, next_state = self.check_init_action(state, init_mode_action)
 
         if safe:
@@ -187,15 +187,13 @@ class LearningSupervisor(Supervisor):
         self.ep_interventions += 1
         self.intervene = True
 
-        valids = simulate_and_classify(state, self.m.qs, self.kernel, self.time_step)
+        valids = self.simulate_and_classify(state)
         if not valids.any():
-            print('No Valid options')
-            print(f"State: {obs['state']}")
-            # plt.show()
+            print(f"No Valid options --> State: {obs['state']}")
             self.intervention_mag = 1
             return init_action, fake_done
 
-        action = modify_mode(self.m, valids)
+        action, idx = modify_mode(valids, self.m.nq_velocity, self.m.nv_modes, self.m.nv_level_modes, self.m.qs)
         self.safe_history.add_locations(init_action[0], action[0])
 
         self.intervention_mag = (action[0] - init_action[0])/self.d_max

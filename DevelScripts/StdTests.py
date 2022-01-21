@@ -62,10 +62,11 @@ def eval_model_sss(n, i):
 def eval_test():
     n = 1
     i = 1
-    sim_conf = load_conf("BaselineComp")
+    sim_conf = load_conf("std_test_kernel")
+    # sim_conf = load_conf("BaselineComp")
     env = TrackSim(sim_conf)
     agent_name = f"Kernel_ModelSSS_{i}_{n}"
-    kernel = TrackKernel(sim_conf)
+    kernel = TrackKernel(sim_conf, False)
     
     planner = EndVehicleTest(agent_name, sim_conf)
     safety_planner = Supervisor(planner, kernel, sim_conf)
@@ -86,6 +87,6 @@ def eval_test():
 
 if __name__ == "__main__":
     # train_baseline_cth(1, 1)
-    eval_model_sss(1, 2)
+    # eval_model_sss(1, 2)
 
-    # eval_test()
+    eval_test()
