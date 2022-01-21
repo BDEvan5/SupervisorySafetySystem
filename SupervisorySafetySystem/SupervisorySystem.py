@@ -169,12 +169,14 @@ class LearningSupervisor(Supervisor):
         plt.savefig(f"{self.planner.path}/{self.planner.name}_laptimes.svg")
 
     def plan(self, obs):
-        obs['reward'] = self.calculate_reward(self.intervention_mag, obs)
-        init_action = self.planner.plan_act(obs)
-        state = np.array(obs['state'])
+        if abs(self.intervention_mag) > 0:
+            obs['reward'] = self.calculate_reward(self.intervention_mag, obs)
+            self.planner.fake_done_entry(obs)
+            init_action = self.planner.plan_act(obs, False)
+        else:
+            init_action = self.planner.plan_act(obs, True)
 
-        fake_done = False
-        if abs(self.intervention_mag) > 0: fake_done = True
+        state = np.array(obs['state'])
 
         init_mode_action = self.m.action2mode(init_action)
         safe, next_state = self.check_init_action(state, init_mode_action)
@@ -182,7 +184,7 @@ class LearningSupervisor(Supervisor):
         if safe:
             self.intervention_mag = 0
             self.safe_history.add_locations(init_action[0], init_action[0])
-            return init_mode_action, fake_done
+            return init_mode_action
 
         self.ep_interventions += 1
         self.intervene = True
@@ -191,14 +193,14 @@ class LearningSupervisor(Supervisor):
         if not valids.any():
             print(f"No Valid options --> State: {obs['state']}")
             self.intervention_mag = 1
-            return init_action, fake_done
+            return init_action
 
         action, idx = modify_mode(valids, self.m.nq_velocity, self.m.nv_modes, self.m.nv_level_modes, self.m.qs)
         self.safe_history.add_locations(init_action[0], action[0])
 
         self.intervention_mag = (action[0] - init_action[0])/self.d_max
 
-        return action, fake_done
+        return action
 
 
 
@@ -270,7 +272,7 @@ def check_kernel_state(state, kernel, origin, resolution, phi_range, d_max, v_mo
 
 
 class TrackKernel:
-    def __init__(self, sim_conf, plotting, kernel_name=None):
+    def __init__(self, sim_conf, plotting=False, kernel_name=None):
         if kernel_name is None:
             kernel_name = f"{sim_conf.kernel_path}Kernel_{sim_conf.kernel_mode}_{sim_conf.map_name}.npy"
         else:

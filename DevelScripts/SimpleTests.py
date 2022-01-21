@@ -1,4 +1,4 @@
-from GeneralTestTrain import test_kernel_vehicle, load_conf
+from GeneralTestTrain import test_kernel_vehicle, load_conf, test_normal_vehicle
 
 from SupervisorySafetySystem.Simulator.TrackSim import TrackSim
 from SupervisorySafetySystem.SupervisorySystem import Supervisor, TrackKernel
@@ -19,6 +19,19 @@ def pp_kernel_test():
     safety_planner = Supervisor(planner, kernel, conf)
 
     test_kernel_vehicle(env, safety_planner, True, 1, add_obs=False, wait=True)
+
+
+def pp_test():
+    conf = load_conf("std_test_kernel")
+
+    # build_track_kernel()
+
+    env = TrackSim(conf)
+    planner = PurePursuit(conf)
+    # kernel = TrackKernel(conf)
+    # safety_planner = Supervisor(planner, kernel, conf)
+
+    test_normal_vehicle(env, planner, True, 1, add_obs=False, wait=True)
 
 def rando_test():
     conf = load_conf("std_test_kernel")
@@ -62,8 +75,9 @@ def profile():
     stats.print_stats()
 
 if __name__ == "__main__":
-    rando_test()
+    # rando_test()
     # pp_kernel_test()
+    pp_test()
     # straight_test()
 
     # profile()

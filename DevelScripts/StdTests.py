@@ -40,7 +40,8 @@ def eval_model_sss(n, i):
     planner = EndVehicleTrain(agent_name, sim_conf)
     kernel = TrackKernel(sim_conf)
     safety_planner = LearningSupervisor(planner, kernel, sim_conf)
-    safety_planner.calculate_reward = MagnitudeReward(sim_conf.sss_reward_scale)
+    safety_planner.calculate_reward = ConstantReward(sim_conf.sss_reward_scale)
+    # safety_planner.calculate_reward = MagnitudeReward(sim_conf.sss_reward_scale)
     
     train_time = train_kernel_continuous(env, safety_planner, sim_conf, show=False)
 
@@ -61,7 +62,7 @@ def eval_model_sss(n, i):
 
 def eval_test():
     n = 1
-    i = 1
+    i = 8
     sim_conf = load_conf("std_test_kernel")
     # sim_conf = load_conf("BaselineComp")
     env = TrackSim(sim_conf)
@@ -87,6 +88,6 @@ def eval_test():
 
 if __name__ == "__main__":
     # train_baseline_cth(1, 1)
-    # eval_model_sss(1, 2)
+    eval_model_sss(1, 9)
 
-    eval_test()
+    # eval_test()

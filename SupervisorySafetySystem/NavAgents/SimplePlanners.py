@@ -71,6 +71,9 @@ class PurePursuit:
         self.progresses = []
         self.aim_pts = []
 
+    def plan(self, obs):
+        return self.plan_act(obs)
+
     def plan_act(self, obs):
         state = obs['state']
         pose_th = state[2]
