@@ -52,9 +52,19 @@ def straight_test():
 
     test_kernel_vehicle(env, safety_planner, True, 1, add_obs=False, wait=True)
   
+def profile():
+    import cProfile, pstats
+    profiler = cProfile.Profile()
+    profiler.enable()
+    rando_test()
+    profiler.disable()
+    stats = pstats.Stats(profiler).sort_stats('cumtime')
+    stats.print_stats()
 
 if __name__ == "__main__":
     rando_test()
     # pp_kernel_test()
     # straight_test()
+
+    # profile()
 

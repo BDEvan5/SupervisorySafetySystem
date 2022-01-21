@@ -92,7 +92,6 @@ class Supervisor:
             self.safe_history.add_locations(init_mode_action[0], init_mode_action[0])
             return init_action
 
-        # valids = simulate_and_classify(state, self.m.qs, self.kernel, self.time_step)
         valids = self.simulate_and_classify(state)
         if not valids.any():
             print(f"No Valid options -> State: {obs['state']}")
@@ -106,7 +105,6 @@ class Supervisor:
 
     def check_init_action(self, state, init_action):
         next_state = update_complex_state(state, init_action, self.time_step)
-        # safe = self.kernel.check_state(next_state)
         safe = check_kernel_state(next_state, self.kernel.kernel, self.kernel.origin, self.kernel.resolution, self.kernel.phi_range, self.m.max_steer, self.m.v_mode_list, self.m.nv_modes, self.m.v_res, self.m.min_velocity)
         
         return safe, next_state
