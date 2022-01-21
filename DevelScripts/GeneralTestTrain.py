@@ -18,7 +18,6 @@ def test_kernel_vehicle(env, vehicle, show=False, laps=100, add_obs=False, wait=
     # env.render(False)
     done, score = False, 0.0
     for i in range(laps):
-        vehicle.kernel.construct_kernel(env.env_map.map_img.shape, env.env_map.obs_pts)
         while not done:
             a = vehicle.plan(state)
             s_p, r, done, _ = env.step_plan(a)
@@ -387,9 +386,6 @@ class TestVehicles(TestData):
             vehicle.plan_track(env.env_map)
         except AttributeError as e: pass
 
-        try:
-            vehicle.kernel.construct_kernel(env.env_map.map_img.shape, env.env_map.obs_pts)
-        except: pass
 
         done = False
         while not done:
@@ -417,7 +413,6 @@ def train_kernel_vehicle(env, vehicle, sim_conf, add_obs=False, show=False):
     state = env.reset(add_obs)
 
     print(f"Starting Training: {vehicle.planner.name}")
-    vehicle.kernel.construct_kernel(env.env_map.map_img.shape, env.env_map.obs_pts)
     for n in range(sim_conf.train_n):
         a = vehicle.plan(state)
         s_prime, r, done, _ = env.step_plan(a)
@@ -433,7 +428,6 @@ def train_kernel_vehicle(env, vehicle, sim_conf, add_obs=False, show=False):
                 vehicle.safe_history.plot_safe_history()
 
             state = env.reset(add_obs)
-            vehicle.kernel.construct_kernel(env.env_map.map_img.shape, env.env_map.obs_pts)
 
     vehicle.planner.t_his.print_update(True)
     vehicle.planner.t_his.save_csv_data()
@@ -454,7 +448,6 @@ def train_continuous_kernel(env, vehicle, sim_conf, add_obs=False, show=False):
     state = env.reset(add_obs)
 
     print(f"Starting Training: {vehicle.planner.name}")
-    vehicle.kernel.construct_kernel(env.env_map.map_img.shape, env.env_map.obs_pts)
     for n in range(sim_conf.train_n):
         a = vehicle.plan(state)
         s_prime, r, done, _ = env.step_plan(a)
@@ -471,7 +464,6 @@ def train_continuous_kernel(env, vehicle, sim_conf, add_obs=False, show=False):
             done = False
 
             state = env.fake_reset()
-            # vehicle.kernel.construct_kernel(env.env_map.map_img.shape, env.env_map.obs_pts)
 
     vehicle.planner.t_his.print_update(True)
     vehicle.planner.t_his.save_csv_data()

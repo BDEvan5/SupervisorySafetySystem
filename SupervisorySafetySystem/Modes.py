@@ -20,6 +20,7 @@ class Modes:
         self.v_mode_list = None
         self.nv_level_modes = None
         self.actions = None
+        self.v_res = (self.max_velocity - self.min_velocity) / (self.nq_velocity - 1)
 
         self.init_modes()
         # self.built_transition_actions()
@@ -52,6 +53,8 @@ class Modes:
         self.nv_modes = np.array(nv_modes) # number of v modes in each level
         self.nv_level_modes = np.diff(self.nv_modes) # number of v modes in each level
         self.v_mode_list = v_mode_list # list of steering angles sorted by velocity
+        for i in range(len(self.v_mode_list)):
+            self.v_mode_list[i] = np.array(self.v_mode_list[i])
 
     def get_mode_id(self, v, d):
         # assume that a valid input is given that is within the range.
