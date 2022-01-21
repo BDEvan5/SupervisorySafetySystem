@@ -38,24 +38,6 @@ def rando_test():
     # test_kernel_vehicle(env, safety_planner, True, 100, add_obs=False)
     test_kernel_vehicle(env, safety_planner, False, 100, add_obs=False)
 
-from SupervisorySafetySystem.WhaleSafety import LobsterSupervisor, TrackSquidKernel
-def rando_test_eel():
-    conf = load_conf("std_test_kernel")
-
-    # build_track_kernel()
-
-    env = TrackSim(conf)
-    planner = RandomPlanner()
-    kernel = TrackSquidKernel(conf, False)
-    # kernel = TrackKernel(conf, False, f"TrackKernel_{conf.track_kernel_path}_{conf.map_name}.npy")
-    # kernel = TrackKernel(conf, False, f"DiscKern_{conf.track_kernel_path}_{conf.map_name}.npy")
-    safety_planner = LobsterSupervisor(planner, kernel, conf)
-
-    test_kernel_vehicle(env, safety_planner, True, 30, add_obs=False, wait=False)
-    # test_kernel_vehicle(env, safety_planner, True, 30, add_obs=False, wait=True)
-    # test_kernel_vehicle(env, safety_planner, True, 100, add_obs=False)
-    # test_kernel_vehicle(env, safety_planner, False, 100, add_obs=False)
-
 
 def straight_test():
     conf = load_conf("std_test_kernel")
@@ -73,8 +55,7 @@ def straight_test():
   
 
 if __name__ == "__main__":
-    # rando_test()
-    rando_test_eel()
+    rando_test()
     # pp_kernel_test()
     # straight_test()
 
