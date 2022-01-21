@@ -86,7 +86,7 @@ class Supervisor:
         init_action = self.planner.plan_act(obs)
         state = np.array(obs['state'])
 
-        init_mode_action = self.action2mode(init_action)
+        init_mode_action = self.m.action2mode(init_action)
         safe, next_state = self.check_init_action(state, init_mode_action)
         if safe:
             self.safe_history.add_locations(init_mode_action[0], init_mode_action[0])
@@ -94,32 +94,16 @@ class Supervisor:
 
         valids = simulate_and_classify(state, self.m.qs, self.kernel, self.time_step)
         if not valids.any():
-            print('No Valid options')
-            print(f"State: {obs['state']}")
-            # plt.show()
+            print(f"No Valid options -> State: {obs['state']}")
             return init_action
         
-        action = modify_mode(self.m, valids)
+        action, idx = modify_mode(valids, self.m.nq_velocity, self.m.nv_modes, self.m.nv_level_modes, self.m.qs)
         self.safe_history.add_locations(init_action[0], action[0])
 
         return action
 
-    def action2mode(self, init_action):
-        id = self.m.get_mode_id(init_action[1], init_action[0])
-        return self.m.qs[id]
 
     def check_init_action(self, state, init_action):
-        d, v = init_action
-        b = 0.523
-        g = 9.81
-        l_d = 0.329
-        if abs(d)> 0.06: 
-            #  only check the friction limit if it might be a problem
-            friction_v = np.sqrt(b*g*l_d/np.tan(abs(d))) *1.1
-            if friction_v < v:
-                print(f"Invalid action: check planner or expect bad resultsL {init_action} -> max_friction_v: {friction_v}")
-                return False, state
-
         next_state = update_complex_state(state, init_action, self.time_step)
         safe = self.kernel.check_state(next_state)
         
@@ -222,46 +206,30 @@ def simulate_and_classify(state, dw, kernel, time_step):
 
     return valid_ds 
 
-#TODO: JIT this
-def modify_mode(self: Modes, valid_window):
+@njit(cache=True)
+def modify_mode(valid_window, nq_velocity, nv_modes, nv_level_modes, qs):
     """ 
     modifies the action for obstacle avoidance only, it doesn't check the dynamic limits here.
     """
-    # max_v_idx = 
-    #TODO: decrease the upper limit of the search according to the velocity
-    for vm in range(self.nq_velocity-1, 0, -1):
-        idx_search = int(self.nv_modes[vm] +(self.nv_level_modes[vm]-1)/2) # idx to start searching at.
+    assert valid_window.any() == 1, "No valid actions:check modify_mode method"
 
-        if self.nv_level_modes[vm] == 1:
-            if valid_window[idx_search]:
-                # if idx_search == 8 or idx_search == 9:
-                    # print(f"Mode idx: {idx_search} -> {self.qs[idx_search]}")
-                return self.qs[idx_search]
+    for vm in range(nq_velocity-1, -1, -1):
+        idx_search = int(nv_modes[vm] +(nv_level_modes[vm]-1)/2) 
+        if valid_window[idx_search]:
+            return qs[idx_search], idx_search
+
+        if nv_level_modes[vm] == 1:
             continue
 
-        # at this point there are at least 3 steer options
-        d_search_size = int((self.nv_level_modes[vm]-1)/2)
-        for dind in range(d_search_size+1): # for d_ss=1 it should search, 0 and 1.
+        d_search_size = int((nv_level_modes[vm]-1)/2)
+        for dind in range(d_search_size+1): 
             p_d = int(idx_search+dind)
             if valid_window[p_d]:
-                return self.qs[p_d]
-            n_d = int(idx_search-dind)
+                return qs[p_d], p_d
+            n_d = int(idx_search-dind-1)
             if valid_window[n_d]:
-                return self.qs[n_d]
+                return qs[n_d], n_d
         
-
-    idx_search = int((len(self.qs)-1)/2)
-    d_size = len(valid_window)
-    for i in range(d_size):
-        p_d = int(min(d_size-1, idx_search+i))
-        if valid_window[p_d]:
-            return self.qs[p_d]
-        n_d = int(max(0, idx_search-i))
-        if valid_window[n_d]:
-            return self.qs[n_d]
-
-
-    
 
 class BaseKernel:
     def __init__(self, sim_conf, plotting):

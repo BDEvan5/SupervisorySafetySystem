@@ -62,6 +62,10 @@ class Modes:
         
         return int(return_mode)
 
+    def action2mode(self, action):
+        id = self.get_mode_id(action[1], action[0])
+        return self.qs[id]
+
     def check_state_modes(self, v, d):
         b = 0.523
         g = 9.81
