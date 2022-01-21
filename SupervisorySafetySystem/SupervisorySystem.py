@@ -316,8 +316,6 @@ class TrackKernel(BaseKernel):
             kernel_name = f"{sim_conf.kernel_path}{kernel_name}"
         self.clean_kernel = np.load(kernel_name)
         self.kernel = self.clean_kernel.copy()
-        print(f"non: {np.count_nonzero(self.kernel[:, :, :, 8])}")
-        print(f"zero: {np.where(self.kernel[:, :, :, 8]==0)}")
         self.phi_range = sim_conf.phi_range
         self.n_modes = self.m.n_modes
         self.max_steer = sim_conf.max_steer

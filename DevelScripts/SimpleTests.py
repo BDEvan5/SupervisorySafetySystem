@@ -1,9 +1,8 @@
-from SupervisorySafetySystem.KernelTests.GeneralTestTrain import test_kernel_vehicle, load_conf
+from GeneralTestTrain import test_kernel_vehicle, load_conf
 
 from SupervisorySafetySystem.Simulator.TrackSim import TrackSim
 from SupervisorySafetySystem.SupervisorySystem import Supervisor, TrackKernel
 from SupervisorySafetySystem.NavAgents.SimplePlanners import RandomPlanner, PurePursuit, ConstantPlanner
-from SupervisorySafetySystem.NavAgents.TrackPP import PurePursuit as TrackPP
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -15,7 +14,7 @@ def pp_kernel_test():
     # build_track_kernel()
 
     env = TrackSim(conf)
-    planner = TrackPP(conf)
+    planner = PurePursuit(conf)
     kernel = TrackKernel(conf)
     safety_planner = Supervisor(planner, kernel, conf)
 

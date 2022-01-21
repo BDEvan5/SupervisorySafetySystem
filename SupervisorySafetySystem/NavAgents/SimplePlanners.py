@@ -4,7 +4,6 @@ from SupervisorySafetySystem.NavUtils.speed_utils import calculate_speed
 import csv 
 from SupervisorySafetySystem import LibFunctions as lib
 
-from SupervisorySafetySystem.NavAgents.TrackPP import PurePursuit as TrackPP
 
 from matplotlib import pyplot as plt
 import os, shutil
