@@ -19,30 +19,33 @@ h_size: 100
 time_step: 0.1
 update_steps: 1
 max_steps: 5000
-end_distance: 0.7
-# end_distance: 3
+# end_distance: 0.7
+end_distance: 1.2
 
 vehicle_path: "Data/Vehicles/"
 # map_name: "torino"
 # map_name: "berlin"
 # map_name: "porto"
-# map_name: "columbia_small"
-map_name: "f1_aut_wide"
+map_name: "columbia_small"
+# map_name: "f1_aut_wide"
 # map_name: "circle"
 # map_name: "torino_redraw_small"
 
 
-r1: 0.04
-r2: 0.004
+r1: 0.06
+r2: 0.002
 
 vehicle: reactive
 
 # Reward
 reward: 'cthRef'
 
-train_n: 10000
+train_n: 20000
 test_n: 10
 
 lookahead: 1.2
 v_gain: 1
 traj_path: "Data/Trajectories/"
+
+nq_steer: 5
+nq_velocity: 3

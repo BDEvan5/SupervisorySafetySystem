@@ -19,15 +19,16 @@ h_size: 100
 time_step: 0.1
 update_steps: 1
 max_steps: 5000
-end_distance: 0.7
+end_distance: 1.2
+# end_distance: 0.7
 # end_distance: 3
 
 vehicle_path: "Data/Vehicles/"
 # map_name: "torino"
 # map_name: "berlin"
 # map_name: "porto"
-# map_name: "columbia_small"
-map_name: "f1_aut_wide"
+map_name: "columbia_small"
+# map_name: "f1_aut_wide"
 # map_name: "circle"
 # map_name: "torino_redraw_small"
 
