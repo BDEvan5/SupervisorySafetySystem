@@ -196,9 +196,14 @@ class RefCTHReward(TrackPtsBase):
         d_th = abs(sub_angles_complex(th_ref, th))
         v_scale = velocity / self.max_v
 
-        new_r =  self.mh * np.cos(d_th) * v_scale - self.md * d_c
+        # new_r =  self.mh * np.cos(d_th) * v_scale - self.md * d_c
+
+        r_h = self.mh * np.cos(d_th) * v_scale
+        r_d = self.md * d_c
+        new_r = r_d + r_h - 0.2
 
         return new_r + s_prime['reward']
+        # return 0
 
 
 

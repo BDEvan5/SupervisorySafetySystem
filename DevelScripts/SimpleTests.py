@@ -1,9 +1,8 @@
-from SupervisorySafetySystem.KernelTests.GeneralTestTrain import test_kernel_vehicle, load_conf
+from GeneralTestTrain import test_kernel_vehicle, load_conf, test_normal_vehicle
 
 from SupervisorySafetySystem.Simulator.TrackSim import TrackSim
 from SupervisorySafetySystem.SupervisorySystem import Supervisor, TrackKernel
 from SupervisorySafetySystem.NavAgents.SimplePlanners import RandomPlanner, PurePursuit, ConstantPlanner
-from SupervisorySafetySystem.NavAgents.TrackPP import PurePursuit as TrackPP
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -15,11 +14,24 @@ def pp_kernel_test():
     # build_track_kernel()
 
     env = TrackSim(conf)
-    planner = TrackPP(conf)
+    planner = PurePursuit(conf)
     kernel = TrackKernel(conf)
     safety_planner = Supervisor(planner, kernel, conf)
 
     test_kernel_vehicle(env, safety_planner, True, 1, add_obs=False, wait=True)
+
+
+def pp_test():
+    conf = load_conf("std_test_kernel")
+
+    # build_track_kernel()
+
+    env = TrackSim(conf)
+    planner = PurePursuit(conf)
+    # kernel = TrackKernel(conf)
+    # safety_planner = Supervisor(planner, kernel, conf)
+
+    test_normal_vehicle(env, planner, True, 1, add_obs=False, wait=True)
 
 def rando_test():
     conf = load_conf("std_test_kernel")
@@ -53,9 +65,20 @@ def straight_test():
 
     test_kernel_vehicle(env, safety_planner, True, 1, add_obs=False, wait=True)
   
+def profile():
+    import cProfile, pstats
+    profiler = cProfile.Profile()
+    profiler.enable()
+    rando_test()
+    profiler.disable()
+    stats = pstats.Stats(profiler).sort_stats('cumtime')
+    stats.print_stats()
 
 if __name__ == "__main__":
-    rando_test()
+    # rando_test()
     # pp_kernel_test()
+    pp_test()
     # straight_test()
+
+    # profile()
 

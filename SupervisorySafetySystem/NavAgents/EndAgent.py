@@ -56,9 +56,10 @@ class EndVehicleTrain(EndBase):
         # self.calculate_reward = None
         self.calculate_reward = RefCTHReward(sim_conf) 
 
-    def plan_act(self, obs):
+    def plan_act(self, obs, add_mem_entry=True):
         nn_obs = self.transform_obs(obs)
-        self.add_memory_entry(obs, nn_obs)
+        if add_mem_entry:
+            self.add_memory_entry(obs, nn_obs)
 
         self.state = obs
         nn_action = self.agent.act(nn_obs)
@@ -93,6 +94,18 @@ class EndVehicleTrain(EndBase):
         if self.t_his.ptr % 10 == 0:
             self.t_his.print_update(False)
             self.agent.save(self.path)
+        self.state = None
+
+        self.agent.replay_buffer.add(self.nn_state, self.nn_act, nn_s_prime, reward, True)
+
+    def fake_done_entry(self, s_prime):
+        """
+        To be called when the supervisor intervenes
+        """
+        nn_s_prime = self.transform_obs(s_prime)
+        reward = self.calculate_reward(self.state, s_prime)
+
+        self.t_his.add_step_data(reward)
         self.state = None
 
         self.agent.replay_buffer.add(self.nn_state, self.nn_act, nn_s_prime, reward, True)

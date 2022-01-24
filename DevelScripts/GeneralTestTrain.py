@@ -7,8 +7,17 @@ import numpy as np
 import csv, time
 
 
+import yaml   
+from argparse import Namespace
+
+from matplotlib import pyplot as plt
+import numpy as np
+import csv, time
+
+
 
 # Training functions
+#TODO: remove this function, I never need episodic training. 
 def train_kernel_episodic(env, vehicle, sim_conf, show=False):
     print(f"Starting Episodic Training: {vehicle.planner.name}")
     start_time = time.time()
@@ -44,21 +53,25 @@ def train_kernel_continuous(env, vehicle, sim_conf, show=False):
     start_time = time.time()
     state, done = env.reset(False), False
 
+    lap_counter = 0
     for n in range(sim_conf.train_n):
-        a, fake_done = vehicle.plan(state)
+        a = vehicle.plan(state)
         s_prime, r, done, _ = env.step_plan(a)
 
         state = s_prime
         vehicle.planner.agent.train(2)
         
         if done:
+            # print(f"{n}: Ep done during continuous training: Note problem")
             vehicle.fake_done(env.steps)
+            print(f"Lap done {lap_counter} -> {env.steps} -> Inters: {vehicle.ep_interventions}")
             if show:
                 env.render(wait=False)
                 vehicle.safe_history.plot_safe_history()
 
             done = False
             state = env.fake_reset()
+            lap_counter += 1
 
     vehicle.planner.t_his.print_update(True)
     vehicle.planner.t_his.save_csv_data()
@@ -250,3 +263,82 @@ def load_conf(fname):
 
 
 
+
+
+"""General test function"""
+def test_kernel_vehicle(env, vehicle, show=False, laps=100, add_obs=False, wait=False):
+    crashes = 0
+    completes = 0
+    lap_times = [] 
+
+    state = env.reset(add_obs)
+    # env.render(False)
+    done, score = False, 0.0
+    for i in range(laps):
+        while not done:
+            a = vehicle.plan(state)
+            s_p, r, done, _ = env.step_plan(a)
+            state = s_p
+            # env.render(False)
+        if show:
+            env.history.show_history()
+            vehicle.safe_history.plot_safe_history()
+
+            env.render(wait=wait, name=vehicle.planner.name)
+            # plt.pause(1)
+
+        if r == -1:
+            crashes += 1
+            print(f"({i}) Crashed -> time: {env.steps} ")
+            plt.show()
+        else:
+            completes += 1
+            print(f"({i}) Complete -> time: {env.steps}")
+            lap_times.append(env.steps)
+        state = env.reset(add_obs)
+        
+        done = False
+
+    print(f"Crashes: {crashes}")
+    print(f"Completes: {completes} --> {(completes / (completes + crashes) * 100):.2f} %")
+    print(f"Lap times Avg: {np.mean(lap_times)} --> Std: {np.std(lap_times)}")
+
+    return completes
+
+def test_normal_vehicle(env, vehicle, show=False, laps=100, add_obs=False, wait=False):
+    crashes = 0
+    completes = 0
+    lap_times = [] 
+
+    state = env.reset(add_obs)
+    # env.render(False)
+    done, score = False, 0.0
+    for i in range(laps):
+        while not done:
+            a = vehicle.plan(state)
+            s_p, r, done, _ = env.step_plan(a)
+            state = s_p
+            # env.render(False)
+        if show:
+            env.history.show_history()
+
+            env.render(wait=wait, name=vehicle.name)
+            # plt.pause(1)
+
+        if r == -1:
+            crashes += 1
+            print(f"({i}) Crashed -> time: {env.steps} ")
+            plt.show()
+        else:
+            completes += 1
+            print(f"({i}) Complete -> time: {env.steps}")
+            lap_times.append(env.steps)
+        state = env.reset(add_obs)
+        
+        done = False
+
+    print(f"Crashes: {crashes}")
+    print(f"Completes: {completes} --> {(completes / (completes + crashes) * 100):.2f} %")
+    print(f"Lap times Avg: {np.mean(lap_times)} --> Std: {np.std(lap_times)}")
+
+    return completes

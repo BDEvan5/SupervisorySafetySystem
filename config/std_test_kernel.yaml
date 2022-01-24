@@ -19,7 +19,7 @@ h_size: 100
 time_step: 0.1
 update_steps: 1
 max_steps: 5000
-end_distance: 1.5
+end_distance: 0.7
 # end_distance: 3
 
 vehicle_path: "Data/Vehicles/"
@@ -48,10 +48,9 @@ lookahead_time_step: 0.2
 n_dx: 40
 
 kernel_reward: "Magnitude"
-sss_reward_scale: 1 
-learning: "Episodic"
+sss_reward_scale: 0.5
 
-r1: 0.04
+r1: 0.08
 r2: 0.004
 
 vehicle: reactive
@@ -59,9 +58,9 @@ vehicle: reactive
 # Reward
 reward: 'cthRef'
 
-train_n: 20000
-test_n: 100
+train_n: 10000
+test_n: 10
 
-lookahead: 0.8
+lookahead: 1.2
 v_gain: 1
 traj_path: "Data/Trajectories/"
