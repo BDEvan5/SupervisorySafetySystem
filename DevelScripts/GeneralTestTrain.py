@@ -134,7 +134,7 @@ def evaluate_vehicle(env, vehicle, sim_conf, show=False):
             state = s_p
         if show:
             env.render(wait=False, name=vehicle.name)
-            vehicle.safe_history.plot_safe_history()
+            # vehicle.safe_history.plot_safe_history()
 
         if r == -1:
             crashes += 1

@@ -3,15 +3,16 @@ from GeneralTestTrain import *
 from SupervisorySafetySystem.Simulator.TrackSim import TrackSim
 from SupervisorySafetySystem.SupervisorySystem import Supervisor, TrackKernel, LearningSupervisor
 from SupervisorySafetySystem.NavAgents.EndAgent import EndVehicleTrain, EndVehicleTest
+from SupervisorySafetySystem.NavAgents.EndAgentDQN import EndVehicleTrainDQN, EndVehicleTestDQN
 from SupervisorySafetySystem.KernelRewards import *
 from SupervisorySafetySystem.NavUtils.RewardFunctions import *
 
 
 
 def train_baseline_cth(n, i):
-    sim_conf = load_conf("std_test_kernel")
+    sim_conf = load_conf("std_test_baseline")
     reward = "cthRef"
-    agent_name = f"Baseline_{reward}_{i}_{n}"
+    agent_name = f"BaselineTD3_{reward}_{i}_{n}"
 
     env = TrackSim(sim_conf)
     planner = EndVehicleTrain(agent_name, sim_conf)
@@ -19,6 +20,30 @@ def train_baseline_cth(n, i):
     train_time, crashes = train_baseline_vehicle(env, planner, sim_conf)
 
     planner = EndVehicleTest(agent_name, sim_conf)
+    eval_dict = evaluate_vehicle(env, planner, sim_conf, False)
+    
+    config_dict = vars(sim_conf)
+    config_dict['EvalName'] = "BaselineComp" 
+    config_dict['test_number'] = n
+    config_dict['train_time'] = train_time
+    config_dict['reward'] = reward
+    config_dict['crashes'] = crashes
+
+    config_dict.update(eval_dict)
+
+    save_conf_dict(config_dict)
+
+def train_baseline_dqn(n, i):
+    sim_conf = load_conf("std_test_kernel")
+    reward = "cthRef"
+    agent_name = f"BaselineDQN_{reward}_{i}_{n}"
+
+    env = TrackSim(sim_conf)
+    planner = EndVehicleTrainDQN(agent_name, sim_conf)
+
+    train_time, crashes = train_baseline_vehicle(env, planner, sim_conf)
+
+    planner = EndVehicleTestDQN(agent_name, sim_conf)
     eval_dict = evaluate_vehicle(env, planner, sim_conf, False)
     
     config_dict = vars(sim_conf)
@@ -84,10 +109,33 @@ def eval_test():
     save_conf_dict(config_dict, "Retest")
 
 
+def eval_test_baseline():
+    n = 1
+    i = 2
+    sim_conf = load_conf("std_test_kernel")
+    # sim_conf = load_conf("BaselineComp")
+    env = TrackSim(sim_conf)
+    reward = "cthRef"
+    agent_name = f"Baseline_{reward}_{i}_{n}"
+    
+    planner = EndVehicleTestDQN(agent_name, sim_conf)
+
+    eval_dict = evaluate_vehicle(env, planner, sim_conf, True)
+    
+    config_dict = vars(sim_conf)
+    config_dict['EvalName'] = "Baseline" 
+    config_dict['test_number'] = n
+    config_dict.update(eval_dict)
+
+    save_conf_dict(config_dict, "Retest")
+
+
 
 
 if __name__ == "__main__":
-    # train_baseline_cth(1, 1)
-    eval_model_sss(1, 9)
+    train_baseline_cth(1, 3)
+    # train_baseline_dqn(1, 2)
+    # eval_model_sss(1, 9)
 
     # eval_test()
+    # eval_test_baseline()
