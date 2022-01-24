@@ -19,7 +19,7 @@ h_size: 100
 time_step: 0.1
 update_steps: 1
 max_steps: 5000
-end_distance: 1.5
+end_distance: 0.7
 # end_distance: 3
 
 vehicle_path: "Data/Vehicles/"
@@ -61,6 +61,6 @@ reward: 'cthRef'
 train_n: 10000
 test_n: 10
 
-lookahead: 0.8
+lookahead: 1.2
 v_gain: 1
 traj_path: "Data/Trajectories/"
