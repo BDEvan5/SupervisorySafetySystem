@@ -33,29 +33,6 @@ def train_baseline_cth(n, i):
 
     save_conf_dict(config_dict)
 
-def train_baseline_dqn(n, i):
-    sim_conf = load_conf("std_test_baseline")
-    reward = "cthRef"
-    agent_name = f"BaselineDQN_{reward}_{i}_{n}"
-
-    env = TrackSim(sim_conf)
-    planner = EndVehicleTrainDQN(agent_name, sim_conf)
-
-    train_time, crashes = train_baseline_vehicle(env, planner, sim_conf)
-
-    planner = EndVehicleTestDQN(agent_name, sim_conf)
-    eval_dict = evaluate_vehicle(env, planner, sim_conf, False)
-    
-    config_dict = vars(sim_conf)
-    config_dict['EvalName'] = "BaselineComp" 
-    config_dict['test_number'] = n
-    config_dict['train_time'] = train_time
-    config_dict['reward'] = reward
-    config_dict['crashes'] = crashes
-
-    config_dict.update(eval_dict)
-
-    save_conf_dict(config_dict)
 
 
 def eval_model_sss(n, i):
@@ -135,7 +112,6 @@ def eval_test_baseline():
 
 if __name__ == "__main__":
     # train_baseline_cth(1, 3)
-    train_baseline_dqn(1, 1)
     # eval_model_sss(1, 9)
 
     # eval_test()
