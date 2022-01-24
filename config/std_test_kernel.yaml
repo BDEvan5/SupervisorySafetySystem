@@ -16,7 +16,7 @@ range_finder_scale: 5
 h_size: 100
 
 # Simulator parameters
-time_step: 0.1
+time_step: 0.02
 update_steps: 1
 max_steps: 5000
 end_distance: 1.2

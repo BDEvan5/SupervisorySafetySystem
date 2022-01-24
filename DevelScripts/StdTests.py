@@ -88,7 +88,7 @@ def eval_test():
 
 def eval_test_baseline():
     n = 1
-    i = 3
+    i = 2
     sim_conf = load_conf("std_test_baseline")
     # sim_conf = load_conf("BaselineComp")
     env = TrackSim(sim_conf)
@@ -111,8 +111,8 @@ def eval_test_baseline():
 
 
 if __name__ == "__main__":
-    # train_baseline_cth(1, 3)
+    # train_baseline_cth(1, 2)
     # eval_model_sss(1, 9)
 
     # eval_test()
-    # eval_test_baseline()
+    eval_test_baseline()
