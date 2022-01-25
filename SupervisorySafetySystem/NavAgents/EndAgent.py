@@ -41,7 +41,7 @@ class EndVehicleTrain(EndBase):
 
         self.path = sim_conf.vehicle_path + agent_name
         state_space = 2 + self.n_beams
-        self.agent = TD3(state_space, 1, 1, agent_name)
+        self.agent = TD3(state_space, 2, 1, agent_name)
         self.agent.try_load(load, sim_conf.h_size, self.path)
 
         self.state = None
@@ -71,7 +71,8 @@ class EndVehicleTrain(EndBase):
         self.nn_state = nn_obs
 
         steering_angle = nn_action[0] * self.max_steer
-        speed = calculate_speed(steering_angle)
+        speed = (nn_action[1] + 1) * self.max_v / 2
+        # speed = calculate_speed(steering_angle)
         self.action = np.array([steering_angle, speed])
 
         return self.action

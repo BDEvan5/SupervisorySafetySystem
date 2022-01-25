@@ -63,5 +63,5 @@ train_n: 10000
 test_n: 10
 
 lookahead: 1.2
-v_gain: 1
+v_gain: 0.6
 traj_path: "Data/Trajectories/"

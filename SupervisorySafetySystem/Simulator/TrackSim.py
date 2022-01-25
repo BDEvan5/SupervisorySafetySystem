@@ -325,6 +325,18 @@ def load_conf(path, fname):
 
 
 
+        
+@njit(cache=True)
+def check_friction_limit(v, d):
+    b = 0.523
+    g = 9.81
+    l_d = 0.329
+    if abs(d) < 0.06:
+        return True # safe because steering is small
+    friction_v = np.sqrt(b*g*l_d/np.tan(abs(d))) *1.1 # nice for the maths, but a bit wrong for actual friction
+    if friction_v > v:
+        return True # this is allowed mode
+    return False # this is not allowed mode: the friction is too high
 
 
 class TrackSim(BaseSim):
@@ -365,12 +377,10 @@ class TrackSim(BaseSim):
             self.colission = True
             self.reward = -1
             self.done_reason = f"Crash obstacle: [{self.state[0:2]}]"
-        # horizontal_force = self.car.mass * self.car.th_dot * self.car.velocity
-        # self.y_forces.append(horizontal_force)
-        # if horizontal_force > self.car.max_friction_force:
-            # self.done = True
-            # self.reward = -1
-            # self.done_reason = f"Friction limit reached: {horizontal_force} > {self.car.max_friction_force}"
+        if not check_friction_limit(self.state[3], self.state[4]):
+            self.done = True
+            self.reward = -1
+            self.done_reason = f"Friction limit exceeded: [{self.state}]"
         if self.steps > self.max_steps:
             self.done = True
             self.done_reason = f"Max steps"

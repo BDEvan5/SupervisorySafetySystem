@@ -75,9 +75,9 @@ def profile():
     stats.print_stats()
 
 if __name__ == "__main__":
-    rando_test()
+    # rando_test()
     # pp_kernel_test()
-    # pp_test()
+    pp_test()
     # straight_test()
 
     # profile()
