@@ -60,7 +60,8 @@ vehicle: reactive
 # Reward
 reward: 'cthRef'
 
-train_n: 10000
+train_n: 5000
+# train_n: 10000
 test_n: 10
 
 lookahead: 1.2

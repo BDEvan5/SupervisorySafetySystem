@@ -48,7 +48,7 @@ def eval_model_sss(n, i):
     safety_planner.calculate_reward = ConstantReward(sim_conf.sss_reward_scale)
     # safety_planner.calculate_reward = MagnitudeReward(sim_conf.sss_reward_scale)
     
-    train_time = train_kernel_continuous(env, safety_planner, sim_conf, show=True)
+    train_time = train_kernel_continuous(env, safety_planner, sim_conf, show=False)
 
     planner = EndVehicleTest(agent_name, sim_conf)
     safety_planner = Supervisor(planner, kernel, sim_conf)
@@ -66,8 +66,8 @@ def eval_model_sss(n, i):
     save_conf_dict(config_dict)
 
 def eval_test():
-    n = 2
-    i = 1
+    n = 4
+    i = 2
     sim_conf = load_conf("std_test_kernel")
     # sim_conf = load_conf("BaselineComp")
     agent_name = f"Kernel_ModelSSS_{n}_{i}"
@@ -117,7 +117,9 @@ def eval_test_baseline():
 
 if __name__ == "__main__":
     # train_baseline_cth(2, 6)
-    eval_model_sss(2, 2)
+    # for i in range(5):
+    #     eval_model_sss(5, i)
+    eval_model_sss(4, 9)
 
     # eval_test()
     # eval_test_baseline()
