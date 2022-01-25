@@ -57,8 +57,8 @@ class EndVehicleTrain(EndBase):
         # self.calculate_reward = CthReward(0.04, 0.004) 
         # self.calculate_reward = SteeringReward(0.01) 
         # self.calculate_reward = None
-        self.calculate_reward = RefCTHReward(sim_conf) 
-        # self.calculate_reward = CenterDistanceReward(sim_conf, 10) 
+        # self.calculate_reward = RefCTHReward(sim_conf) 
+        self.calculate_reward = CenterDistanceReward(sim_conf, 10) 
         
 
     def plan_act(self, obs, add_mem_entry=True):
@@ -156,8 +156,10 @@ class EndVehicleTest(EndBase):
         nn_action = self.actor(nn_obs).data.numpy().flatten()
         self.nn_act = nn_action
 
-        steering_angle = self.max_steer * nn_action[0]
-        speed = calculate_speed(steering_angle)
-        action = np.array([steering_angle, speed])
 
-        return action
+        steering_angle = nn_action[0] * self.max_steer
+        speed = (nn_action[1] + 1) * self.max_v / 2
+        # speed = calculate_speed(steering_angle)
+        self.action = np.array([steering_angle, speed])
+
+        return self.action
