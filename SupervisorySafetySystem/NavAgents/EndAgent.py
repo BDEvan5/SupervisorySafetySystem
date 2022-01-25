@@ -36,13 +36,15 @@ class EndBase:
         return nn_obs
 
 class EndVehicleTrain(EndBase):
-    def __init__(self, agent_name, sim_conf, load=False):
+    def __init__(self, agent_name, sim_conf, link):
         super().__init__(agent_name, sim_conf)
 
         self.path = sim_conf.vehicle_path + agent_name
         state_space = 2 + self.n_beams
         self.agent = TD3(state_space, 2, 1, agent_name)
+        load = False
         self.agent.try_load(load, sim_conf.h_size, self.path)
+        self.link = link
 
         self.state = None
         self.nn_state = None
@@ -55,8 +57,8 @@ class EndVehicleTrain(EndBase):
         # self.calculate_reward = CthReward(0.04, 0.004) 
         # self.calculate_reward = SteeringReward(0.01) 
         # self.calculate_reward = None
-        # self.calculate_reward = RefCTHReward(sim_conf) 
-        self.calculate_reward = CenterDistanceReward(sim_conf, 4) 
+        self.calculate_reward = RefCTHReward(sim_conf) 
+        # self.calculate_reward = CenterDistanceReward(sim_conf, 10) 
         
 
     def plan_act(self, obs, add_mem_entry=True):
@@ -101,6 +103,8 @@ class EndVehicleTrain(EndBase):
         self.state = None
 
         self.agent.replay_buffer.add(self.nn_state, self.nn_act, nn_s_prime, reward, True)
+
+        self.link.write_agent_log(f"Run: {self.t_his.t_counter}, Reward: {self.t_his.rewards[self.t_his.ptr-1]}\n ")
 
     def fake_done_entry(self, s_prime):
         """

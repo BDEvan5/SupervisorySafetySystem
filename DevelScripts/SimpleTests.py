@@ -6,7 +6,7 @@ from SupervisorySafetySystem.NavAgents.SimplePlanners import RandomPlanner, Pure
 
 import numpy as np
 from matplotlib import pyplot as plt
-
+from SupervisorySafetySystem.logger import LinkyLogger
 
 def pp_kernel_test():
     conf = load_conf("std_test_kernel")
@@ -25,9 +25,9 @@ def pp_test():
     conf = load_conf("std_test_kernel")
 
     # build_track_kernel()
-
-    env = TrackSim(conf)
     planner = PurePursuit(conf)
+    link = LinkyLogger(conf, planner.name)
+    env = TrackSim(conf, link)
     # kernel = TrackKernel(conf)
     # safety_planner = Supervisor(planner, kernel, conf)
 
@@ -55,8 +55,9 @@ def straight_test():
     conf = load_conf("std_test_kernel")
 
     # build_track_kernel()
+    link = LinkyLogger(sim_conf, agent_name)
 
-    env = TrackSim(conf)
+    env = TrackSim(conf, link)
     # planner = ConstantPlanner("Left", -0.4)
     # planner = ConstantPlanner("Right", -0.4)
     planner = ConstantPlanner()

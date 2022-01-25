@@ -346,7 +346,7 @@ class TrackSim(BaseSim):
     Important to note the check_done function which checks if the episode is complete
         
     """
-    def __init__(self, sim_conf):
+    def __init__(self, sim_conf, link):
         """
         Init function
 
@@ -360,8 +360,9 @@ class TrackSim(BaseSim):
             sim_conf = load_conf(path, "std_config")
 
         env_map = TrackMap(sim_conf)
-        BaseSim.__init__(self, env_map, self.check_done_reward_track_train, sim_conf)
+        BaseSim.__init__(self, env_map, self.check_done_reward_track_train, sim_conf, link)
         self.end_distance = sim_conf.end_distance
+
 
     def check_done_reward_track_train(self):
         """
@@ -386,10 +387,11 @@ class TrackSim(BaseSim):
             self.done_reason = f"Max steps"
 
         cur_end_dis = get_distance(self.state[0:2], self.env_map.start_pose[0:2]) 
-        if cur_end_dis < self.end_distance and self.steps > 50:
+        # if cur_end_dis < self.end_distance and self.steps > 50:
+        if cur_end_dis < self.end_distance and self.previous_progress > 0.5:
             self.done = True
             self.reward = 1
-            self.done_reason = f"Lap complete, d: {cur_end_dis}"
+            self.done_reason = f"Lap complete, d: {cur_end_dis}, prev: {self.previous_progress}"
 
 
         return self.done

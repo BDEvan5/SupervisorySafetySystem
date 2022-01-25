@@ -6,7 +6,7 @@ from SupervisorySafetySystem.NavAgents.EndAgent import EndVehicleTrain, EndVehic
 from SupervisorySafetySystem.NavAgents.EndAgentDQN import EndVehicleTrainDQN, EndVehicleTestDQN
 from SupervisorySafetySystem.KernelRewards import *
 from SupervisorySafetySystem.NavUtils.RewardFunctions import *
-
+from SupervisorySafetySystem.logger import LinkyLogger
 
 
 def train_baseline_cth(n, i):
@@ -14,10 +14,11 @@ def train_baseline_cth(n, i):
     reward = "cthRef"
     agent_name = f"BaselineTD3_{reward}_{i}_{n}"
 
-    env = TrackSim(sim_conf)
-    planner = EndVehicleTrain(agent_name, sim_conf)
+    link = LinkyLogger(sim_conf, agent_name)
+    env = TrackSim(sim_conf, link)
+    planner = EndVehicleTrain(agent_name, sim_conf, link)
 
-    train_time, crashes = train_baseline_vehicle(env, planner, sim_conf)
+    train_time, crashes = train_baseline_vehicle(env, planner, sim_conf, False)
 
     planner = EndVehicleTest(agent_name, sim_conf)
     eval_dict = evaluate_vehicle(env, planner, sim_conf, False)
@@ -88,13 +89,14 @@ def eval_test():
 
 def eval_test_baseline():
     n = 1
-    i = 2
+    i = 3
     sim_conf = load_conf("std_test_baseline")
     # sim_conf = load_conf("BaselineComp")
-    env = TrackSim(sim_conf)
     reward = "cthRef"
     agent_name = f"BaselineTD3_{reward}_{i}_{n}"
     
+    link = LinkyLogger(sim_conf, agent_name)
+    env = TrackSim(sim_conf, link)
     planner = EndVehicleTest(agent_name, sim_conf)
     # planner = EndVehicleTestDQN(agent_name, sim_conf)
 
@@ -111,7 +113,7 @@ def eval_test_baseline():
 
 
 if __name__ == "__main__":
-    train_baseline_cth(1, 1)
+    train_baseline_cth(1, 4)
     # eval_model_sss(1, 9)
 
     # eval_test()
