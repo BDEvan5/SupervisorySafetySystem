@@ -200,7 +200,7 @@ class RefCTHReward(TrackPtsBase):
 
         r_h = self.mh * np.cos(d_th) * v_scale
         r_d = self.md * d_c
-        new_r = r_h - r_d #- 0.2
+        new_r = r_h - r_d - 0.05
 
         return new_r + s_prime['reward']
         # return 0

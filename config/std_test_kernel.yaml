@@ -23,7 +23,8 @@ end_distance: 1.2
 # end_distance: 0.7
 # end_distance: 3
 
-vehicle_path: "Data/Vehicles/"
+vehicle_path: "Data/TuningVehicles/"
+# vehicle_path: "Data/Vehicles/"
 # map_name: "torino"
 # map_name: "berlin"
 # map_name: "porto"
@@ -45,14 +46,14 @@ phi_range: 6.28
 discrim_block: 1
 discrim_phi: 0
 kernel_time_step: 0.1
-lookahead_time_step: 0.2
+lookahead_time_step: 0.1
 n_dx: 40
 
 kernel_reward: "Magnitude"
-sss_reward_scale: 0.5
+sss_reward_scale: 1
 
 r1: 0.08
-r2: 0.004
+r2: 0.001
 
 vehicle: reactive
 

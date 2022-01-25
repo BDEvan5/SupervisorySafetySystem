@@ -136,7 +136,7 @@ class BaseSim:
         self.scan_sim.init_sim_map(env_map)
 
         self.done = False
-        self.colission = False
+        self.collision = False
         self.reward = 0
         self.action = np.zeros((2))
         self.action_memory = []
@@ -221,6 +221,7 @@ class BaseSim:
         """
         self.done = False
         self.done_reason = "Null"
+        self.collision = False
         self.action_memory = []
         self.steps = 0
         self.reward = 0
@@ -371,6 +372,7 @@ class BaseSim:
         observation['full_scan'] = self.scan_sim.scan(pose, 1000)
         observation['target'] = target
         observation['reward'] = self.reward
+        observation['collision'] = self.collision
 
         return observation
 

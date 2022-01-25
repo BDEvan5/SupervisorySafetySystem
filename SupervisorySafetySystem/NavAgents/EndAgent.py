@@ -117,6 +117,8 @@ class EndVehicleTrain(EndBase):
         self.state = None
 
         self.agent.replay_buffer.add(self.nn_state, self.nn_act, nn_s_prime, reward, True)
+        
+        self.link.write_agent_log(f"Run: {self.t_his.t_counter}, Reward: {self.t_his.rewards[self.t_his.ptr-1]}\n ")
 
     def fake_done(self):
         """
