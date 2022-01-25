@@ -56,13 +56,14 @@ class ReplayBufferTD3(object):
 
 
 class SmartBufferTD3(object):
-    def __init__(self, max_size=1000000, state_dim=14):     
+    def __init__(self, max_size=1000000, state_dim=14, action_dim=2):     
         self.max_size = max_size
         self.state_dim = state_dim
+        self.action_dim = action_dim
         self.ptr = 0
 
         self.states = np.empty((max_size, state_dim))
-        self.actions = np.empty((max_size, 1))
+        self.actions = np.empty((max_size, action_dim))
         self.next_states = np.empty((max_size, state_dim))
         self.rewards = np.empty((max_size, 1))
         self.dones = np.empty((max_size, 1))
@@ -81,7 +82,7 @@ class SmartBufferTD3(object):
     def sample(self, batch_size):
         ind = np.random.randint(0, self.ptr-1, size=batch_size)
         states = np.empty((batch_size, self.state_dim))
-        actions = np.empty((batch_size, 1))
+        actions = np.empty((batch_size, self.action_dim))
         next_states = np.empty((batch_size, self.state_dim))
         rewards = np.empty((batch_size, 1))
         dones = np.empty((batch_size, 1))

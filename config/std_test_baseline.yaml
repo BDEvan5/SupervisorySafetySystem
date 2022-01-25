@@ -22,7 +22,8 @@ max_steps: 5000
 # end_distance: 0.7
 end_distance: 1.2
 
-vehicle_path: "Data/Vehicles/"
+# vehicle_path: "Data/Vehicles/"
+vehicle_path: "Data/TuningVehicles/"
 # map_name: "torino"
 # map_name: "berlin"
 # map_name: "porto"
@@ -32,15 +33,15 @@ map_name: "columbia_small"
 # map_name: "torino_redraw_small"
 
 
-r1: 0.06
-r2: 0.002
+r1: 0.08
+r2: 0.001
 
 vehicle: reactive
 
 # Reward
 reward: 'cthRef'
 
-train_n: 20000
+train_n: 12000
 test_n: 10
 
 lookahead: 1.2

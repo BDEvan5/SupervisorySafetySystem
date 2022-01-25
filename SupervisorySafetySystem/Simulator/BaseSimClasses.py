@@ -112,7 +112,7 @@ class BaseSim:
         action: the current action which has been given
         history: a data logger for the history
     """
-    def __init__(self, env_map, done_fcn, sim_conf):
+    def __init__(self, env_map, done_fcn, sim_conf, link):
         """
         Init function
 
@@ -123,6 +123,7 @@ class BaseSim:
         self.done_fcn = done_fcn
         self.env_map = env_map
         self.sim_conf = sim_conf #TODO: don't store the conf file, just use and throw away.
+        self.link = link
         self.n_obs = self.env_map.n_obs
 
         self.timestep = self.sim_conf.time_step
@@ -135,7 +136,7 @@ class BaseSim:
         self.scan_sim.init_sim_map(env_map)
 
         self.done = False
-        self.colission = False
+        self.collision = False
         self.reward = 0
         self.action = np.zeros((2))
         self.action_memory = []
@@ -181,6 +182,10 @@ class BaseSim:
         #     self.done = True 
         #     self.done_reason = f"Wrong direction: {self.state[2]},track direction: {obs['target'][2]} -> diff: {angle_diff}"
         #     print(f"{self.done_reason}")
+        if self.done:
+            self.link.write_env_log(f"Steps: {self.steps}, Done Reason: {self.done_reason}, Reward: {self.reward} :: state: {self.state} \n")
+
+
         done = self.done
         reward = self.reward
 
@@ -196,6 +201,8 @@ class BaseSim:
             self.state[2] += 2*np.pi
 
     def record_history(self, action):
+        #TODO: deprecate this because it wastes memory and processing and isn't really used. 
+        #TODO: replace it with the option to save things if they are important to a csv file with the logger that can be used later.
         self.action = action
         self.history.velocities.append(self.state[3])
         self.history.steering.append(self.state[4])
@@ -214,6 +221,7 @@ class BaseSim:
         """
         self.done = False
         self.done_reason = "Null"
+        self.collision = False
         self.action_memory = []
         self.steps = 0
         self.reward = 0
@@ -341,6 +349,7 @@ class BaseSim:
 
         em = self.env_map
         s, idx = calculate_track_progress_idx(pos, em.ref_pts, em.diffs, em.l2s, em.ss_normal)
+        self.previous_progress = s
         
         lower_idx = int(max(0, idx-2))
         upper_idx = int(min(len(em.ref_pts)-1, idx+2))
@@ -363,6 +372,7 @@ class BaseSim:
         observation['full_scan'] = self.scan_sim.scan(pose, 1000)
         observation['target'] = target
         observation['reward'] = self.reward
+        observation['collision'] = self.collision
 
         return observation
 

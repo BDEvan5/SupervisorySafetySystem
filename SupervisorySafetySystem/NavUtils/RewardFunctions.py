@@ -165,7 +165,7 @@ class CenterDistanceReward(TrackPtsBase):
         prime_pos = car_state[0:2]
         pos = state['state'][0:2]
 
-        reward = self.get_distance_r(pos, prime_pos, 1)
+        reward = self.get_distance_r(pos, prime_pos, self.b_distance)
 
         reward += s_prime['reward']
 
@@ -200,7 +200,7 @@ class RefCTHReward(TrackPtsBase):
 
         r_h = self.mh * np.cos(d_th) * v_scale
         r_d = self.md * d_c
-        new_r = r_h - r_d #- 0.2
+        new_r = r_h - r_d - 0.05
 
         return new_r + s_prime['reward']
         # return 0

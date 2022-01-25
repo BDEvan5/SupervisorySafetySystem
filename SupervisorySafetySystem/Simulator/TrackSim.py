@@ -325,6 +325,18 @@ def load_conf(path, fname):
 
 
 
+        
+@njit(cache=True)
+def check_friction_limit(v, d):
+    b = 0.523
+    g = 9.81
+    l_d = 0.329
+    if abs(d) < 0.06:
+        return True # safe because steering is small
+    friction_v = np.sqrt(b*g*l_d/np.tan(abs(d))) *1.3 # nice for the maths, but a bit wrong for actual friction
+    if friction_v > v:
+        return True # this is allowed mode
+    return False # this is not allowed mode: the friction is too high
 
 
 class TrackSim(BaseSim):
@@ -334,7 +346,7 @@ class TrackSim(BaseSim):
     Important to note the check_done function which checks if the episode is complete
         
     """
-    def __init__(self, sim_conf):
+    def __init__(self, sim_conf, link):
         """
         Init function
 
@@ -348,7 +360,7 @@ class TrackSim(BaseSim):
             sim_conf = load_conf(path, "std_config")
 
         env_map = TrackMap(sim_conf)
-        BaseSim.__init__(self, env_map, self.check_done_reward_track_train, sim_conf)
+        BaseSim.__init__(self, env_map, self.check_done_reward_track_train, sim_conf, link)
         self.end_distance = sim_conf.end_distance
 
     def check_done_reward_track_train(self):
@@ -362,24 +374,25 @@ class TrackSim(BaseSim):
         
         if self.env_map.check_scan_location(self.state[0:2]):
             self.done = True
-            self.colission = True
+            self.collision = True
             self.reward = -1
             self.done_reason = f"Crash obstacle: [{self.state[0:2]}]"
-        # horizontal_force = self.car.mass * self.car.th_dot * self.car.velocity
-        # self.y_forces.append(horizontal_force)
-        # if horizontal_force > self.car.max_friction_force:
-            # self.done = True
-            # self.reward = -1
-            # self.done_reason = f"Friction limit reached: {horizontal_force} > {self.car.max_friction_force}"
+        if not check_friction_limit(self.state[3], self.state[4]):
+            self.done = True
+            self.reward = -1
+            self.done_reason = f"Friction limit exceeded: [{self.state}]"
+            self.collision = True
         if self.steps > self.max_steps:
             self.done = True
             self.done_reason = f"Max steps"
+            self.collision = True
 
         cur_end_dis = get_distance(self.state[0:2], self.env_map.start_pose[0:2]) 
-        if cur_end_dis < self.end_distance and self.steps > 50:
+        # if cur_end_dis < self.end_distance and self.steps > 50:
+        if cur_end_dis < self.end_distance and self.previous_progress > 0.5 and self.steps > 50:
             self.done = True
             self.reward = 1
-            self.done_reason = f"Lap complete, d: {cur_end_dis}"
+            self.done_reason = f"Lap complete, d: {cur_end_dis}, prev: {self.previous_progress}"
 
 
         return self.done

@@ -71,6 +71,14 @@ class PurePursuit:
         self.progresses = []
         self.aim_pts = []
 
+        path = conf.vehicle_path + self.name
+        if os.path.exists(path):
+            try:
+                os.rmdir(path)
+            except:
+                shutil.rmtree(path)
+        os.mkdir(path)
+
     def plan(self, obs):
         return self.plan_act(obs)
 

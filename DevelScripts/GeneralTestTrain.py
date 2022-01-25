@@ -61,13 +61,20 @@ def train_kernel_continuous(env, vehicle, sim_conf, show=False):
         state = s_prime
         vehicle.planner.agent.train(2)
         
+        if s_prime['collision']:
+            print(f"COLLISION:: Lap done {lap_counter} -> {env.steps} -> Inters: {vehicle.ep_interventions}")
+            state = env.reset(False)
+            done = False
+            lap_counter += 1
+            vehicle.done_entry(s_prime)
+
         if done:
             # print(f"{n}: Ep done during continuous training: Note problem")
-            vehicle.fake_done(env.steps)
             print(f"Lap done {lap_counter} -> {env.steps} -> Inters: {vehicle.ep_interventions}")
+            vehicle.fake_done(env.steps)
             if show:
                 env.render(wait=False)
-                vehicle.safe_history.plot_safe_history()
+                # vehicle.safe_history.plot_safe_history()
 
             done = False
             state = env.fake_reset()
