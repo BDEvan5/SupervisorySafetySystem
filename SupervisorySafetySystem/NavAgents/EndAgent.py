@@ -57,8 +57,8 @@ class EndVehicleTrain(EndBase):
         # self.calculate_reward = CthReward(0.04, 0.004) 
         # self.calculate_reward = SteeringReward(0.01) 
         # self.calculate_reward = None
-        # self.calculate_reward = RefCTHReward(sim_conf) 
-        self.calculate_reward = CenterDistanceReward(sim_conf, 5) 
+        self.calculate_reward = RefCTHReward(sim_conf) 
+        # self.calculate_reward = CenterDistanceReward(sim_conf, 5) 
         
 
     def plan_act(self, obs, add_mem_entry=True):

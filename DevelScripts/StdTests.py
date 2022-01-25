@@ -113,8 +113,8 @@ def eval_test_baseline():
 
 
 if __name__ == "__main__":
-    # train_baseline_cth(1, 6)
+    train_baseline_cth(2, 1)
     # eval_model_sss(1, 9)
 
     # eval_test()
-    eval_test_baseline()
+    # eval_test_baseline()
