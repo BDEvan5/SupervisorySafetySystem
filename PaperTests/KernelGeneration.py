@@ -6,7 +6,7 @@ from SupervisorySafetySystem.KernelRewards import *
 
 from SupervisorySafetySystem.KernelGenerator import build_track_kernel
 from SupervisorySafetySystem.DynamicsBuilder import build_dynamics_table
-
+from SupervisorySafetySystem.logger import LinkyLogger
     
 def generate_standard_kernels():
     conf = load_conf("PaperKernelGen")
@@ -17,8 +17,8 @@ def generate_standard_kernels():
 
     conf.kernel_mode = "disc"
     # build_dynamics_table(conf)
-    # for name in ["columbia_small", "porto", "f1_aut_wide"]:
-    for name in ["columbia_small"]:
+    for name in ["columbia_small", "porto", "f1_aut_wide"]:
+    # for name in ["columbia_small"]:
         conf.map_name = name
         build_track_kernel(conf)
 
@@ -113,19 +113,46 @@ def rando_pictures():
     conf.test_n = 5
     render_kernel(env, safety_planner, conf, True)
 
+# def rando_results(n):
+#     conf = load_conf("PaperSafety")
+#     conf.kernel_mode = "disc"
+#     conf.vehicle = "random"
+#     conf.test_n = 10
+
+#     agent_name = f"RandoResult_{conf.kernel_mode}_{n}"
+#     planner = RandomPlanner(conf, agent_name)
+#     link = LinkyLogger(conf, agent_name)
+#     env = TrackSim(conf, link)
+#     # for mode in ["viab", "disc"]:
+#     for mode in ["disc"]:
+#         conf.kernel_mode = mode
+
+#         kernel = TrackKernel(conf, False)
+#         # kernel.print_kernel_area()
+#         safety_planner = Supervisor(planner, kernel, conf)
+
+#         eval_dict = evaluate_vehicle(env, safety_planner, conf, False)
+        
+#         config_dict = vars(conf)
+#         config_dict['test_number'] = n
+#         config_dict.update(eval_dict)
+
+#         save_conf_dict(config_dict)
+
 def rando_results(n):
-    conf = load_conf("SafetyTests")
+    conf = load_conf("PaperSafety")
     conf.kernel_mode = "disc"
     conf.vehicle = "random"
     conf.test_n = 10
 
-    env = TrackSim(conf)
-    for mode in ["viab", "disc"]:
-        conf.kernel_mode = mode
-        planner = RandomPlanner(f"RandoResult_{conf.kernel_mode}_{n}")
+    agent_name = f"RandoResult_{conf.kernel_mode}_{n}"
+    planner = RandomPlanner(conf, agent_name)
+    link = LinkyLogger(conf, agent_name)
+    env = TrackSim(conf, link)
+    for map_name in ["porto", "columbia_small", "f1_aut_wide"]:
+        conf.map_name = map_name
 
         kernel = TrackKernel(conf, False)
-        kernel.print_kernel_area()
         safety_planner = Supervisor(planner, kernel, conf)
 
         eval_dict = evaluate_vehicle(env, safety_planner, conf, False)
@@ -166,10 +193,10 @@ if __name__ == "__main__":
     # kernel_discretization_ndx()
     # kernel_discretization_time()
 
-    generate_standard_kernels()
+    # generate_standard_kernels()
 
     # rando_pictures()
-    # rando_results(1)
+    rando_results(1)
     # run_constant_tests(1)
 
 

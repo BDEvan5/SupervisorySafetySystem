@@ -38,8 +38,9 @@ def rando_test():
 
     # build_track_kernel()
 
-    env = TrackSim(conf)
-    planner = RandomPlanner()
+    link = LinkyLogger(conf, "RandoTest")
+    env = TrackSim(conf, link)
+    planner = RandomPlanner(conf, "RandoTest")
     kernel = TrackKernel(conf, False)
     # kernel = TrackKernel(conf, False, f"TrackKernel_{conf.track_kernel_path}_{conf.map_name}.npy")
     # kernel = TrackKernel(conf, False, f"DiscKern_{conf.track_kernel_path}_{conf.map_name}.npy")
@@ -76,9 +77,9 @@ def profile():
     stats.print_stats()
 
 if __name__ == "__main__":
-    # rando_test()
+    rando_test()
     # pp_kernel_test()
-    pp_test()
+    # pp_test()
     # straight_test()
 
     # profile()
