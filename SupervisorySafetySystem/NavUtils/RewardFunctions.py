@@ -180,6 +180,7 @@ class RefCTHReward(TrackPtsBase):
         self.load_reference_pts()
         self.mh = conf.r1
         self.md = conf.r2
+        self.rk = conf.rk
 
     def __call__(self, state, s_prime):
         car_state = s_prime['state']
@@ -200,7 +201,7 @@ class RefCTHReward(TrackPtsBase):
 
         r_h = self.mh * np.cos(d_th) * v_scale
         r_d = self.md * d_c
-        new_r = r_h - r_d - 0.04
+        new_r = r_h - r_d - self.rk
 
         return new_r + s_prime['reward']
         # return new_r + s_prime['reward']
