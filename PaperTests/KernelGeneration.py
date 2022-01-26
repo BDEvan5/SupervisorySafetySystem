@@ -140,7 +140,7 @@ def rando_pictures():
 #         save_conf_dict(config_dict)
 
 def rando_results(n):
-    conf = load_conf("PaperSafety")
+    conf = load_conf("PaperKernelGen")
     conf.kernel_mode = "disc"
     conf.vehicle = "random"
     conf.test_n = 10
@@ -148,9 +148,9 @@ def rando_results(n):
     agent_name = f"RandoResult_{conf.kernel_mode}_{n}"
     planner = RandomPlanner(conf, agent_name)
     link = LinkyLogger(conf, agent_name)
-    env = TrackSim(conf, link)
     for map_name in ["porto", "columbia_small", "f1_aut_wide"]:
         conf.map_name = map_name
+        env = TrackSim(conf, link)
 
         kernel = TrackKernel(conf, False)
         safety_planner = Supervisor(planner, kernel, conf)

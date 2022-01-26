@@ -90,8 +90,7 @@ class Supervisor:
         safe, next_state = self.check_init_action(state, init_mode_action)
         if safe:
             self.safe_history.add_locations(init_mode_action[0], init_mode_action[0])
-            # return init_mode_action
-            return init_action
+            return init_mode_action
 
         valids = self.simulate_and_classify(state)
         if not valids.any():
