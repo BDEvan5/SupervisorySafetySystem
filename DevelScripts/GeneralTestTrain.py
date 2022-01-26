@@ -289,8 +289,8 @@ def test_kernel_vehicle(env, vehicle, show=False, laps=100, add_obs=False, wait=
             state = s_p
             # env.render(False)
         if show:
-            env.history.show_history()
-            vehicle.safe_history.plot_safe_history()
+            # env.history.show_history()
+            # vehicle.safe_history.plot_safe_history()
 
             env.render(wait=wait, name=vehicle.planner.name)
             # plt.pause(1)
