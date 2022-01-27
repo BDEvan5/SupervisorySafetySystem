@@ -35,6 +35,16 @@ class EndBase:
 
         return nn_obs
 
+    def transfrom_action(self, nn_action):
+        steering_angle = nn_action[0] * self.max_steer
+        # this is to ensure that it doesn't stay still
+        speed = (nn_action[1] + 1) * (self.max_v  / 2 - 0.5) + 0.5
+        max_speed = calculate_speed(steering_angle)
+        speed = np.clip(speed, 0, max_speed)
+        action = np.array([steering_angle, speed])
+
+        return action
+
 class EndVehicleTrain(EndBase):
     def __init__(self, agent_name, sim_conf, link):
         super().__init__(agent_name, sim_conf)
@@ -71,12 +81,7 @@ class EndVehicleTrain(EndBase):
         self.nn_act = nn_action
 
         self.nn_state = nn_obs
-
-        steering_angle = nn_action[0] * self.max_steer
-        # this is to ensure that it doesn't stay still
-        speed = (nn_action[1] + 1) * (self.max_v -2) / 2 + 1
-        # speed = calculate_speed(steering_angle)
-        self.action = np.array([steering_angle, speed])
+        self.action = self.transfrom_action(nn_action)
 
         return self.action
 
@@ -119,7 +124,7 @@ class EndVehicleTrain(EndBase):
 
         self.agent.replay_buffer.add(self.nn_state, self.nn_act, nn_s_prime, reward, True)
         
-        self.link.write_agent_log(f"Run: {self.t_his.t_counter}, Reward: {self.t_his.rewards[self.t_his.ptr-1]}\n ")
+        # self.link.write_agent_log(f"Run: {self.t_his.t_counter}, Reward: {self.t_his.rewards[self.t_his.ptr-1]}\n ")
 
     def fake_done(self):
         """
@@ -159,9 +164,6 @@ class EndVehicleTest(EndBase):
         nn_action = self.actor(nn_obs).data.numpy().flatten()
 
 
-        steering_angle = nn_action[0] * self.max_steer
-        speed = (nn_action[1] + 1) * (self.max_v -2) / 2 +1
-        # speed = calculate_speed(steering_angle)
-        action = np.array([steering_angle, speed])
+        action = self.transfrom_action(nn_action)
 
         return action

@@ -47,7 +47,7 @@ n_dx: 40
 kernel_reward: "Magnitude"
 sss_reward_scale: 1
 
-r1: 0.08
+r1: 0.02
 r2: 0.001
 rk: 0.04
 
@@ -56,9 +56,9 @@ vehicle: KernelSSS
 # Reward
 reward: 'cthRef'
 
-# train_n: 5000
-train_n: 20000
-test_n: 100
+train_n: 2000
+# train_n: 20000
+test_n: 10
 
 lookahead: 1.2
 v_gain: 0.6

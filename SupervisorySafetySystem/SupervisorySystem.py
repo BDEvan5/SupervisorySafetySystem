@@ -86,13 +86,12 @@ class Supervisor:
         init_action = self.planner.plan_act(obs)
         state = np.array(obs['state'])
 
-        init_mode_action = self.m.action2mode(init_action)
-        safe, next_state = self.check_init_action(state, init_mode_action)
+        safe, next_state = self.check_init_action(state, init_action)
         if safe:
-            self.safe_history.add_locations(init_mode_action[0], init_mode_action[0])
-            return init_mode_action
+            self.safe_history.add_locations(init_action[0], init_action[0])
+            return init_action
 
-        print(f"Intervening")
+        # print(f"Intervening")
         valids = self.simulate_and_classify(state)
         if not valids.any():
             print(f"No Valid options -> State: {obs['state']}")
@@ -179,13 +178,13 @@ class LearningSupervisor(Supervisor):
 
         state = np.array(obs['state'])
 
-        init_mode_action = self.m.action2mode(init_action)
-        safe, next_state = self.check_init_action(state, init_mode_action)
+        # init_mode_action = self.m.action2mode(init_action)
+        safe, next_state = self.check_init_action(state, init_action)
 
         if safe:
             self.intervention_mag = 0
             self.safe_history.add_locations(init_action[0], init_action[0])
-            return init_mode_action
+            return init_action
 
         self.ep_interventions += 1
         self.intervene = True

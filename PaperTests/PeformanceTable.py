@@ -7,8 +7,8 @@ from SupervisorySafetySystem.KernelRewards import *
 from SupervisorySafetySystem.NavUtils.RewardFunctions import *
 from SupervisorySafetySystem.logger import LinkyLogger
 
-MAP_NAME = "f1_aut_wide"
-# MAP_NAME = "columbia_small"
+# MAP_NAME = "f1_aut_wide"
+MAP_NAME = "columbia_small"
 
 def train_baseline_cth(n, i):
     sim_conf = load_conf("PaperBaseline")
@@ -84,11 +84,12 @@ def eval_model_wo_sss(n, i):
     link = LinkyLogger(sim_conf, agent_name)
 
     env = TrackSim(sim_conf, link)
-    kernel = TrackKernel(sim_conf)
+    # kernel = TrackKernel(sim_conf)
 
     planner = EndVehicleTest(agent_name, sim_conf)
-    safety_planner = Supervisor(planner, kernel, sim_conf)
-    eval_dict = evaluate_vehicle(env, safety_planner, sim_conf, True)
+    # safety_planner = Supervisor(planner, kernel, sim_conf)
+    # eval_dict = evaluate_vehicle(env, safety_planner, sim_conf, True)
+    eval_dict = evaluate_vehicle(env, planner, sim_conf, True)
     
     config_dict = vars(sim_conf)
     config_dict['EvalName'] = "PerfTable" 
@@ -98,15 +99,15 @@ def eval_model_wo_sss(n, i):
     config_dict['vehicle'] = "KernelWoSSS"
     config_dict.update(eval_dict)
 
-    # save_conf_dict(config_dict, "WithoutSSS")
-    save_conf_dict(config_dict, "WithSSS")
+    save_conf_dict(config_dict, "WithoutSSS")
+    # save_conf_dict(config_dict, "WithSSS")
 
 # def retest():
 
 
 if __name__ == "__main__":
     # train_baseline_cth(3, 2)
-    # eval_model_sss(3, 2)
-    eval_model_wo_sss(3, 2)
+    eval_model_sss(3, 4)
+    # eval_model_wo_sss(3, 3)
 
 
