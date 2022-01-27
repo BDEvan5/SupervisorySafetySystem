@@ -33,7 +33,7 @@ map_name: "f1_aut_wide"
 # map_name: "circle"
 # map_name: "torino_redraw_small"
 
-kernel_path: "Data/PaperKernels/"
+kernel_path: "Data/Kernels/"
 dynamics_path: "Data/Dynamics/"
 kernel_mode: "disc"
 # kernel_mode: "viab"
@@ -54,15 +54,15 @@ sss_reward_scale: 1
 
 r1: 0.08
 r2: 0.001
-rk: 0.04
+rk: 0.00
 
 vehicle: reactive
 
 # Reward
 reward: 'cthRef'
 
-train_n: 5000
-# train_n: 10000
+# train_n: 5000
+train_n: 10000
 test_n: 10
 
 lookahead: 1.2

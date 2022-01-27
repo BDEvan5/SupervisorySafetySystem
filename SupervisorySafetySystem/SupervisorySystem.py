@@ -133,8 +133,8 @@ class LearningSupervisor(Supervisor):
         self.ep_interventions = 0
         self.lap_times.append(steps)
 
-    def fake_done(self, steps):
-        self.planner.fake_done()
+    def lap_complete(self, steps):
+        self.planner.lap_complete()
         self.intervention_list.append(self.ep_interventions)
         self.ep_interventions = 0
         self.lap_times.append(steps)
@@ -171,7 +171,7 @@ class LearningSupervisor(Supervisor):
     def plan(self, obs):
         if abs(self.intervention_mag) > 0:
             obs['reward'] = self.calculate_reward(self.intervention_mag, obs)
-            self.planner.fake_done_entry(obs)
+            self.planner.intervention_entry(obs)
             init_action = self.planner.plan_act(obs, False)
         else:
             init_action = self.planner.plan_act(obs, True)

@@ -64,6 +64,20 @@ def eval_model_sss(n, i):
 
     save_conf_dict(config_dict)
 
+
+    planner = EndVehicleTest(agent_name, sim_conf)
+    eval_dict = evaluate_vehicle(env, planner, sim_conf, True)
+    
+    config_dict = vars(sim_conf)
+    config_dict['EvalName'] = "PerfTable" 
+    config_dict['test_number'] = n
+    # config_dict['train_time'] = train_time
+    config_dict['kernel_reward'] = "Constant"
+    config_dict['vehicle'] = "KernelWoSSS"
+    config_dict.update(eval_dict)
+
+    save_conf_dict(config_dict, "WithoutSSS")
+
 def eval_test():
     n = 4
     i = 2
@@ -118,7 +132,7 @@ if __name__ == "__main__":
     # train_baseline_cth(1, 3)
     # for i in range(5):
     #     eval_model_sss(5, i)
-    eval_model_sss(10, 1)
+    eval_model_sss(5, 10)
 
     # eval_test()
     # eval_test_baseline()

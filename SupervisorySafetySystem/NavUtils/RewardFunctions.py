@@ -171,6 +171,15 @@ class CenterDistanceReward(TrackPtsBase):
 
         return reward
 
+class Constant:
+    def __init__(self, conf):
+        self.val = -conf.rk
+
+    def __call__(self, state, s_prime):
+        return self.val + s_prime['reward']
+        # return self.val 
+
+
 class RefCTHReward(TrackPtsBase):
     def __init__(self, conf) -> None:
         TrackPtsBase.__init__(self, conf)

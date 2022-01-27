@@ -67,9 +67,9 @@ class EndVehicleTrain(EndBase):
         # self.calculate_reward = CthReward(0.04, 0.004) 
         # self.calculate_reward = SteeringReward(0.01) 
         # self.calculate_reward = None
-        self.calculate_reward = RefCTHReward(sim_conf) 
+        # self.calculate_reward = RefCTHReward(sim_conf) 
         # self.calculate_reward = CenterDistanceReward(sim_conf, 5) 
-        
+        self.calculate_reward = Constant(sim_conf)
 
     def plan_act(self, obs, add_mem_entry=True):
         nn_obs = self.transform_obs(obs)
@@ -101,7 +101,7 @@ class EndVehicleTrain(EndBase):
         reward = self.calculate_reward(self.state, s_prime)
 
         self.t_his.add_step_data(reward)
-        self.t_his.lap_done(False)
+        self.t_his.lap_done(True)
         self.t_his.print_update(False) #remove this line
         if self.t_his.ptr % 10 == 0:
             self.t_his.print_update(False)
@@ -112,7 +112,7 @@ class EndVehicleTrain(EndBase):
 
         self.link.write_agent_log(f"Run: {self.t_his.t_counter}, Reward: {self.t_his.rewards[self.t_his.ptr-1]}\n ")
 
-    def fake_done_entry(self, s_prime):
+    def intervention_entry(self, s_prime):
         """
         To be called when the supervisor intervenes
         """
@@ -120,17 +120,17 @@ class EndVehicleTrain(EndBase):
         reward = self.calculate_reward(self.state, s_prime)
 
         self.t_his.add_step_data(reward)
-        self.state = None
+        # self.state = None
 
         self.agent.replay_buffer.add(self.nn_state, self.nn_act, nn_s_prime, reward, True)
         
         # self.link.write_agent_log(f"Run: {self.t_his.t_counter}, Reward: {self.t_his.rewards[self.t_his.ptr-1]}\n ")
 
-    def fake_done(self):
+    def lap_complete(self):
         """
         To be called when ep is done.
         """
-        self.t_his.lap_done(False)
+        self.t_his.lap_done(True)
         self.t_his.print_update(False) #remove this line
         if self.t_his.ptr % 10 == 0:
             self.t_his.print_update(False)
