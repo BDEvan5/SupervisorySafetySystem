@@ -25,10 +25,11 @@ end_distance: 1.2
 
 vehicle_path: "Data/PaperVehicles/"
 # map_name: "porto"
-# map_name: "columbia_small"
-map_name: "f1_aut_wide"
+map_name: "columbia_small"
+# map_name: "f1_aut_wide"
 
-kernel_path: "Data/PaperKernels/"
+# kernel_path: "Data/PaperKernels/"
+kernel_path: "Data/Kernels/"
 dynamics_path: "Data/Dynamics/"
 kernel_mode: "disc"
 # kernel_mode: "viab"
@@ -47,7 +48,7 @@ n_dx: 40
 kernel_reward: "Magnitude"
 sss_reward_scale: 1
 
-r1: 0.02
+r1: 0.08
 r2: 0.001
 rk: 0.04
 
@@ -56,10 +57,10 @@ vehicle: KernelSSS
 # Reward
 reward: 'cthRef'
 
-train_n: 2000
+train_n: 10000
 # train_n: 20000
 test_n: 10
 
 lookahead: 1.2
-v_gain: 0.6
+v_gain: 0.5
 traj_path: "Data/Trajectories/"

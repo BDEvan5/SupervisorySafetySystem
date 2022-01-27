@@ -21,12 +21,12 @@ max_steps: 5000
 end_distance: 1.2
 
 vehicle_path: "Data/PaperVehicles/"
-map_name: "porto"
-# map_name: "columbia_small"
+# map_name: "porto"
+map_name: "columbia_small"
 # map_name: "f1_aut_wide"
 
 r1: 0.08
-r2: 0.002
+r2: 0.001
 rk: 0
 
 vehicle: Baseline

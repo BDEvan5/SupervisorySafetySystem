@@ -35,6 +35,7 @@ map_name: "columbia_small"
 
 r1: 0.08
 r2: 0.001
+rk: 0
 
 vehicle: reactive
 

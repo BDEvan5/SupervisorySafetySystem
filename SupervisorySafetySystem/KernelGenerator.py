@@ -281,6 +281,7 @@ if __name__ == "__main__":
 
     # test_construction()
     conf = load_conf("std_test_kernel")
+    conf.map_name = "porto"
     build_track_kernel(conf)
 
 

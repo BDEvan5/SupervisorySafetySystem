@@ -36,7 +36,8 @@ def train_baseline_cth(n, i):
 
 
 def eval_model_sss(n, i):
-    sim_conf = load_conf("PaperSSS")
+    sim_conf = load_conf("std_test_kernel")
+    # sim_conf = load_conf("PaperSSS")
     sim_conf.map_name = MAP_NAME
     agent_name = f"KernelSSS_{n}_{i}"
     link = LinkyLogger(sim_conf, agent_name)
@@ -46,7 +47,7 @@ def eval_model_sss(n, i):
     kernel = TrackKernel(sim_conf)
     safety_planner = LearningSupervisor(planner, kernel, sim_conf)
     safety_planner.calculate_reward = ConstantReward(sim_conf.sss_reward_scale)
-    safety_planner.calculate_reward = MagnitudeReward(sim_conf.sss_reward_scale)
+    # safety_planner.calculate_reward = MagnitudeReward(sim_conf.sss_reward_scale)
     
     train_time = train_kernel_continuous(env, safety_planner, sim_conf, show=False)
 
@@ -106,8 +107,8 @@ def eval_model_wo_sss(n, i):
 
 
 if __name__ == "__main__":
-    # train_baseline_cth(3, 2)
-    eval_model_sss(3, 4)
+    # train_baseline_cth(4, 1)
+    eval_model_sss(4, 4)
     # eval_model_wo_sss(3, 3)
 
 

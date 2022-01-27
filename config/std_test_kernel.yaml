@@ -28,8 +28,8 @@ vehicle_path: "Data/TuningVehicles/"
 # map_name: "torino"
 # map_name: "berlin"
 # map_name: "porto"
-# map_name: "columbia_small"
-map_name: "f1_aut_wide"
+map_name: "columbia_small"
+# map_name: "f1_aut_wide"
 # map_name: "circle"
 # map_name: "torino_redraw_small"
 
@@ -54,7 +54,7 @@ sss_reward_scale: 1
 
 r1: 0.08
 r2: 0.001
-rk: 0.00
+rk: 0.04
 
 vehicle: reactive
 

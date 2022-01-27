@@ -10,7 +10,9 @@ from SupervisorySafetySystem.logger import LinkyLogger
 
 
 def train_baseline_cth(n, i):
-    sim_conf = load_conf("PaperBaseline")
+    sim_conf = load_conf("std_test_baseline")
+    # sim_conf = load_conf("PaperBaseline")
+    sim_conf.map_name = 'porto'
     agent_name = f"BaselineTD3_{n}_{i}"
 
     link = LinkyLogger(sim_conf, agent_name)
@@ -23,7 +25,7 @@ def train_baseline_cth(n, i):
     eval_dict = evaluate_vehicle(env, planner, sim_conf, False)
     
     config_dict = vars(sim_conf)
-    config_dict['EvalName'] = "PaperBaseline" 
+    config_dict['EvalName'] = "stdBaseline" 
     config_dict['test_number'] = n
     config_dict['train_time'] = train_time
     config_dict['crashes'] = crashes
@@ -37,6 +39,7 @@ def train_baseline_cth(n, i):
 def eval_model_sss(n, i):
     # sim_conf = load_conf("PaperSSS")
     sim_conf = load_conf("std_test_kernel")
+    sim_conf.map_name = 'porto'
     agent_name = f"KernelSSS_{n}_{i}"
     link = LinkyLogger(sim_conf, agent_name)
 
@@ -78,12 +81,11 @@ def eval_model_sss(n, i):
 
     save_conf_dict(config_dict, "WithoutSSS")
 
-def eval_test():
-    n = 4
-    i = 2
+def eval_test(n, i):
     sim_conf = load_conf("std_test_kernel")
+    sim_conf.map_name = 'porto'
     # sim_conf = load_conf("BaselineComp")
-    agent_name = f"Kernel_ModelSSS_{n}_{i}"
+    agent_name = f"KernelSSS_{n}_{i}"
     link = LinkyLogger(sim_conf, agent_name)
     env = TrackSim(sim_conf, link)
     kernel = TrackKernel(sim_conf, False)
@@ -103,10 +105,32 @@ def eval_test():
     save_conf_dict(config_dict, "Retest")
 
 
-def eval_test_baseline():
-    n = 1
-    i = 2
-    sim_conf = load_conf("PaperBaseline")
+def eval_test_wo_sss(n, i):
+    sim_conf = load_conf("std_test_kernel")
+    sim_conf.map_name = 'porto'
+    # sim_conf = load_conf("BaselineComp")
+    # agent_name = f"KernelSSS_{n}_{i}"
+    agent_name = f"BaselineTD3_{n}_{i}"
+    link = LinkyLogger(sim_conf, agent_name)
+    env = TrackSim(sim_conf, link)
+    
+    planner = EndVehicleTest(agent_name, sim_conf)
+
+    eval_dict = evaluate_vehicle(env, planner, sim_conf, True)
+    
+    config_dict = vars(sim_conf)
+    config_dict['EvalName'] = "BaselineComp" 
+    config_dict['test_number'] = n
+    config_dict['learning'] = "Continuous"
+    config_dict['kernel_reward'] = "Magnitude"
+    config_dict.update(eval_dict)
+
+    save_conf_dict(config_dict, "KernelWoSSS")
+
+
+def eval_test_baseline(n, i):
+    sim_conf = load_conf("std_test_baseline")
+    sim_conf.map_name = "porto"
     agent_name = f"BaselineTD3_{n}_{i}"
 
     
@@ -115,8 +139,8 @@ def eval_test_baseline():
     planner = EndVehicleTest(agent_name, sim_conf)
     # planner = EndVehicleTestDQN(agent_name, sim_conf)
 
-    eval_dict = evaluate_vehicle(env, planner, sim_conf, False)
-    # eval_dict = evaluate_vehicle(env, planner, sim_conf, True)
+    # eval_dict = evaluate_vehicle(env, planner, sim_conf, False)
+    eval_dict = evaluate_vehicle(env, planner, sim_conf, True)
     
     config_dict = vars(sim_conf)
     config_dict['EvalName'] = "Baseline" 
@@ -129,10 +153,13 @@ def eval_test_baseline():
 
 
 if __name__ == "__main__":
-    # train_baseline_cth(1, 3)
+    train_baseline_cth(6, 2)
     # for i in range(5):
     #     eval_model_sss(5, i)
-    eval_model_sss(5, 10)
+    # eval_model_sss(7, 1)
 
-    # eval_test()
-    # eval_test_baseline()
+    # eval_test(6, 1)
+    # eval_test(6, 10)
+    # eval_test_baseline(6, 2)
+
+    # eval_test_wo_sss(6, 10)

@@ -166,6 +166,8 @@ class CenterDistanceReward(TrackPtsBase):
         pos = state['state'][0:2]
 
         reward = self.get_distance_r(pos, prime_pos, self.b_distance)
+        if reward < 0:
+            reward = 0
 
         reward += s_prime['reward']
 
