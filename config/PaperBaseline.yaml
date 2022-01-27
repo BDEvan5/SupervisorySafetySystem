@@ -20,7 +20,8 @@ update_steps: 1
 max_steps: 5000
 end_distance: 1.2
 
-vehicle_path: "Data/PaperVehicles/"
+vehicle_path: "Data/TuningVehicles/"
+# vehicle_path: "Data/PaperVehicles/"
 # map_name: "porto"
 map_name: "columbia_small"
 # map_name: "f1_aut_wide"

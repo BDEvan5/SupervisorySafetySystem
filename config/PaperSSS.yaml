@@ -24,17 +24,14 @@ end_distance: 1.2
 # end_distance: 3
 
 vehicle_path: "Data/PaperVehicles/"
-# map_name: "porto"
 map_name: "columbia_small"
 # map_name: "f1_aut_wide"
 
-# kernel_path: "Data/PaperKernels/"
 kernel_path: "Data/Kernels/"
 dynamics_path: "Data/Dynamics/"
 kernel_mode: "disc"
 # kernel_mode: "viab"
 n_phi: 41
-# n_modes: 5
 
 nq_steer: 5
 nq_velocity: 3
@@ -52,13 +49,13 @@ r1: 0.08
 r2: 0.001
 rk: 0.04
 
-vehicle: KernelSSS
+vehicle: reactive
 
 # Reward
 reward: 'cthRef'
 
+# train_n: 5000
 train_n: 10000
-# train_n: 20000
 test_n: 10
 
 lookahead: 1.2

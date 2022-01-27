@@ -23,8 +23,8 @@ end_distance: 1.2
 # end_distance: 0.7
 # end_distance: 3
 
-vehicle_path: "Data/TuningVehicles/"
-# vehicle_path: "Data/Vehicles/"
+# vehicle_path: "Data/TuningVehicles/"
+vehicle_path: "Data/PaperVehicles/"
 # map_name: "torino"
 # map_name: "berlin"
 # map_name: "porto"
