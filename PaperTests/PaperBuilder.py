@@ -26,8 +26,7 @@ class DataBuilder:
             except Exception as e:
                 print(f"Exception: {e}")
                 print(f"Filename issue: {folder}")
-                continue
-            
+                continue            
 
             with open(config, 'r') as f:
                 config_data = yaml.safe_load(f)
@@ -39,13 +38,6 @@ class DataBuilder:
             for key in config_data.keys():
                 if key in self.base_keys:
                     self.data[i][key] = config_data[key]
-
-            # name = config_data["name"][0:6]
-            # if name == "Kernel":
-            #     self.data[i]["vehicle"] = "kernel"
-            # elif name == "Baseli":
-            #     self.data[i]["vehicle"] = "baseline"
-
 
 
     def save_data_table(self, name="DataTable"):

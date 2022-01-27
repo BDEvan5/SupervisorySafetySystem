@@ -92,6 +92,7 @@ class Supervisor:
             self.safe_history.add_locations(init_mode_action[0], init_mode_action[0])
             return init_mode_action
 
+        print(f"Intervening")
         valids = self.simulate_and_classify(state)
         if not valids.any():
             print(f"No Valid options -> State: {obs['state']}")

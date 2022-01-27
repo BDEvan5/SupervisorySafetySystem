@@ -74,7 +74,7 @@ class EndVehicleTrain(EndBase):
 
         steering_angle = nn_action[0] * self.max_steer
         # this is to ensure that it doesn't stay still
-        speed = (nn_action[1] + 1) * (self.max_v -1) / 2 + 1
+        speed = (nn_action[1] + 1) * (self.max_v -2) / 2 + 1
         # speed = calculate_speed(steering_angle)
         self.action = np.array([steering_angle, speed])
 
@@ -157,12 +157,11 @@ class EndVehicleTest(EndBase):
 
         nn_obs = torch.FloatTensor(nn_obs.reshape(1, -1))
         nn_action = self.actor(nn_obs).data.numpy().flatten()
-        self.nn_act = nn_action
 
 
         steering_angle = nn_action[0] * self.max_steer
-        speed = (nn_action[1] + 1) * (self.max_v -1) / 2 + 1
+        speed = (nn_action[1] + 1) * (self.max_v -2) / 2 +1
         # speed = calculate_speed(steering_angle)
-        self.action = np.array([steering_angle, speed])
+        action = np.array([steering_angle, speed])
 
-        return self.action
+        return action
