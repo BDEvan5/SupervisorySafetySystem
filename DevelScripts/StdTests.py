@@ -35,7 +35,8 @@ def train_baseline_cth(n, i):
 
 
 def eval_model_sss(n, i):
-    sim_conf = load_conf("PaperSSS")
+    # sim_conf = load_conf("PaperSSS")
+    sim_conf = load_conf("std_test_kernel")
     agent_name = f"KernelSSS_{n}_{i}"
     link = LinkyLogger(sim_conf, agent_name)
 
@@ -117,7 +118,7 @@ if __name__ == "__main__":
     # train_baseline_cth(1, 3)
     # for i in range(5):
     #     eval_model_sss(5, i)
-    eval_model_sss(1, 2)
+    eval_model_sss(10, 1)
 
     # eval_test()
     # eval_test_baseline()

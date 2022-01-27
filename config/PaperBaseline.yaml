@@ -34,5 +34,5 @@ vehicle: Baseline
 # Reward
 reward: 'cthRef'
 
-train_n: 50000
+train_n: 20000
 test_n: 100

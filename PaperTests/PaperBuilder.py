@@ -6,10 +6,10 @@ class DataBuilder:
         self.data = {}
         self.base_keys = []
         self.n = 0
-        self.path = f"PaperData/Vehicles/"
+        self.path = f"Data/PaperVehicles/"
 
     def build_keys(self):
-        with open(f"PaperData/base_key_builder.yaml") as f:
+        with open(f"Data/base_key_builder.yaml") as f:
             key_data = yaml.safe_load(f)
 
         for key in key_data:
@@ -40,15 +40,15 @@ class DataBuilder:
                 if key in self.base_keys:
                     self.data[i][key] = config_data[key]
 
-            name = config_data["name"][0:6]
-            if name == "Kernel":
-                self.data[i]["vehicle"] = "kernel"
-            elif name == "Baseli":
-                self.data[i]["vehicle"] = "baseline"
+            # name = config_data["name"][0:6]
+            # if name == "Kernel":
+            #     self.data[i]["vehicle"] = "kernel"
+            # elif name == "Baseli":
+            #     self.data[i]["vehicle"] = "baseline"
 
 
 
-    def save_data_table(self, name="PaperTable"):
+    def save_data_table(self, name="DataTable"):
         directory = "PaperProcessing/" + name + ".csv"
         with open(directory, 'w') as file:
             writer = csv.DictWriter(file, fieldnames=self.base_keys)

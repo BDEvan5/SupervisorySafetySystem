@@ -11,16 +11,19 @@ from SupervisorySafetySystem.logger import LinkyLogger
 def generate_standard_kernels():
     conf = load_conf("PaperKernelGen")
 
-    # conf.kernel_mode = "viab"
-    # build_dynamics_table(conf)
-    # build_track_kernel(conf)
-
-    conf.kernel_mode = "disc"
-    # build_dynamics_table(conf)
+    conf.kernel_mode = "viab"
+    build_dynamics_table(conf)
     for name in ["columbia_small", "porto", "f1_aut_wide"]:
     # for name in ["columbia_small"]:
         conf.map_name = name
         build_track_kernel(conf)
+
+    # conf.kernel_mode = "disc"
+    # # build_dynamics_table(conf)
+    # for name in ["columbia_small", "porto", "f1_aut_wide"]:
+    # # for name in ["columbia_small"]:
+    #     conf.map_name = name
+    #     build_track_kernel(conf)
 
 
 def kernel_discretization_ndx():
@@ -141,27 +144,28 @@ def rando_pictures():
 
 def rando_results(n):
     conf = load_conf("PaperKernelGen")
-    conf.kernel_mode = "disc"
     conf.vehicle = "random"
     conf.test_n = 10
 
-    agent_name = f"RandoResult_{conf.kernel_mode}_{n}"
-    planner = RandomPlanner(conf, agent_name)
-    link = LinkyLogger(conf, agent_name)
     for map_name in ["porto", "columbia_small", "f1_aut_wide"]:
         conf.map_name = map_name
-        env = TrackSim(conf, link)
+        for mode in ["viab", "disc"]:
+            conf.kernel_mode = mode 
+            agent_name = f"RandoResult_{conf.map_name}_{conf.kernel_mode}_{n}"
+            planner = RandomPlanner(conf, agent_name)
+            link = LinkyLogger(conf, agent_name)
+            env = TrackSim(conf, link)
 
-        kernel = TrackKernel(conf, False)
-        safety_planner = Supervisor(planner, kernel, conf)
+            kernel = TrackKernel(conf, False)
+            safety_planner = Supervisor(planner, kernel, conf)
 
-        eval_dict = evaluate_vehicle(env, safety_planner, conf, False)
-        
-        config_dict = vars(conf)
-        config_dict['test_number'] = n
-        config_dict.update(eval_dict)
+            eval_dict = evaluate_vehicle(env, safety_planner, conf, False)
+            
+            config_dict = vars(conf)
+            config_dict['test_number'] = n
+            config_dict.update(eval_dict)
 
-        save_conf_dict(config_dict)
+            save_conf_dict(config_dict)
 
 def run_constant_tests(n):
     conf = load_conf("SafetyTests")

@@ -23,8 +23,8 @@ map_name: "porto"
 
 kernel_path: "Data/PaperKernels/"
 dynamics_path: "Data/Dynamics/"
-kernel_mode: "disc"
-# kernel_mode: "viab"
+# kernel_mode: "disc"
+kernel_mode: "viab"
 n_phi: 41
 nq_steer: 5
 nq_velocity: 3
@@ -37,3 +37,5 @@ n_dx: 40
 
 
 vehicle_path: "Data/PaperVehicles/"
+
+EvalName: "KernelGen"

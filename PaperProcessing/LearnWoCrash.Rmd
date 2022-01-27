@@ -1,0 +1,54 @@
+---
+title: "LearnWoCrash"
+author: "Benjamin Evans"
+date: "26/01/2022"
+output: html_document
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+
+data = read.csv("DataTable.csv")
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(knitr)
+
+```
+
+# Kernel Safety Tests
+
+Firstly, we run random tests to ensure that the kernels are safe and that they do work.
+
+```{r}
+kernel_gen = data %>%
+  filter(EvalName=="KernelGen")%>%
+  select(kernel_mode, map_name, avg_times)%>%
+  group_by(map_name)
+
+# tab = table(kernel_gen$map_name, c)
+
+kable(kernel_gen)
+```
+
+
+# Repeatability
+
+```{r}
+repeatability = data %>%
+  filter(EvalName=="Baseline"| EvalName=='KernelSSS')%>%
+  filter(avg_times<1000)%>%
+  select(map_name, avg_times, success_rate, vehicle)%>%
+  group_by(vehicle)%>%
+  mutate(mean_time=mean(avg_times))%>%
+  ggplot(aes(x=vehicle, y=avg_times, group=vehicle))+
+  geom_boxplot()+
+  geom_point()+
+  geom_point(aes(y=mean_time), shape='x', size=10)
+repeatability
+```
+
+
+
+# Tests
