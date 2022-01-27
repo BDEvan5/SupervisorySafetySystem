@@ -33,11 +33,44 @@ kable(kernel_gen)
 ```
 
 
-# Repeatability
+
+
+# Tests
+
+# Comparision
+
+## Performance Table
+
+
+
+```{r}
+kernel_gen = data %>%
+  filter(EvalName=="PerfTable")%>%
+  select(vehicle, crashes,  avg_times, success_rate)
+
+kable(kernel_gen)
+```
+
+
+## Repeatability
+
 
 ```{r}
 repeatability = data %>%
-  filter(EvalName=="Baseline"| EvalName=='KernelSSS')%>%
+  filter(EvalName=="Repeatability") %>%
+  filter(avg_times<1000)%>%
+  select(map_name, avg_times, success_rate, vehicle)%>%
+  group_by(vehicle)%>%
+  mutate(mean_time=mean(success_rate))%>%
+  ggplot(aes(x=vehicle, y=success_rate, group=vehicle))+
+  geom_boxplot()+
+  geom_point()+
+  geom_point(aes(y=mean_time), shape='x', size=10)
+repeatability
+```
+```{r}
+repeatability = data %>%
+  filter(EvalName=="Repeatability") %>%
   filter(avg_times<1000)%>%
   select(map_name, avg_times, success_rate, vehicle)%>%
   group_by(vehicle)%>%
@@ -49,6 +82,3 @@ repeatability = data %>%
 repeatability
 ```
 
-
-
-# Tests

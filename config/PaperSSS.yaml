@@ -23,15 +23,22 @@ end_distance: 1.2
 # end_distance: 0.7
 # end_distance: 3
 
+# vehicle_path: "Data/TuningVehicles/"
 vehicle_path: "Data/PaperVehicles/"
+# map_name: "torino"
+# map_name: "berlin"
+# map_name: "porto"
 map_name: "columbia_small"
 # map_name: "f1_aut_wide"
+# map_name: "circle"
+# map_name: "torino_redraw_small"
 
 kernel_path: "Data/Kernels/"
 dynamics_path: "Data/Dynamics/"
 kernel_mode: "disc"
 # kernel_mode: "viab"
 n_phi: 41
+# n_modes: 5
 
 nq_steer: 5
 nq_velocity: 3
@@ -49,7 +56,7 @@ r1: 0.08
 r2: 0.001
 rk: 0.04
 
-vehicle: reactive
+vehicle: KernelSSS
 
 # Reward
 reward: 'cthRef'
