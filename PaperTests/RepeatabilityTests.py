@@ -80,7 +80,7 @@ def eval_model_sss(n, i):
 
 
 if __name__ == "__main__":
-    for i in range(3):
+    for i in range(3, 5):
         train_baseline_cth(2, i)
         eval_model_sss(2, i)
 

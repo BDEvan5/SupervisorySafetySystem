@@ -73,7 +73,7 @@ repeatability = data %>%
   filter(EvalName=="Repeatability") %>%
   filter(avg_times<1000)%>%
   select(map_name, avg_times, success_rate, vehicle)%>%
-  group_by(vehicle)%>%
+  # group_by(vehicle)%>%
   mutate(mean_time=mean(avg_times))%>%
   ggplot(aes(x=vehicle, y=avg_times, group=vehicle))+
   geom_boxplot()+
