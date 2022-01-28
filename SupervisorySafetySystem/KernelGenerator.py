@@ -273,7 +273,7 @@ def build_track_kernel(conf):
     img = prepare_track_img(conf) 
     # img, img2 = shrink_img(img, 5)
     kernel = KernelGenerator(img, conf)
-    kernel.calculate_kernel(50)
+    kernel.calculate_kernel(60)
     kernel.save_kernel(f"Kernel_{conf.kernel_mode}_{conf.map_name}")
 
 
@@ -281,6 +281,7 @@ if __name__ == "__main__":
 
     # test_construction()
     conf = load_conf("std_test_kernel")
+    conf.map_name = "porto"
     build_track_kernel(conf)
 
 

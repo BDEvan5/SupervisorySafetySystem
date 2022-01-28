@@ -166,10 +166,21 @@ class CenterDistanceReward(TrackPtsBase):
         pos = state['state'][0:2]
 
         reward = self.get_distance_r(pos, prime_pos, self.b_distance)
+        if reward < 0:
+            reward = 0
 
         reward += s_prime['reward']
 
         return reward
+
+class Constant:
+    def __init__(self, conf):
+        self.val = -conf.rk
+
+    def __call__(self, state, s_prime):
+        return self.val + s_prime['reward']
+        # return self.val 
+
 
 class RefCTHReward(TrackPtsBase):
     def __init__(self, conf) -> None:
@@ -180,6 +191,7 @@ class RefCTHReward(TrackPtsBase):
         self.load_reference_pts()
         self.mh = conf.r1
         self.md = conf.r2
+        self.rk = conf.rk
 
     def __call__(self, state, s_prime):
         car_state = s_prime['state']
@@ -200,10 +212,11 @@ class RefCTHReward(TrackPtsBase):
 
         r_h = self.mh * np.cos(d_th) * v_scale
         r_d = self.md * d_c
-        new_r = r_h - r_d - 0.05
+        new_r = r_h - r_d - self.rk
 
         return new_r + s_prime['reward']
-        # return 0
+        # return new_r + s_prime['reward']
+        # return s_prime['reward'] - 0.04
 
 
 

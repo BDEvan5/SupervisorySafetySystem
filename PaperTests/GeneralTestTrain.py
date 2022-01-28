@@ -44,21 +44,32 @@ def train_kernel_continuous(env, vehicle, sim_conf, show=False):
     start_time = time.time()
     state, done = env.reset(False), False
 
+    lap_counter = 0
     for n in range(sim_conf.train_n):
-        a, fake_done = vehicle.plan(state)
+        a = vehicle.plan(state)
         s_prime, r, done, _ = env.step_plan(a)
 
         state = s_prime
         vehicle.planner.agent.train(2)
         
+        if s_prime['collision']:
+            print(f"COLLISION:: Lap done {lap_counter} -> {env.steps} -> Inters: {vehicle.ep_interventions}")
+            state = env.reset(False)
+            done = False
+            lap_counter += 1
+            vehicle.done_entry(s_prime, env.steps)
+
         if done:
-            vehicle.fake_done(env.steps)
+            # print(f"{n}: Ep done during continuous training: Note problem")
+            print(f"Lap done {lap_counter} -> {env.steps} -> Inters: {vehicle.ep_interventions}")
+            vehicle.lap_complete(env.steps)
             if show:
                 env.render(wait=False)
-                vehicle.safe_history.plot_safe_history()
+                # vehicle.safe_history.plot_safe_history()
 
             done = False
-            state = env.fake_reset()
+            env.fake_reset()
+            lap_counter += 1
 
     vehicle.planner.t_his.print_update(True)
     vehicle.planner.t_his.save_csv_data()
@@ -68,8 +79,7 @@ def train_kernel_continuous(env, vehicle, sim_conf, show=False):
     train_time = time.time() - start_time
     print(f"Finished Continuous Training: {vehicle.planner.name} in {train_time} seconds")
 
-    return train_time 
-
+    return train_time
 def train_baseline_vehicle(env, vehicle, sim_conf, show=False):
     start_time = time.time()
     state, done = env.reset(False), False
@@ -121,7 +131,7 @@ def evaluate_vehicle(env, vehicle, sim_conf, show=False):
             state = s_p
         if show:
             env.render(wait=False, name=vehicle.name)
-            vehicle.safe_history.plot_safe_history()
+            # vehicle.safe_history.plot_safe_history()
 
         if r == -1:
             crashes += 1

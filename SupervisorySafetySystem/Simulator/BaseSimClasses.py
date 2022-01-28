@@ -372,7 +372,11 @@ class BaseSim:
         observation['full_scan'] = self.scan_sim.scan(pose, 1000)
         observation['target'] = target
         observation['reward'] = self.reward
+        # observation['reward'] = 0
         observation['collision'] = self.collision
+
+        # if self.reward == 1: 
+        #     print(f"Reward is 1")
 
         return observation
 

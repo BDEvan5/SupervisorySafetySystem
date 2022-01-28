@@ -5,7 +5,6 @@ l_r: 0.171
 l_f: 0.158
 
 max_v: 4
-min_v: 2
 max_a: 8.5
 max_steer: 0.4
 max_d_dot: 3.2
@@ -19,35 +18,22 @@ h_size: 100
 time_step: 0.1
 update_steps: 1
 max_steps: 5000
-# end_distance: 0.7
 end_distance: 1.2
 
-# vehicle_path: "Data/PaperVehicles/"
-vehicle_path: "Data/TuningVehicles/"
-# map_name: "torino"
-# map_name: "berlin"
+# vehicle_path: "Data/TuningVehicles/"
+vehicle_path: "Data/PaperVehicles/"
 # map_name: "porto"
 map_name: "columbia_small"
 # map_name: "f1_aut_wide"
-# map_name: "circle"
-# map_name: "torino_redraw_small"
-
 
 r1: 0.08
 r2: 0.001
 rk: 0
 
-vehicle: reactive
+vehicle: Baseline
 
 # Reward
 reward: 'cthRef'
 
-train_n: 12000
-test_n: 10
-
-lookahead: 1.2
-v_gain: 1
-traj_path: "Data/Trajectories/"
-
-nq_steer: 5
-nq_velocity: 3
+train_n: 20000
+test_n: 100

@@ -9,6 +9,7 @@ class ConstantReward:
         if intervention_mag == 0:
             return 0
         return -self.reward_size + obs['reward']
+        # return -self.reward_size #+ obs['reward']
 
 
 class ConstantContinuousReward:

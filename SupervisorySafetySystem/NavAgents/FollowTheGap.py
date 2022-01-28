@@ -14,8 +14,8 @@ class ForestFGM:
     
     def __init__(self, sim_conf, name="FGM"):
         self.degrees_per_elem = None
-        self.name = "Follow the Forest Gap"
-        self.n_beams = 1000
+        self.name = name
+        self.n_beams = sim_conf.n_beams
 
         path = sim_conf.vehicle_path + name 
         if os.path.exists(path):
@@ -81,7 +81,7 @@ class ForestFGM:
         steering_angle = steering_angle * np.pi / 180
 
         # speed = 4
-        speed = calculate_speed(steering_angle)
+        speed = calculate_speed(steering_angle) * 0.4
 
         action = np.array([steering_angle, speed])
 

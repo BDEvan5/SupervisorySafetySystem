@@ -1,32 +1,33 @@
 from SupervisorySafetySystem.Simulator.TrackSim import TrackSim
-from SupervisorySafetySystem.NavAgents.Oracle import Oracle
 from SupervisorySafetySystem.NavAgents.FollowTheGap import ForestFGM
+from SupervisorySafetySystem.NavAgents.SimplePlanners import PurePursuit
 
 from GeneralTestTrain import * 
-
+from SupervisorySafetySystem.logger import LinkyLogger
 
 
 def test_FGM():
-    sim_conf = load_conf("test_kernel")
-    env = TrackSim(sim_conf)
+    sim_conf = load_conf("PaperClassical")
     planner = ForestFGM(sim_conf)
+    link = LinkyLogger(sim_conf, planner.name)
+    env = TrackSim(sim_conf, link)
 
     sim_conf.test_n = 5
 
     evaluate_vehicle(env, planner, sim_conf, True)
-    render_baseline(env, planner, sim_conf, False)
+    # render_baseline(env, planner, sim_conf, False)
 
 
 def test_oracle():
-    sim_conf = load_conf("test_kernel")
-    env = TrackSim(sim_conf)
-    planner = Oracle(sim_conf)
-    planner.plan_track(env.env_map)
+    conf = load_conf("PaperClassical")
+    planner = PurePursuit(conf)
+    link = LinkyLogger(conf, planner.name)
+    env = TrackSim(conf, link)
 
-    sim_conf.test_n = 5
+    conf.test_n = 1
 
-    evaluate_vehicle(env, planner, sim_conf, True)
-    render_baseline(env, planner, sim_conf, False)
+    evaluate_vehicle(env, planner, conf, True)
+    # render_baseline(env, planner, conf, False)
 
 
 

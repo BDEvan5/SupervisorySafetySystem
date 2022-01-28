@@ -11,12 +11,12 @@ from SupervisorySafetySystem.NavUtils.Trajectory import Trajectory
 
 
 class RandomPlanner:
-    def __init__(self, name="RandoPlanner"):
-        self.d_max = 0.4 # radians  
+    def __init__(self, conf, name="RandoPlanner"):
+        self.d_max = conf.max_steer # radians  
         self.v = 2        
         self.name = name
         
-        path = os.getcwd() + "/PaperData/Vehicles/" + self.name 
+        path = os.getcwd() + f"/{conf.vehicle_path}" + self.name 
         # path = os.getcwd() + "/EvalVehicles/" + self.name 
         if os.path.exists(path):
             try:

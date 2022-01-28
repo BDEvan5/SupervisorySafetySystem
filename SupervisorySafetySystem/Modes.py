@@ -134,7 +134,8 @@ def load_conf(fname):
 
 
 def test_modes():
-    conf = load_conf("std_test_kernel")
+    conf = load_conf("PaperKernelGen")
+    # conf = load_conf("std_test_kernel")
     m = Modes(conf)
     m.init_modes()
     

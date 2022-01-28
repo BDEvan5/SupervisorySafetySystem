@@ -83,6 +83,7 @@ class TrainHistory():
             csvwriter.writerows(data)
 
         plt.figure(2)
+        lib.plot(self.rewards[0:self.ptr],figure_n=2)
         plt.savefig(self.path + "/training_rewards.png")
         
 def moving_average(data, period):

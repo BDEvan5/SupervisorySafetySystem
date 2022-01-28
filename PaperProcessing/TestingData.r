@@ -3,7 +3,12 @@ library(ggplot2)
 library(dplyr)
 library(tidyr)
 
-test_data = read.csv("PaperTable.csv")
+test_data = read.csv("DataTable.csv")
+
+data %>%
+  filter(EvalName=="KernelGen")%?%
+  select(kernel_mode, map_name, avg_tims)%>%
+  
 
 # Baseline
 test_data %>%

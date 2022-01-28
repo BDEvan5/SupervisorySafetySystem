@@ -35,6 +35,16 @@ class EndBase:
 
         return nn_obs
 
+    def transfrom_action(self, nn_action):
+        steering_angle = nn_action[0] * self.max_steer
+        # this is to ensure that it doesn't stay still
+        speed = (nn_action[1] + 1) * (self.max_v  / 2 - 0.5) + 0.5
+        max_speed = calculate_speed(steering_angle)
+        speed = np.clip(speed, 0, max_speed)
+        action = np.array([steering_angle, speed])
+
+        return action
+
 class EndVehicleTrain(EndBase):
     def __init__(self, agent_name, sim_conf, link):
         super().__init__(agent_name, sim_conf)
@@ -59,7 +69,7 @@ class EndVehicleTrain(EndBase):
         # self.calculate_reward = None
         self.calculate_reward = RefCTHReward(sim_conf) 
         # self.calculate_reward = CenterDistanceReward(sim_conf, 5) 
-        
+        # self.calculate_reward = Constant(sim_conf)
 
     def plan_act(self, obs, add_mem_entry=True):
         nn_obs = self.transform_obs(obs)
@@ -71,11 +81,7 @@ class EndVehicleTrain(EndBase):
         self.nn_act = nn_action
 
         self.nn_state = nn_obs
-
-        steering_angle = nn_action[0] * self.max_steer
-        speed = (nn_action[1] + 1) * self.max_v / 2
-        # speed = calculate_speed(steering_angle)
-        self.action = np.array([steering_angle, speed])
+        self.action = self.transfrom_action(nn_action)
 
         return self.action
 
@@ -106,7 +112,7 @@ class EndVehicleTrain(EndBase):
 
         self.link.write_agent_log(f"Run: {self.t_his.t_counter}, Reward: {self.t_his.rewards[self.t_his.ptr-1]}\n ")
 
-    def fake_done_entry(self, s_prime):
+    def intervention_entry(self, s_prime):
         """
         To be called when the supervisor intervenes
         """
@@ -114,13 +120,13 @@ class EndVehicleTrain(EndBase):
         reward = self.calculate_reward(self.state, s_prime)
 
         self.t_his.add_step_data(reward)
-        self.state = None
+        # self.state = None
 
         self.agent.replay_buffer.add(self.nn_state, self.nn_act, nn_s_prime, reward, True)
         
-        self.link.write_agent_log(f"Run: {self.t_his.t_counter}, Reward: {self.t_his.rewards[self.t_his.ptr-1]}\n ")
+        # self.link.write_agent_log(f"Run: {self.t_his.t_counter}, Reward: {self.t_his.rewards[self.t_his.ptr-1]}\n ")
 
-    def fake_done(self):
+    def lap_complete(self):
         """
         To be called when ep is done.
         """
@@ -156,12 +162,8 @@ class EndVehicleTest(EndBase):
 
         nn_obs = torch.FloatTensor(nn_obs.reshape(1, -1))
         nn_action = self.actor(nn_obs).data.numpy().flatten()
-        self.nn_act = nn_action
 
 
-        steering_angle = nn_action[0] * self.max_steer
-        speed = (nn_action[1] + 1) * self.max_v / 2
-        # speed = calculate_speed(steering_angle)
-        self.action = np.array([steering_angle, speed])
+        action = self.transfrom_action(nn_action)
 
-        return self.action
+        return action

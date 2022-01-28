@@ -71,13 +71,13 @@ def train_kernel_continuous(env, vehicle, sim_conf, show=False):
         if done:
             # print(f"{n}: Ep done during continuous training: Note problem")
             print(f"Lap done {lap_counter} -> {env.steps} -> Inters: {vehicle.ep_interventions}")
-            vehicle.fake_done(env.steps)
+            vehicle.lap_complete(env.steps)
             if show:
                 env.render(wait=False)
                 # vehicle.safe_history.plot_safe_history()
 
             done = False
-            state = env.fake_reset()
+            env.fake_reset()
             lap_counter += 1
 
     vehicle.planner.t_his.print_update(True)
@@ -140,8 +140,8 @@ def evaluate_vehicle(env, vehicle, sim_conf, show=False):
             s_p, r, done, _ = env.step_plan(a)
             state = s_p
         if show:
-            # env.render(wait=False, name=vehicle.name)
-            env.render(wait=True, name=vehicle.name)
+            env.render(wait=False, name=vehicle.name)
+            # env.render(wait=True, name=vehicle.name)
             # vehicle.safe_history.plot_safe_history()
 
         if r == -1:
@@ -289,8 +289,8 @@ def test_kernel_vehicle(env, vehicle, show=False, laps=100, add_obs=False, wait=
             state = s_p
             # env.render(False)
         if show:
-            env.history.show_history()
-            vehicle.safe_history.plot_safe_history()
+            # env.history.show_history()
+            # vehicle.safe_history.plot_safe_history()
 
             env.render(wait=wait, name=vehicle.planner.name)
             # plt.pause(1)
