@@ -200,7 +200,7 @@ if __name__ == "__main__":
     # generate_standard_kernels()
 
     # rando_pictures()
-    rando_results(10)
+    rando_results(1)
     # run_constant_tests(1)
 
 

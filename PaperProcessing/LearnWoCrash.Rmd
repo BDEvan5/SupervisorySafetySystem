@@ -25,8 +25,8 @@ Firstly, we run random tests to ensure that the kernels are safe and that they d
 kernel_gen = data %>%
   filter(EvalName=="KernelGen")%>%
   select(kernel_mode, map_name, avg_times)%>%
-  group_by(map_name)
-
+  pivot_wider(names_from = kernel_mode, values_from = avg_times)
+  
 # tab = table(kernel_gen$map_name, c)
 
 kable(kernel_gen)
@@ -73,12 +73,34 @@ repeatability = data %>%
   filter(EvalName=="Repeatability") %>%
   filter(avg_times<1000)%>%
   select(map_name, avg_times, success_rate, vehicle)%>%
-  # group_by(vehicle)%>%
+  group_by(vehicle)%>%
   mutate(mean_time=mean(avg_times))%>%
   ggplot(aes(x=vehicle, y=avg_times, group=vehicle))+
   geom_boxplot()+
   geom_point()+
   geom_point(aes(y=mean_time), shape='x', size=10)
 repeatability
+```
+
+```{r}
+rep_tab = data %>%
+  filter(EvalName=="Repeatability") %>%
+  filter(avg_times<1000)%>%
+  select(map_name, avg_times, success_rate, vehicle, kernel_reward)%>%
+  group_by(kernel_reward)%>%
+  mutate(mean_time=mean(avg_times))
+
+repeatability
+```
+
+## Rewards
+```{r}
+reward = data %>%
+  filter(EvalName=="Reward") %>%
+  filter(avg_times<1000)%>%
+  select(reward, kernel_reward, rk, avg_times, success_rate)
+
+
+kable(reward)
 ```
 
