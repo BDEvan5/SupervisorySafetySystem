@@ -1,14 +1,19 @@
 run_name: RewardTest
 
 base_config_name: "PaperRewards"
+eval_name: "RewardSignals"
+n: 1
 
 runs:
-  # - run: 1
-  #   name: "StdReward"
-  #   rk: 0
+  - run: 1
+    name: "StdBaseReward"
+    rk: 0
   - run: 2
     name: "NegativeBias04"
     rk: 0.04
-  # - run: 3
-  #   name: "NegativeBias1"
-  #   rk: 0.1
+  - run: 3
+    name: "NegativeBias1"
+    rk: 0.1
+  - run: 4
+    name: "NegativeBias1"
+    rk: 0.1
