@@ -1,8 +1,14 @@
 eval_name,r1,r2,rk,constant_reward,mag_reward,crashes,avg_times,success_rate,name,vehicle,map_name,kernel_mode,kernel_filled,train_n,ResultsSSS_avg_times,ResultsSSS_name,ResultsSSS_std_dev,ResultsSSS_success_rate,ResultsWoSSS_avg_times,ResultsWoSSS_name,ResultsWoSSS_std_dev,ResultsWoSSS_success_rate
+KernelGen,,,,,,,137.3,100.0,,,f1_aut_wide,disc,,,,,,,,,,
 RewardSignals,0,0,0.04,0,0,,,,ZeroT04,KernelSSS,columbia_small,disc,,10000,100.0,KernelSSS_1_ZeroT04,0.0,100.0,0.0,KernelSSS_1_ZeroT04,0.0,0.0
 RewardSignals,0.08,0.001,0.1,1,0,,,,ConsRk1,KernelSSS,columbia_small,disc,,10000,103.8,KernelSSS_1_ConsRk1,0.5099019513592784,100.0,0.0,KernelSSS_1_ConsRk1,0.0,0.0
 RewardSignals,0,0,0.04,1,0,,,,ConsT04,KernelSSS,columbia_small,disc,,10000,106.55,KernelSSS_1_ConsT04,0.4974937185533099,100.0,0.0,KernelSSS_1_ConsT04,0.0,0.0
+KernelGen,,,,,,,123.6,100.0,,,porto,viab,,,,,,,,,,
+KernelGen,,,,,,,121.1,100.0,,,porto,disc,,,,,,,,,,
 RewardSignals,0.08,0.001,0,1,0,,,,StdConstant,KernelSSS,columbia_small,disc,,10000,105.65,KernelSSS_1_StdConstant,1.4585952145814822,100.0,105.25,KernelSSS_1_StdConstant,1.4097872179871684,100.0
+KernelGen,,,,,,,113.1,100.0,,,columbia_small,viab,,,,,,,,,,
 RewardSignals,0.08,0.001,0,0,0,,,,StdZeroBaseline,KernelSSS,columbia_small,disc,,10000,113.25,KernelSSS_1_StdZeroBaseline,1.699264546796643,100.0,112.45,KernelSSS_1_StdZeroBaseline,1.532155344604456,100.0
 RewardSignals,0.08,0.001,0.04,1,0,,,,ConsRk04,KernelSSS,columbia_small,disc,,10000,0.0,KernelSSS_1_ConsRk04,0.0,0.0,0.0,KernelSSS_1_ConsRk04,0.0,0.0
+KernelGen,,,,,,,143.8,100.0,,,f1_aut_wide,viab,,,,,,,,,,
+KernelGen,,,,,,,110.7,100.0,,,columbia_small,disc,,,,,,,,,,
 RewardSignals,0.08,0.001,0,0,1,,,,StdMagnitude,KernelSSS,columbia_small,disc,,10000,134.3,KernelSSS_1_StdMagnitude,2.72213151776324,100.0,134.85,KernelSSS_1_StdMagnitude,3.15079355083763,100.0

@@ -23,7 +23,7 @@ Firstly, we run random tests to ensure that the kernels are safe and that they d
 
 ```{r}
 kernel_gen = data %>%
-  filter(EvalName=="KernelGen")%>%
+  filter(eval_name=="KernelGen")%>%
   select(kernel_mode, map_name, avg_times)%>%
   pivot_wider(names_from = kernel_mode, values_from = avg_times)
   

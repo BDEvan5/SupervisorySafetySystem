@@ -1,0 +1,25 @@
+run_name: KernelGen
+
+base_config_name: "PaperKernelGen"
+
+n: 1
+
+runs:
+  - run: 1
+    map_name: "f1_aut_wide"
+    kernel_mode: "viab"
+  - run: 2
+    map_name: "columbia_small"
+    kernel_mode: "viab"
+  - run: 3
+    map_name: "porto"
+    kernel_mode: "viab"
+  - run: 4
+    map_name: "f1_aut_wide"
+    kernel_mode: "disc"
+  - run: 5
+    map_name: "columbia_small"
+    kernel_mode: "disc"
+  - run: 6
+    map_name: "porto"
+    kernel_mode: "disc"

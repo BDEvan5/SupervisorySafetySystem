@@ -2,7 +2,6 @@ from GeneralTestTrain import *
 from SupervisorySafetySystem.Simulator.TrackSim import TrackSim
 from SupervisorySafetySystem.SupervisorySystem import Supervisor, TrackKernel, LearningSupervisor
 from SupervisorySafetySystem.NavAgents.SimplePlanners import RandomPlanner, ConstantPlanner
-from SupervisorySafetySystem.KernelRewards import *
 
 from SupervisorySafetySystem.KernelGenerator import build_track_kernel
 from SupervisorySafetySystem.DynamicsBuilder import build_dynamics_table
@@ -156,8 +155,7 @@ def rando_results(n):
             link = LinkyLogger(conf, agent_name)
             env = TrackSim(conf, link)
 
-            kernel = TrackKernel(conf, False)
-            safety_planner = Supervisor(planner, kernel, conf)
+            safety_planner = Supervisor(planner, conf)
 
             eval_dict = evaluate_vehicle(env, safety_planner, conf, False)
             

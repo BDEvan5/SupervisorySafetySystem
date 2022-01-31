@@ -7,6 +7,7 @@ from SupervisorySafetySystem.NavAgents.EndAgent import EndVehicleTrain, EndVehic
 from SupervisorySafetySystem.NavUtils.RewardFunctions import *
 from SupervisorySafetySystem.logger import LinkyLogger
 from copy import copy
+from SupervisorySafetySystem.NavAgents.SimplePlanners import RandomPlanner
 
 # MAP_NAME = "f1_aut_wide"
 MAP_NAME = "columbia_small"
@@ -75,7 +76,36 @@ def execute_run_tests(run_name, n):
         save_conf_dict(save_dict)
 
 
+def execute_gen_run(run_name):
+    runs = load_yaml_dict(run_name)
+    base_config = load_yaml_dict(runs['base_config_name'])
+    n = runs['n']
+
+    for run in runs['runs']:
+        conf = copy(base_config)
+        conf['run_name'] = runs['run_name']
+        conf['base_config_name'] = runs['base_config_name']
+        for param in run.keys():
+            conf[param] = run[param]
+
+        conf = Namespace(**conf)
+        agent_name = f"Rando_{n}_{conf.map_name}_{conf.kernel_mode}"
+        link = LinkyLogger(conf, agent_name)
+        env = TrackSim(conf, link)
+
+        planner = RandomPlanner(conf, agent_name)
+        safety_planner = Supervisor(planner, conf)
+        eval_dict = evaluate_vehicle(env, safety_planner, conf, False)
+    
+        save_dict = vars(conf)
+        # save_dict['ResultsWoSSS'] = eval_dict
+        save_dict['agent_name'] = agent_name
+        save_dict.update(eval_dict)
+        save_conf_dict(save_dict)
+
+
 
 if __name__ == "__main__":
-    execute_kernel_run("reward_run")
+    # execute_kernel_run("reward_run")
+    execute_gen_run("kernel_gen_run")
     # execute_run_tests("reward_run", 1)
