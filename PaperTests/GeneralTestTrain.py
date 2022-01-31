@@ -129,10 +129,10 @@ def evaluate_vehicle(env, vehicle, sim_conf, show=False):
     print(f"Lap times Avg: {avg_times} --> Std: {std_dev}")
 
     eval_dict = {}
-    eval_dict['name'] = vehicle.name
+    # eval_dict['name'] = vehicle.name
     eval_dict['success_rate'] = float(success_rate)
     eval_dict['avg_times'] = float(avg_times)
-    eval_dict['std_dev'] = float(std_dev)
+    # eval_dict['std_dev'] = float(std_dev)
 
     print(f"Finished running test and saving file with results.")
 

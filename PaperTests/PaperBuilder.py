@@ -36,6 +36,14 @@ class DataBuilder:
 
             self.data[i] = {}
             for key in config_data.keys():
+                if key == "ResultsSSS" or key == "ResultsWoSSS":
+                    for sub_key in config_data[key].keys():
+                        # if sub_key in self.base_keys:
+                        store_key = f"{key}_{sub_key}"
+                        self.data[i][store_key] = config_data[key][sub_key]
+                        if not store_key in self.base_keys:
+                            self.base_keys.append(store_key)
+                    continue
                 if key in self.base_keys:
                     self.data[i][key] = config_data[key]
 
