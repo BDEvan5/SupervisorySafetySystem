@@ -34,7 +34,7 @@ def execute_kernel_run(run_name):
         train_kernel_vehicle(env, safety_planner, conf, show=False)
 
         planner = EndVehicleTest(agent_name, conf)
-        eval_dict_wo = evaluate_vehicle(env, planner, conf, True)
+        eval_dict_wo = evaluate_vehicle(env, planner, conf, False)
     
         safety_planner = Supervisor(planner, conf)
         eval_dict_sss = evaluate_vehicle(env, safety_planner, conf, False)
@@ -77,5 +77,5 @@ def execute_run_tests(run_name, n):
 
 
 if __name__ == "__main__":
-    execute_kernel_run("reward_run", 1)
+    execute_kernel_run("reward_run")
     # execute_run_tests("reward_run", 1)

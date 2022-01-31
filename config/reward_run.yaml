@@ -6,14 +6,38 @@ n: 1
 
 runs:
   - run: 1
-    name: "StdBaseReward"
+    name: "StdZeroBaseline"
     rk: 0
+    constant_reward: 0
+
   - run: 2
-    name: "NegativeBias04"
-    rk: 0.04
+    name: "StdConstant"
+    constant_reward: 1
+    rk: 0
+
   - run: 3
-    name: "NegativeBias1"
-    rk: 0.1
+    name: "StdMagnitude"
+    rk: 0
+    mag_reward: 1
+    constant_reward: 0
+
   - run: 4
-    name: "NegativeBias1"
+    name: "ConsRk04"
+    rk: 0.04
+
+  - run: 5
+    name: "ConsRk1"
     rk: 0.1
+
+  - run: 6
+    name: "ConsT04"
+    rk: 0.04
+    r1: 0 
+    r2: 0
+
+  - run: 7
+    name: "ZeroT04"
+    rk: 0.04
+    r1: 0 
+    r2: 0
+    constant_reward: 0
