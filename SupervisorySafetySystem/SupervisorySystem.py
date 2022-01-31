@@ -56,7 +56,7 @@ class SafetyHistory:
 
 
 class Supervisor:
-    def __init__(self, planner, kernel, conf):
+    def __init__(self, planner, conf):
         """
         A wrapper class that can be used with any other planner.
         Requires a planner with:
@@ -65,8 +65,7 @@ class Supervisor:
         """
         
         self.d_max = conf.max_steer
-        self.v = 2
-        self.kernel = kernel
+        self.kernel = TrackKernel(conf)
         self.planner = planner
         self.safe_history = SafetyHistory()
         self.intervene = False
@@ -104,6 +103,10 @@ class Supervisor:
 
 
     def check_init_action(self, state, init_action):
+        next_state = update_complex_state(state, init_action, self.time_step/2)
+        safe = check_kernel_state(next_state, self.kernel.kernel, self.kernel.origin, self.kernel.resolution, self.kernel.phi_range, self.m.max_steer, self.m.v_mode_list, self.m.nv_modes, self.m.v_res, self.m.min_velocity)
+        if not safe:
+            return safe, next_state
         next_state = update_complex_state(state, init_action, self.time_step)
         safe = check_kernel_state(next_state, self.kernel.kernel, self.kernel.origin, self.kernel.resolution, self.kernel.phi_range, self.m.max_steer, self.m.v_mode_list, self.m.nv_modes, self.m.v_res, self.m.min_velocity)
         
@@ -117,11 +120,22 @@ class Supervisor:
 
         return valids
 
+class SupervisorReward:
+    def __init__(self, conf):
+        self.mag_reward = conf.mag_reward
+        self.constant_reward = conf.constant_reward
+
+    def __call__(self, intervention_mag, obs):
+        mag = - self.mag_reward * abs(intervention_mag)
+        total_reward = mag - self.constant_reward + obs['reward']
+        return  total_reward
+
+
 class LearningSupervisor(Supervisor):
-    def __init__(self, planner, kernel, conf):
-        Supervisor.__init__(self, planner, kernel, conf)
+    def __init__(self, planner, conf):
+        Supervisor.__init__(self, planner, conf)
         self.intervention_mag = 0
-        self.calculate_reward = None # to be replaced by a function
+        self.calculate_reward = SupervisorReward(conf)
         self.ep_interventions = 0
         self.intervention_list = []
         self.lap_times = []

@@ -9,37 +9,8 @@ import csv, time
 
 
 # Training functions
-def train_kernel_episodic(env, vehicle, sim_conf, show=False):
-    print(f"Starting Episodic Training: {vehicle.planner.name}")
-    start_time = time.time()
-    state, done = env.reset(False), False
 
-    for n in range(sim_conf.train_n):
-        a, fake_done = vehicle.plan(state)
-        s_prime, r, done, _ = env.step_plan(a)
-
-        state = s_prime
-        vehicle.planner.agent.train(2)
-        
-        if done or fake_done:
-            vehicle.done_entry(s_prime, env.steps)
-            if show:
-                env.render(wait=False)
-                vehicle.safe_history.plot_safe_history()
-
-            state = env.reset(False)
-
-    vehicle.planner.t_his.print_update(True)
-    vehicle.planner.t_his.save_csv_data()
-    vehicle.planner.agent.save(vehicle.planner.path)
-    vehicle.save_intervention_list()
-
-    train_time = time.time() - start_time
-    print(f"Finished Episodic Training: {vehicle.planner.name} in {train_time} seconds")
-
-    return train_time 
-
-def train_kernel_continuous(env, vehicle, sim_conf, show=False):
+def train_kernel_vehicle(env, vehicle, sim_conf, show=False):
     print(f"Starting Continuous Training: {vehicle.planner.name}")
     start_time = time.time()
     state, done = env.reset(False), False
@@ -80,6 +51,7 @@ def train_kernel_continuous(env, vehicle, sim_conf, show=False):
     print(f"Finished Continuous Training: {vehicle.planner.name} in {train_time} seconds")
 
     return train_time
+
 def train_baseline_vehicle(env, vehicle, sim_conf, show=False):
     start_time = time.time()
     state, done = env.reset(False), False
@@ -136,6 +108,7 @@ def evaluate_vehicle(env, vehicle, sim_conf, show=False):
         if r == -1:
             crashes += 1
             print(f"({i}) Crashed -> time: {env.steps} ")
+            plt.show()
         else:
             completes += 1
             print(f"({i}) Complete -> time: {env.steps}")
@@ -244,8 +217,8 @@ def render_baseline(env, vehicle, sim_conf, show=False):
 # Admin functions
 def save_conf_dict(dictionary, save_name=None):
     if save_name is None:
-        save_name  = dictionary["name"]
-    path = dictionary["vehicle_path"] + dictionary["name"] + f"/{save_name}_record.yaml"
+        save_name  = dictionary["agent_name"]
+    path = dictionary["vehicle_path"] + dictionary["agent_name"] + f"/{save_name}_record.yaml"
     with open(path, 'w') as file:
         yaml.dump(dictionary, file)
 
@@ -257,6 +230,13 @@ def load_conf(fname):
     conf = Namespace(**conf_dict)
 
     return conf
+
+def load_yaml_dict(fname):
+    full_path =  "config/" + fname + '.yaml'
+    with open(full_path) as file:
+        conf_dict = yaml.load(file, Loader=yaml.FullLoader)
+
+    return conf_dict
 
 
 

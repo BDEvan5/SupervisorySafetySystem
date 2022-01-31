@@ -63,13 +63,7 @@ class EndVehicleTrain(EndBase):
 
         self.t_his = TrainHistory(agent_name, sim_conf, load)
 
-        # self.calculate_reward = DistReward() 
-        # self.calculate_reward = CthReward(0.04, 0.004) 
-        # self.calculate_reward = SteeringReward(0.01) 
-        # self.calculate_reward = None
         self.calculate_reward = RefCTHReward(sim_conf) 
-        # self.calculate_reward = CenterDistanceReward(sim_conf, 5) 
-        # self.calculate_reward = Constant(sim_conf)
 
     def plan_act(self, obs, add_mem_entry=True):
         nn_obs = self.transform_obs(obs)
@@ -162,7 +156,6 @@ class EndVehicleTest(EndBase):
 
         nn_obs = torch.FloatTensor(nn_obs.reshape(1, -1))
         nn_action = self.actor(nn_obs).data.numpy().flatten()
-
 
         action = self.transfrom_action(nn_action)
 
