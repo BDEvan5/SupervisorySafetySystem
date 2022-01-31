@@ -52,4 +52,5 @@ test_n: 20
 
 traj_path: "Data/Trajectories/"
 
+eval_name: "RewardSignals"
 

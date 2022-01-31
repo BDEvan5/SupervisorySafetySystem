@@ -20,7 +20,6 @@ update_steps: 1
 max_steps: 5000
 end_distance: 1.2
 
-# vehicle_path: "Data/TuningVehicles/"
 vehicle_path: "Data/PaperVehicles/"
 # map_name: "porto"
 map_name: "columbia_small"
@@ -32,8 +31,7 @@ rk: 0
 
 vehicle: Baseline
 
-# Reward
-reward: 'cthRef'
-
 train_n: 20000
-test_n: 100
+test_n: 20
+
+eval_name: "Comparision"

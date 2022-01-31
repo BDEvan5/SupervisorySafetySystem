@@ -3,7 +3,6 @@ from GeneralTestTrain import *
 from SupervisorySafetySystem.Simulator.TrackSim import TrackSim
 from SupervisorySafetySystem.SupervisorySystem import Supervisor, TrackKernel, LearningSupervisor
 from SupervisorySafetySystem.NavAgents.EndAgent import EndVehicleTrain, EndVehicleTest
-from SupervisorySafetySystem.KernelRewards import *
 from SupervisorySafetySystem.NavUtils.RewardFunctions import *
 from SupervisorySafetySystem.logger import LinkyLogger
 

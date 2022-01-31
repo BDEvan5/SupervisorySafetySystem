@@ -24,11 +24,9 @@ Firstly, we run random tests to ensure that the kernels are safe and that they d
 ```{r}
 kernel_gen = data %>%
   filter(eval_name=="KernelGen")%>%
-  select(kernel_mode, map_name, avg_times)%>%
-  pivot_wider(names_from = kernel_mode, values_from = avg_times)
+  select(kernel_mode, map_name, SSS_avg_times)%>%
+  pivot_wider(names_from = kernel_mode, values_from = SSS_avg_times)
   
-# tab = table(kernel_gen$map_name, c)
-
 kable(kernel_gen)
 ```
 
@@ -45,8 +43,13 @@ kable(kernel_gen)
 
 ```{r}
 kernel_gen = data %>%
-  filter(EvalName=="PerfTable")%>%
-  select(vehicle, crashes,  avg_times, success_rate)
+  filter(eval_name=="Comparision"&vehicle=='Baseline')%>%
+  select(agent_name, crashes,  Wo_avg_times, Wo_success_rate)
+kable(kernel_gen)
+
+kernel_gen = data %>%
+  filter(eval_name=="Comparision"&vehicle=='KernelSSS')%>%
+  select(agent_name, SSS_avg_times, SSS_success_rate, Wo_avg_times, Wo_success_rate)
 
 kable(kernel_gen)
 ```
@@ -55,50 +58,34 @@ kable(kernel_gen)
 ## Repeatability
 
 
-```{r}
-repeatability = data %>%
-  filter(EvalName=="Repeatability") %>%
-  filter(avg_times<1000)%>%
-  select(map_name, avg_times, success_rate, vehicle)%>%
-  group_by(vehicle)%>%
-  mutate(mean_time=mean(success_rate))%>%
-  ggplot(aes(x=vehicle, y=success_rate, group=vehicle))+
-  geom_boxplot()+
-  geom_point()+
-  geom_point(aes(y=mean_time), shape='x', size=10)
-repeatability
-```
-```{r}
-repeatability = data %>%
-  filter(EvalName=="Repeatability") %>%
-  filter(avg_times<1000)%>%
-  select(map_name, avg_times, success_rate, vehicle)%>%
-  group_by(vehicle)%>%
-  mutate(mean_time=mean(avg_times))%>%
-  ggplot(aes(x=vehicle, y=avg_times, group=vehicle))+
-  geom_boxplot()+
-  geom_point()+
-  geom_point(aes(y=mean_time), shape='x', size=10)
-repeatability
-```
 
 ```{r}
-rep_tab = data %>%
-  filter(EvalName=="Repeatability") %>%
-  filter(avg_times<1000)%>%
-  select(map_name, avg_times, success_rate, vehicle, kernel_reward)%>%
-  group_by(kernel_reward)%>%
-  mutate(mean_time=mean(avg_times))
+repeatability = data %>%
+   filter(eval_name=="Comparision") %>%
+   select(SSS_avg_times, vehicle)%>%
+   # group_by(vehicle)%>%
+   ggplot(aes(x=vehicle, y=SSS_avg_times, group=vehicle))+
+   geom_boxplot()+
+   geom_point()
 
+repeatability = data %>%
+   filter(eval_name=="Comparision") %>%
+   select(Wo_avg_times, vehicle)%>%
+   group_by(vehicle)%>%
+   mutate(mean_time=mean(Wo_avg_times))%>%
+   ggplot(aes(x=vehicle, y=Wo_avg_times, group=vehicle))+
+   geom_boxplot()+
+   geom_point()+
+   geom_point(aes(y=mean_time), shape='x', size=10)
 repeatability
 ```
+ 
 
 ## Rewards
 ```{r}
 reward = data %>%
-  filter(EvalName=="Reward") %>%
-  filter(avg_times<1000)%>%
-  select(reward, kernel_reward, rk, avg_times, success_rate)
+  filter(eval_name=="RewardSignals") %>%
+  select(agent_name, r1, r2, rk, constant_reward, mag_reward, SSS_avg_times, SSS_success_rate, Wo_avg_times, Wo_success_rate)
 
 
 kable(reward)

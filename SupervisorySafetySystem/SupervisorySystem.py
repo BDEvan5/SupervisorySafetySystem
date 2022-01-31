@@ -19,11 +19,23 @@ class SafetyHistory:
             self.safe_actions.append(safe_action)
 
     def plot_safe_history(self):
+        planned = np.array(self.planned_actions)
+        safe = np.array(self.safe_actions)
         plt.figure(5)
         plt.clf()
-        plt.title("Safe History")
-        plt.plot(self.planned_actions, color='blue')
-        plt.plot(self.safe_actions, '-x', color='red')
+        plt.title("Safe History: steering")
+        plt.plot(planned[:, 0], color='blue')
+        plt.plot(safe[:, 0], '-x', color='red')
+        plt.legend(['Planned Actions', 'Safe Actions'])
+        plt.ylim([-0.5, 0.5])
+        # plt.show()
+        plt.pause(0.0001)
+
+        plt.figure(6)
+        plt.clf()
+        plt.title("Safe History: velocity")
+        plt.plot(planned[:, 1], color='blue')
+        plt.plot(safe[:, 1], '-x', color='red')
         plt.legend(['Planned Actions', 'Safe Actions'])
         plt.ylim([-0.5, 0.5])
         # plt.show()
@@ -33,14 +45,13 @@ class SafetyHistory:
         self.safe_actions = []
 
     def save_safe_history(self, path, name):
+        self.plot_safe_history()
+
         plt.figure(5)
-        plt.clf()
-        plt.title(f"Safe History: {name}")
-        plt.plot(self.planned_actions, color='blue')
-        plt.plot(self.safe_actions, color='red')
-        plt.legend(['Planned Actions', 'Safe Actions'])
-        plt.ylim([-0.5, 0.5])
-        plt.savefig(f"{path}/{name}_actions.png")
+        plt.savefig(f"{path}/{name}_steer_actions.png")
+
+        plt.figure(6)
+        plt.savefig(f"{path}/{name}_velocity_actions.png")
 
         data = []
         for i in range(len(self.planned_actions)):
@@ -87,7 +98,7 @@ class Supervisor:
 
         safe, next_state = self.check_init_action(state, init_action)
         if safe:
-            self.safe_history.add_locations(init_action[0], init_action[0])
+            self.safe_history.add_locations(init_action, init_action)
             return init_action
 
         # print(f"Intervening")
@@ -97,10 +108,9 @@ class Supervisor:
             return init_action
         
         action, idx = modify_mode(valids, self.m.nq_velocity, self.m.nv_modes, self.m.nv_level_modes, self.m.qs)
-        self.safe_history.add_locations(init_action[0], action[0])
+        self.safe_history.add_locations(init_action, action)
 
         return action
-
 
     def check_init_action(self, state, init_action):
         next_state = update_complex_state(state, init_action, self.time_step/2)
@@ -120,22 +130,13 @@ class Supervisor:
 
         return valids
 
-class SupervisorReward:
-    def __init__(self, conf):
-        self.mag_reward = conf.mag_reward
-        self.constant_reward = conf.constant_reward
-
-    def __call__(self, intervention_mag, obs):
-        mag = - self.mag_reward * abs(intervention_mag)
-        total_reward = mag - self.constant_reward + obs['reward']
-        return  total_reward
-
 
 class LearningSupervisor(Supervisor):
     def __init__(self, planner, conf):
         Supervisor.__init__(self, planner, conf)
         self.intervention_mag = 0
-        self.calculate_reward = SupervisorReward(conf)
+        self.mag_reward = conf.mag_reward
+        self.constant_reward = conf.constant_reward
         self.ep_interventions = 0
         self.intervention_list = []
         self.lap_times = []
@@ -216,7 +217,10 @@ class LearningSupervisor(Supervisor):
 
         return action
 
-
+    def calculate_reward(self, intervention_mag, obs):
+        mag = - self.mag_reward * abs(intervention_mag)
+        total_reward = mag - self.constant_reward + obs['reward']
+        return  total_reward
 
 @njit(cache=True)
 def modify_mode(valid_window, nq_velocity, nv_modes, nv_level_modes, qs):

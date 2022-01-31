@@ -35,8 +35,9 @@ class DataBuilder:
                 continue
 
             self.data[i] = {}
+            # self.data[i]['folder'] = folder
             for key in config_data.keys():
-                if key == "ResultsSSS" or key == "ResultsWoSSS":
+                if key == "SSS" or key == "Wo":
                     for sub_key in config_data[key].keys():
                         # if sub_key in self.base_keys:
                         store_key = f"{key}_{sub_key}"

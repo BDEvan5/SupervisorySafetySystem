@@ -1,7 +1,6 @@
 run_name: RewardTest
 
 base_config_name: "PaperRewards"
-eval_name: "RewardSignals"
 n: 1
 
 runs:
