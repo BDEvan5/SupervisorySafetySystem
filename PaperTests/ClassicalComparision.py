@@ -33,5 +33,5 @@ def test_oracle():
 
 if __name__ == "__main__":
     test_FGM()
-    test_oracle()
+    # test_oracle()
 

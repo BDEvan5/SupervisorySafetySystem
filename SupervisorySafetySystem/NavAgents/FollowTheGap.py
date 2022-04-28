@@ -3,10 +3,11 @@ from numba import njit
  
 from LearningLocalPlanning.NavUtils.speed_utils import calculate_speed
 import os, shutil
+from matplotlib import pyplot as plt
 
 #TODO: most of this can be njitted
 class ForestFGM:    
-    BUBBLE_RADIUS = 250
+    BUBBLE_RADIUS = 400
     PREPROCESS_CONV_SIZE = 3
     BEST_POINT_CONV_SIZE = 100
     MAX_LIDAR_DIST = 10
@@ -16,6 +17,7 @@ class ForestFGM:
         self.degrees_per_elem = None
         self.name = name
         self.n_beams = sim_conf.n_beams
+        self.max_steer = sim_conf.max_steer
 
         path = sim_conf.vehicle_path + name 
         if os.path.exists(path):
@@ -29,7 +31,7 @@ class ForestFGM:
     def preprocess_lidar(self, ranges):
         self.degrees_per_elem = (180) / len(ranges)
         proc_ranges = np.array(ranges[self.REDUCTION:-self.REDUCTION])
-        proc_ranges = ranges
+        # proc_ranges = ranges
         proc_ranges = np.clip(proc_ranges, 0, self.MAX_LIDAR_DIST)
         proc_ranges = np.convolve(proc_ranges, np.ones(self.PREPROCESS_CONV_SIZE), 'same') / self.PREPROCESS_CONV_SIZE
 
@@ -52,7 +54,7 @@ class ForestFGM:
     def get_angle(self, range_index, range_len):
         """ Get the angle of a particular element in the LiDAR data
         """
-        return (range_index - (range_len/2)) * self.degrees_per_elem 
+        return (range_index - (range_len/2)) * self.degrees_per_elem *0.5
 
     def process_lidar(self, ranges):
         proc_ranges = self.preprocess_lidar(ranges)
@@ -70,8 +72,22 @@ class ForestFGM:
 
         steering_angle = self.get_angle(best, len(proc_ranges))
         # self.vis.add_step(proc_ranges, steering_angle)
+        self.plot_scan(ranges, proc_ranges, best)
 
         return steering_angle
+
+    def plot_scan(self, ranges, proc_ranges, best):
+        plt.figure(1)
+        plt.clf()
+        xs = ranges = np.cos(np.linspace(0, np.pi, len(ranges))) * ranges
+        ys = ranges = np.sin(np.linspace(0, np.pi, len(ranges))) * ranges
+        plt.plot(xs, ys, 'b')
+        
+        xs = proc_ranges = np.cos(np.linspace(0, np.pi, len(proc_ranges))) * proc_ranges
+        ys = proc_ranges = np.sin(np.linspace(0, np.pi, len(proc_ranges))) * proc_ranges
+        plt.plot(xs, ys, 'r')
+
+        plt.pause(0.0001)
 
     def plan_act(self, obs):
         scan = obs['full_scan']
@@ -79,9 +95,10 @@ class ForestFGM:
 
         steering_angle = self.process_lidar(ranges)
         steering_angle = steering_angle * np.pi / 180
+        steering_angle = np.clip(steering_angle, -self.max_steer, self.max_steer)
 
         # speed = 4
-        speed = calculate_speed(steering_angle) * 0.4
+        speed = calculate_speed(steering_angle) * 0.8
 
         action = np.array([steering_angle, speed])
 

@@ -104,16 +104,16 @@ def execute_gen_run(run_name):
 
 
 def execute_performance_kernel_run(n):
-    conf = load_conf("std_test_kernel")
-    # conf = load_conf("PaperSSS")
+    # conf = load_conf("std_test_kernel")
+    conf = load_conf("PaperSSS")
 
     agent_name = f"KernelSSS_{n}"
     link = LinkyLogger(conf, agent_name)
     env = TrackSim(conf, link)
 
-    # planner = EndVehicleTrain(agent_name, conf, link)
-    # safety_planner = LearningSupervisor(planner, conf)
-    # train_kernel_vehicle(env, safety_planner, conf, show=False)
+    planner = EndVehicleTrain(agent_name, conf, link)
+    safety_planner = LearningSupervisor(planner, conf)
+    train_kernel_vehicle(env, safety_planner, conf, show=False)
 
     planner = EndVehicleTest(agent_name, conf)
     eval_dict_wo = evaluate_vehicle(env, planner, conf, False)
@@ -129,22 +129,22 @@ def execute_performance_kernel_run(n):
 
 
 def train_baseline(n):
-    sim_conf = load_conf("PaperBaseline")
-    # sim_conf = load_conf("std_test_kernel")
+    # sim_conf = load_conf("PaperBaseline")
+    sim_conf = load_conf("std_test_kernel")
     sim_conf.map_name = MAP_NAME
     agent_name = f"Baseline_{n}"
     link = LinkyLogger(sim_conf, agent_name)
     env = TrackSim(sim_conf, link)
 
-    # planner = EndVehicleTrain(agent_name, sim_conf, link)
-    # train_time, crashes = train_baseline_vehicle(env, planner, sim_conf)
+    planner = EndVehicleTrain(agent_name, sim_conf, link)
+    train_time, crashes = train_baseline_vehicle(env, planner, sim_conf)
 
     planner = EndVehicleTest(agent_name, sim_conf)
     eval_dict_wo = evaluate_vehicle(env, planner, sim_conf, False)
     
     save_dict = vars(sim_conf)
-    # save_dict['train_time'] = train_time
-    # save_dict['crashes'] = crashes
+    save_dict['train_time'] = train_time
+    save_dict['crashes'] = crashes
     save_dict['agent_name'] = agent_name
     save_dict['Wo'] = eval_dict_wo
 
@@ -153,13 +153,13 @@ def train_baseline(n):
 
 
 def run_repeatability():
-    for i in range(1, 10):
+    for i in range(30, 35):
         execute_performance_kernel_run(i)
-        train_baseline(i)
+        # train_baseline(i)
 
 if __name__ == "__main__":
     # Kernel gen tests
-    execute_gen_run("kernel_gen_run")
+    # execute_gen_run("kernel_gen_run")
     
     # Reward Tests
     # execute_kernel_run("reward_run")
@@ -169,4 +169,4 @@ if __name__ == "__main__":
     # execute_performance_kernel_run(21)
     # train_baseline(1)
 
-    # run_repeatability()
+    run_repeatability()

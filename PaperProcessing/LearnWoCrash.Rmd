@@ -44,12 +44,16 @@ kable(kernel_gen)
 ```{r}
 kernel_gen = data %>%
   filter(eval_name=="Comparision"&vehicle=='Baseline')%>%
-  select(agent_name, crashes,  Wo_avg_times, Wo_success_rate)
+  select(agent_name, crashes,  Wo_avg_times, Wo_success_rate) %>%
+   arrange(desc(agent_name))
+
+
 kable(kernel_gen)
 
 kernel_gen = data %>%
   filter(eval_name=="Comparision"&vehicle=='KernelSSS')%>%
-  select(agent_name, SSS_avg_times, SSS_success_rate, Wo_avg_times, Wo_success_rate)
+  select(agent_name, SSS_avg_times, SSS_success_rate, Wo_avg_times, Wo_success_rate)%>%
+   arrange(desc(agent_name))
 
 kable(kernel_gen)
 ```
@@ -60,16 +64,16 @@ kable(kernel_gen)
 
 
 ```{r}
-repeatability = data %>%
-   filter(eval_name=="Comparision") %>%
-   select(SSS_avg_times, vehicle)%>%
-   # group_by(vehicle)%>%
-   ggplot(aes(x=vehicle, y=SSS_avg_times, group=vehicle))+
-   geom_boxplot()+
-   geom_point()
+# repeatability = data %>%
+#    filter(eval_name=="Comparision") %>%
+#    select(SSS_avg_times, vehicle)%>%
+#    # group_by(vehicle)%>%
+#    ggplot(aes(x=vehicle, y=SSS_avg_times, group=vehicle))+
+#    geom_boxplot()+
+#    geom_point()
 
 repeatability = data %>%
-   filter(eval_name=="Comparision") %>%
+   filter(eval_name=="Comparision"&Wo_avg_times>1) %>%
    select(Wo_avg_times, vehicle)%>%
    group_by(vehicle)%>%
    mutate(mean_time=mean(Wo_avg_times))%>%
