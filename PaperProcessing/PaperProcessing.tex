@@ -1,0 +1,183 @@
+% Options for packages loaded elsewhere
+\PassOptionsToPackage{unicode}{hyperref}
+\PassOptionsToPackage{hyphens}{url}
+%
+\documentclass[
+]{article}
+\title{Paper Data Presetation}
+\author{Benjamin Evans}
+\date{29/11/2021}
+
+\usepackage{amsmath,amssymb}
+\usepackage{lmodern}
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provide euro and other symbols
+\else % if luatex or xetex
+  \usepackage{unicode-math}
+  \defaultfontfeatures{Scale=MatchLowercase}
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+% Use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\IfFileExists{microtype.sty}{% use microtype if available
+  \usepackage[]{microtype}
+  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\makeatletter
+\@ifundefined{KOMAClassName}{% if non-KOMA class
+  \IfFileExists{parskip.sty}{%
+    \usepackage{parskip}
+  }{% else
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
+}{% if KOMA class
+  \KOMAoptions{parskip=half}}
+\makeatother
+\usepackage{xcolor}
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\IfFileExists{bookmark.sty}{\usepackage{bookmark}}{\usepackage{hyperref}}
+\hypersetup{
+  pdftitle={Paper Data Presetation},
+  pdfauthor={Benjamin Evans},
+  hidelinks,
+  pdfcreator={LaTeX via pandoc}}
+\urlstyle{same} % disable monospaced font for URLs
+\usepackage[margin=1in]{geometry}
+\usepackage{graphicx}
+\makeatletter
+\def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
+\makeatother
+% Scale images if necessary, so that they will not overflow the page
+% margins by default, and it is still possible to overwrite the defaults
+% using explicit options in \includegraphics[width, height, ...]{}
+\setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
+% Set default figure placement to htbp
+\makeatletter
+\def\fps@figure{htbp}
+\makeatother
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\setcounter{secnumdepth}{-\maxdimen} % remove section numbering
+\ifLuaTeX
+  \usepackage{selnolig}  % disable illegal ligatures
+\fi
+
+\begin{document}
+\maketitle
+
+\hypertarget{kernel-safety-tests}{%
+\section{Kernel Safety Tests}\label{kernel-safety-tests}}
+
+\hypertarget{tests}{%
+\section{Tests}\label{tests}}
+
+\hypertarget{kernel-space-discretisation}{%
+\subsection{Kernel Space
+Discretisation}\label{kernel-space-discretisation}}
+
+\includegraphics{PaperProcessing_files/figure-latex/unnamed-chunk-1-1.pdf}
+
+The test shows that a higher percentage of the image region is filled
+for the discriminating kernel than the viability kernel. It also shows
+that the two amounts converge as the discretization step gets smaller.
+
+\hypertarget{kernel-safety}{%
+\subsection{Kernel Safety}\label{kernel-safety}}
+
+Make a table here like the one that I am going to put into the report.
+
+\hypertarget{learning-formulation}{%
+\section{Learning Formulation}\label{learning-formulation}}
+
+\hypertarget{learning-mode}{%
+\subsection{Learning Mode}\label{learning-mode}}
+
+\includegraphics{PaperProcessing_files/figure-latex/unnamed-chunk-2-1.pdf}
+
+The test shows that the standard learning formulation used in robotics
+(episodic learning with a constant punishment) is very ineffective. The
+method presented in this paper enables continuous learning where the
+agent is able to continue driving around the race track because it never
+crashes. Continuous learning is shown to produce significantly lower lap
+times than episodic learning.
+
+Additionally, due to the supervisors intervention, the severity of how
+bad an action is can be easily measured. The magnitude based reward
+signal punishes the agent relative to the magnitude of the intervention
+required to keep the vehicle from crashing. The results indicate that
+using a magnitude based punishment in both continuous and episodic
+learning leads to an improvement.
+
+Overall, our novel learning style of continuous learning using a
+punishment related to the magnitude of the supervisors intervention,
+leads to significantly faster racing performance.
+
+\hypertarget{kernel-reward}{%
+\subsection{Kernel Reward}\label{kernel-reward}}
+
+\includegraphics{PaperProcessing_files/figure-latex/unnamed-chunk-3-1.pdf}
+
+\hypertarget{baseline-comparision}{%
+\section{Baseline Comparision}\label{baseline-comparision}}
+
+\hypertarget{repeatability}{%
+\subsection{Repeatability}\label{repeatability}}
+
+We evaluate 10 agents of the baseline and the SSS.
+
+\includegraphics{PaperProcessing_files/figure-latex/unnamed-chunk-4-1.pdf}
+
+The tests show that the SSS produces much more similar results than the
+baseline agent. The standard deviation of the data is much smaller at
+\ldots{} vs \ldots{}
+
+The average times produced by the SSS is also lower, showing that the
+SSS leads to faster racing behaviour.
+
+\hypertarget{training-rate}{%
+\subsection{Training Rate}\label{training-rate}}
+
+\begin{verbatim}
+## `geom_smooth()` using formula 'y ~ x'
+\end{verbatim}
+
+\includegraphics{PaperProcessing_files/figure-latex/unnamed-chunk-5-1.pdf}
+\includegraphics{PaperProcessing_files/figure-latex/unnamed-chunk-6-1.pdf}
+
+\hypertarget{archive-tests}{%
+\section{Archive Tests}\label{archive-tests}}
+
+\hypertarget{kernel-reward-1}{%
+\subsection{Kernel Reward}\label{kernel-reward-1}}
+
+There are very interesting results from the evaluations on the kernel
+reward signal We start by looking at the direct results from all the
+tests run.
+
+\includegraphics{PaperProcessing_files/figure-latex/unnamed-chunk-7-1.pdf}
+The first and most obvious result is that using a reward signal value of
+zero is produces poor behaviour with slow lap times. Apart from that,
+the results show that as the sss reward scale increases the lap times
+become slower. This is true for the magnitude and constant reward
+signals.
+
+\begin{figure}
+\centering
+\includegraphics{PaperProcessing_files/figure-latex/unnamed-chunk-8-1.pdf}
+\caption{Magnitude Reward Signals}
+\end{figure}
+
+What is interesting to note and is not shown on the graphs is that for
+the 0.2 reward, ti only achieves a success rate of around 97\% without
+the SSS. This means that it doesn't learn to be totally independant of
+the supervisor. This is definitely something to watch out for.
+
+The interpretation of this result is the clear balance between
+performance and safety.
+
+\end{document}
